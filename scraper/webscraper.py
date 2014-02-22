@@ -73,5 +73,9 @@ class Scraper():
             self.videos.append(url)
 
 
+    def extract_vide_info(self):
+                
+
+
 if __name__ == '__main__':
     Scraper()
