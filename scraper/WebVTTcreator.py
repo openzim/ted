@@ -19,14 +19,27 @@ class WebVTTcreator():
 
 
     def __init__(self, url):
+        """
+        Loads the json representation of the subtitles form the given
+        Url and decodes it. 
+        Creates a WebVtt document off it and saves it in a .vtt file.
+        """
         subtitles_json = requests.get(url).text
         self.create_WebVtt(json.loads(subtitles_json))
         print self.WebVTTdocument
 
 
     def create_WebVtt(self, json):
-        print 'WEBVTT\n'
-        
+        """
+        Create the WebVTT file from the given decoded json.
+        Structure of a WebVTT file:
+
+        WebVTT
+
+        00:00:00.000 --> 00:00:00.000 
+        [start time --> end time]
+        'content'
+        """
         for subtitle in json['captions']:
             startTime = int(subtitle['startTime'])
             duration = int(subtitle['duration'])
@@ -38,10 +51,13 @@ class WebVTTcreator():
 
 
     def time_string(self, ms):
+        """
+        Create the '00:00:00.000' string representation of the time.
+        """
         hours, remainder = divmod(ms, 3600000)
         minutes, remainder = divmod(remainder, 60000)
         seconds, miliseconds = divmod(remainder, 1000)
-        return '%.2d:%.2d:%.2d:%.3d' % (hours, minutes, seconds, miliseconds)
+        return '%.2d:%.2d:%.2d.%.3d' % (hours, minutes, seconds, miliseconds)
          
 
     def create_file(self):
