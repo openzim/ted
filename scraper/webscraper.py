@@ -58,6 +58,7 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print self.videos
+            break
 
 
     def extract_videos(self):
@@ -71,10 +72,27 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.videos.append(url)
+            self.extract_video_info(url)
+            break
 
 
-    def extract_vide_info(self):
-                
+    def extract_video_info(self, url):
+        self.soup = BeautifulSoup(requests.get(url).text)
+
+        # Extract the speaker of the TED talk
+        speaker = self.soup.select('a.talk-hero__speaker__link')[0].text.strip()
+
+        # Extract the title of the TED talk
+        title = self.soup.select('div.talk-hero__title')[0].text.strip()
+        
+        # Extract the upload date of the TED talk
+        date =  self.soup.find('div', class_="talk-hero__meta")
+        date = date.find_all('span')[1]
+        date.strong.replace_with('')
+        date = date.text.strip()
+
+        print speaker, '\n', title, '\n', date
+
 
 
 if __name__ == '__main__':
