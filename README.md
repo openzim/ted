@@ -2,7 +2,8 @@
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. Its web site is www.ted.com.
 
-The purpose of this project is to create a sustainable solution to create ZIM files providing the TED and TEDx videos in a similar manner like ted.com.
+The purpose of this project is to create a sustainable solution to create ZIM files providing the TED and TEDx videos in a similar manner like www.ted.com.
+Everything about this project can be found [here](www.kiwix.org/wiki/TED). 
 
 ## Building the project
 
