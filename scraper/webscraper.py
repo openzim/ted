@@ -57,7 +57,6 @@ class Scraper():
             html = requests.get(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
-            print self.videos
             break
 
 
@@ -115,7 +114,7 @@ class Scraper():
         # Extract the view count of the TED talk
         views = self.soup.select('span.talk-sharing__value')[0].text.strip()
 
-        json_data = self.soup.select('div.talks-main script')[2].text
+        json_data = self.soup.select('div.talks-main script')[-1].text
 
         print json_data
 
