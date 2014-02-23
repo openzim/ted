@@ -15,7 +15,7 @@ Chose one of the following methods to do that:
 
 It's advised, that you have `virtualenv` installed:
 
-    pip install virtualenv
+    sudo pip install virtualenv
 
 Up next you have to create a virtual enviroment in the kiwix-other/TED/ directoryfor the TED Scraper:
 
