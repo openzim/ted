@@ -69,6 +69,7 @@ class Scraper():
             html = requests.get(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
+            break
 
 
     def extract_videos(self):
@@ -137,7 +138,7 @@ class Scraper():
         video_link = json_data['talks'][0]['nativeDownloads']['medium']
 
         # Extract the video Id of the TED talk video.
-        # We need this to generate the subtitle page
+        # We need this to generate the subtitle page.
         video_id = json_data['talks'][0]['id']
 
         # Generate a list of all subtitle languages with the link to
@@ -154,8 +155,14 @@ class Scraper():
                      for lang in json_data['talks'][0]['languages']]
         subtitles = utils.build_subtitle_pages(video_id, subtitles)
 
+        # Extract the keywords for the TED talk
+        keywords = self.soup.find('meta', attrs={'name':'keywords'})['content']
+        keywords = [key.strip() for key in keywords.split(',')]
+        keywords.remove('TED')
+
         # Append the meta-data to a list
         self.videos.append([{
+            'id':video_id,
             'title':title, 
             'description':description,
             'speaker':speaker, 
@@ -166,7 +173,8 @@ class Scraper():
             'views':views, 
             'thumbnail':thumbnail, 
             'video_link':video_link, 
-            'subtitles':subtitles}])
+            'subtitles':subtitles,
+            'keywords':keywords}])
 
         
     def dump_data(self):
