@@ -1,25 +1,26 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title></title>
-		
-		<link href="/../CSS/video.css" rel="stylesheet" type="text/css">
-		<link href="/../CSS/ted.css" rel="stylesheet" type="text/css">
-		<script src="/../JS/video.js"></script>	
+    <head>
+        <title>{{ title }}</title>
+        
+        <link href="/../CSS/video.css" rel="stylesheet" type="text/css">
+        <link href="/../CSS/ted.css" rel="stylesheet" type="text/css">
+        <script src="/../JS/video.js"/>
+    </head>
 
-	</head>
+    <body>
+        <div id="content">
+            <h2>{{ speaker }}</h2>
+            <h1>{{ title }}</h1>
+            <video class="video-js vjs-default-skin" controls preload="none" width="640" height="264"
+                poster="{{ thumbnail }}" data-setup="{}">
+                <source src="video.mp4" type='video/mp4'>
+                <track kind="subtitles" src="subs_eng.vtt" srclang="en" label="English"</track>
+                <track kind="subtitles" src="subs_eng.vtt" srclang="ro" label="Romanian"</track>
+                <track kind="subtitles" src="subs_alb.vtt" srclang="sq" label="Albanian"</track>
+            </video>
 
-	<body>
-		<div id="content">
-			<h1>Rupal Patel: Synthetic voices, as unique as fingerprints</h1>
-			<video id="example_video_1" class="video-js vjs-default-skin" 
-				controls preload="none" width="640" height="264"
-				poster="http://video-js.zencoder.com/oceans-clip.png" data-setup="{}">
-				<source src="RupalPatel_2013W.mp4" type='video/mp4'>
-				<track kind="subtitles" src="subs_eng.vtt" srclang="en" label="English"</track>
-				<track kind="subtitles" src="subs_eng.vtt" srclang="ro" label="Romanian"</track>
-				<track kind="subtitles" src="subs_alb.vtt" srclang="sq" label="Albanian"</track>
-			</video>
-		</div>
-	</body>
+            <div id="description">{{ description }}</div>
+        </div>
+    </body>
 </html>
