@@ -79,10 +79,11 @@ class Scraper():
     def extract_video_info(self, url):
         """
         Extract the meta-data of the video:
-        speaker, title, publishing date, view count, description,
-        direct download link to the video, download link to the
-        JSON subtitles file,
-
+        Speaker, the profession of the speaker, a short biography of 
+        the speaker, the link to a picture of the speaker, title, 
+        publishing date, view count, description of the TED talk, 
+        direct download link to the video, download link to the subtitle
+        files and a link to a thumbnail of the video.
         """
         self.soup = BeautifulSoup(requests.get(url).text)
 
