@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 from urlparse import urljoin
 import utils
+import json
 
 
 class Scraper():
@@ -72,7 +73,7 @@ class Scraper():
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.videos.append(url)
             self.extract_video_info(url)
-            break
+            
 
 
     def extract_video_info(self, url):
@@ -85,9 +86,12 @@ class Scraper():
         """
         self.soup = BeautifulSoup(requests.get(url).text)
 
+        json_data = self.soup.select('div.talks-main script')[-1].text
+        json_data = ' '.join(json_data.split(',', 1)[1].split(')')[:-1])
+        json_data = json.loads(json_data)
+
         # Extract the speaker of the TED talk
-        speaker = self.soup.select(
-            'a.talk-hero__speaker__link')[0].text.strip()
+        speaker = json_data['talks'][0]['speaker']
 
         # Extract the profession of the speaker of the TED talk
         speaker_profession = self.soup.select('div.talk-speaker__description') \
@@ -100,7 +104,7 @@ class Scraper():
         speaker_picture = self.soup.select('img.thumb__image')[0]['src']
 
         # Extract the title of the TED talk
-        title = self.soup.select('div.talk-hero__title')[0].text.strip()
+        title = json_data['talks'][0]['title']
 
         # Extract the description of the TED talk
         description = self.soup.select('p.talk-description')[0].text.strip()
@@ -114,9 +118,16 @@ class Scraper():
         # Extract the view count of the TED talk
         views = self.soup.select('span.talk-sharing__value')[0].text.strip()
 
-        json_data = self.soup.select('div.talks-main script')[-1].text
+        thumbnail = json_data['talks'][0]['thumb']
 
-        print json_data
+        video_download = json_data['talks'][0]['nativeDownloads']['medium']
+
+        video_id = json_data['talks'][0]['id']
+
+        subtitles = [[lang['languageName'], lang['languageCode']] \
+            for lang in json_data['talks'][0]['languages']]
+        subtitles = utils.build_subtitle_pages(video_id, subtitles)
+
 
 
 if __name__ == '__main__':

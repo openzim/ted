@@ -1,0 +1,199 @@
+{
+    "talks": [
+        {
+            "id": 1932,
+            "duration": 562,
+            "languages": [
+                {
+                    "languageName": "English",
+                    "languageCode": "en",
+                    "isRtl": false
+                }
+            ],
+            "nativeLanguage": "en",
+            "isSubtitleRequired": false,
+            "introDuration": 11.82,
+            "adDuration": "3.33",
+            "adUrl": "http://pubads.g.doubleclick.net/gampad/ads?iu=%2F5641%2Fted2%2Ftalk&sz=640x360&ciu_szs=300x250%2C512x288%2C120x60&impl=s&gdfp_req=1&env=vp&output=xml_vast2&cust_params=id%3D1932%26talk%3Dash_beckham_we_re_all_hiding_something_let_s_find_the_courage_to_open_up%26year%3D2013%26tag%3Dculture%2Cempathy%2Chappiness%26event%3DTEDxBoulder+2013&url=%5Breferrer_url%5D&correlator=%5Bcorrelator%5D&unviewed_position_start=1",
+            "streamer": "rtmp://tedfs.fplive.net/ted",
+            "resources": {
+                "h264": [
+                    {
+                        "bitrate": 320,
+                        "file": "http://download.ted.com/talks/AshBeckham_2013X-320k.mp4?apikey=489b859150fc58263f17110eeb44ed5fba4a3b22"
+                    }
+                ],
+                "rtmp": [
+                    {
+                        "bitrate": 1500,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-1500k.mp4",
+                        "name": "1500k",
+                        "width": 1280,
+                        "height": 720
+                    },
+                    {
+                        "bitrate": 950,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-950k.mp4",
+                        "name": "950k",
+                        "width": 854,
+                        "height": 480
+                    },
+                    {
+                        "bitrate": 600,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-600k.mp4",
+                        "name": "600k",
+                        "width": 640,
+                        "height": 360
+                    },
+                    {
+                        "bitrate": 450,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-450k.mp4",
+                        "name": "450k",
+                        "width": 512,
+                        "height": 288
+                    },
+                    {
+                        "bitrate": 320,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-320k.mp4",
+                        "name": "320k",
+                        "width": 512,
+                        "height": 288
+                    },
+                    {
+                        "bitrate": 180,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-180k.mp4",
+                        "name": "180k",
+                        "width": 512,
+                        "height": 288
+                    },
+                    {
+                        "bitrate": 64,
+                        "file": "mp4:talk/stream/2013X/Blank/AshBeckham_2013X-64k.mp4",
+                        "name": "64k",
+                        "width": 398,
+                        "height": 224
+                    }
+                ],
+                "hls": {
+                    "adUrl": "http://ad.doubleclick.net/pfadx/tconf.ted/hls;sz=6x6;id=1932;talk=ash_beckham_we_re_all_hiding_something_let_s_find_the_courage_to_open_up;year=2013;tag=culture,empathy,happiness;event=TEDxBoulder+2013;dcmt=text/xml",
+                    "stream": "http://hls.ted.com/talks/1932.m3u8",
+                    "metadata": "http://hls.ted.com/talks/1932.json"
+                }
+            },
+            "canonical": "http://www.ted.com/talks/ash_beckham_we_re_all_hiding_something_let_s_find_the_courage_to_open_up.html",
+            "external": null,
+            "name": "Ash Beckham: We're all hiding something. Let's find the courage to open up",
+            "title": " We're all hiding something. Let's find the courage to open up",
+            "speaker": "Ash Beckham",
+            "thumb": "http://images.ted.com/images/ted/8615dfe1be88cc3698fd1547eda6e138dd56cda3_615x461.jpg",
+            "slug": "ash_beckham_we_re_all_hiding_something_let_s_find_the_courage_to_open_up",
+            "event": "TEDxBoulder 2013",
+            "filmed": 1379030400,
+            "published": 1392997406,
+            "nativeDownloads": {
+                "low": "http://download.ted.com/talks/AshBeckham_2013X-light.mp4?apikey=489b859150fc58263f17110eeb44ed5fba4a3b22",
+                "medium": "http://download.ted.com/talks/AshBeckham_2013X.mp4?apikey=489b859150fc58263f17110eeb44ed5fba4a3b22",
+                "high": "http://download.ted.com/talks/AshBeckham_2013X-480p.mp4?apikey=489b859150fc58263f17110eeb44ed5fba4a3b22"
+            },
+            "subtitledDownloads": null,
+            "audioDownload": null
+        }
+    ],
+    "language": "en",
+    "ratings": [
+        {
+            "id": 24,
+            "name": "Persuasive",
+            "count": 62
+        },
+        {
+            "id": 3,
+            "name": "Courageous",
+            "count": 202
+        },
+        {
+            "id": 22,
+            "name": "Fascinating",
+            "count": 20
+        },
+        {
+            "id": 1,
+            "name": "Beautiful",
+            "count": 85
+        },
+        {
+            "id": 10,
+            "name": "Inspiring",
+            "count": 226
+        },
+        {
+            "id": 8,
+            "name": "Informative",
+            "count": 29
+        },
+        {
+            "id": 7,
+            "name": "Funny",
+            "count": 60
+        },
+        {
+            "id": 25,
+            "name": "OK",
+            "count": 17
+        },
+        {
+            "id": 26,
+            "name": "Obnoxious",
+            "count": 27
+        },
+        {
+            "id": 9,
+            "name": "Ingenious",
+            "count": 12
+        },
+        {
+            "id": 21,
+            "name": "Unconvincing",
+            "count": 31
+        },
+        {
+            "id": 2,
+            "name": "Confusing",
+            "count": 3
+        },
+        {
+            "id": 11,
+            "name": "Longwinded",
+            "count": 19
+        },
+        {
+            "id": 23,
+            "name": "Jaw-dropping",
+            "count": 1
+        }
+    ],
+    "relatedTalks": [
+        {
+            "image": "http://images.ted.com/images/ted/4c9b700ffa65cc8257a838af93a12729b9848088_615x461.jpg",
+            "speaker": "Sam Richards",
+            "title": "A radical experiment in empathy",
+            "duration": 1087,
+            "slug": "sam_richards_a_radical_experiment_in_empathy"
+        },
+        {
+            "image": "http://images.ted.com/images/ted/85a7e0b84f99c0bb409fe2596d547868f7a2991e_615x461.jpg",
+            "speaker": "Pico Iyer",
+            "title": "Where is home?",
+            "duration": 841,
+            "slug": "pico_iyer_where_is_home"
+        },
+        {
+            "image": "http://images.ted.com/images/ted/3fa1ecfb3e36fe94a599229a97c832abae4634ca_615x461.jpg",
+            "speaker": "Sally Kohn",
+            "title": "Let’s try emotional correctness",
+            "duration": 359,
+            "slug": "sally_kohn_let_s_try_emotional_correctness"
+        }
+    ],
+    "threadId": 24994
+}
