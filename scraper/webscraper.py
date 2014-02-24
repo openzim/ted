@@ -117,13 +117,20 @@ class Scraper():
 
         # Extract the view count of the TED talk
         views = self.soup.select('span.talk-sharing__value')[0].text.strip()
-
+        
+        # Extract the thumbnail of the of the TED talk video
         thumbnail = json_data['talks'][0]['thumb']
 
+        # Extract the download link of the TED talk video
         video_download = json_data['talks'][0]['nativeDownloads']['medium']
 
+        # Extract the video Id of the TED talk video. 
+        # We need this to generate the subtitle page 
         video_id = json_data['talks'][0]['id']
 
+        # Generate a list of all subtitle languages with the link to
+        # its subtitles page. It will be in this format:
+        # [['English', 'en', '.../talks/subtitles/id/{id}/lang/{lang}']]
         subtitles = [[lang['languageName'], lang['languageCode']] \
             for lang in json_data['talks'][0]['languages']]
         subtitles = utils.build_subtitle_pages(video_id, subtitles)
