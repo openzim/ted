@@ -36,7 +36,7 @@ def build_subtitle_pages(video_id, language_list):
 
     for language in language_list:
         page = 'http://www.ted.com/talks/subtitles/id/{}/lang/{}' \
-            .format(video_id, language[1])
-        language.append(page)
+            .format(video_id, language['languageCode'])
+        language['link'] = page
 
     return language_list

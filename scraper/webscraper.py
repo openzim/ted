@@ -58,7 +58,7 @@ class Scraper():
             html = requests.get(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
-            break
+            # break
 
 
     def extract_videos(self):
@@ -73,7 +73,7 @@ class Scraper():
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.videos.append(url)
             self.extract_video_info(url)
-            
+            break
 
 
     def extract_video_info(self, url):
@@ -131,10 +131,19 @@ class Scraper():
 
         # Generate a list of all subtitle languages with the link to
         # its subtitles page. It will be in this format:
-        # [['English', 'en', '.../talks/subtitles/id/{id}/lang/{lang}']]
-        subtitles = [[lang['languageName'], lang['languageCode']] \
-            for lang in json_data['talks'][0]['languages']]
+        # [
+        #     {
+        #         'languageCode': u'bg',
+        #         'link': 'http://www.ted.com/talks/subtitles/id/1907/lang/bg',
+        #         'languageName': u'Bulgarian'
+        #     }
+        # ]
+        subtitles = [{'languageName':lang['languageName'], \
+        'languageCode':lang['languageCode']} \
+        for lang in json_data['talks'][0]['languages']]
         subtitles = utils.build_subtitle_pages(video_id, subtitles)
+
+        print subtitles
 
 
 
