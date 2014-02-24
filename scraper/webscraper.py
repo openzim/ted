@@ -128,6 +128,10 @@ class Scraper():
         date.strong.replace_with('')
         date = date.text.strip()
 
+        # Extract the length of the TED talk in minutes
+        length = int(json_data['talks'][0]['duration'])
+        length = divmod(length, 60)[0]
+
         # Extract the view count of the TED talk
         views = self.soup.select('span.talk-sharing__value')[0].text.strip()
 
@@ -170,6 +174,7 @@ class Scraper():
             'speaker_bio':speaker_bio, 
             'speaker_picture':speaker_picture,  
             'date':date,
+            'length':length,
             'views':views, 
             'thumbnail':thumbnail, 
             'video_link':video_link, 
