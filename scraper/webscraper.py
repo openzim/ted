@@ -69,6 +69,7 @@ class Scraper():
             html = requests.get(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
+            print 'Finished scraping page {}'.format(page)
 
 
     def extract_videos(self):
@@ -163,7 +164,7 @@ class Scraper():
         keywords = [key.strip() for key in keywords.split(',')]
         keywords.remove('TED')
 
-        # # Extract the ratings list for the TED talk
+        # Extract the ratings list for the TED talk
         ratings = json_data['ratings']
 
         # Append the meta-data to a list
