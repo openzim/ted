@@ -24,7 +24,7 @@ def build_video_page(page):
     Url builder for TED talk video pages.
     Appending the page number to the 'page' parameter.
     """
-    return 'http://new.ted.com/talks/browse?page={}'.format(str(page))
+    return 'http://new.ted.com/talks/browse?page={}'.format(page)
 
 
 def build_subtitle_pages(video_id, language_list):

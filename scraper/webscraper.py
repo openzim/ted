@@ -7,6 +7,9 @@ __title__ = 'webscraper'
 __author__ = 'Rashiq Ahmad'
 __license__ = 'GPLv3'
 
+import sys
+import os.path
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from urlparse import urljoin
@@ -31,9 +34,17 @@ class Scraper():
         Extract number of video pages. Generate the specific
         video page from it and srape it.
         """
+        # Time the script, if the script has been called with a '-d' flag
+        if '-d' in sys.argv: self.startTime = datetime.now()
+        
         self.pages = self.extract_page_number()
         self.extract_all_video_links()
+        self.dump_data()
 
+        # Print the execution time of the script
+        if '-d' in sys.argv: print('The script took {} to run' \
+            .format(datetime.now() - self.startTime))
+        
 
     def extract_page_number(self):
         """
@@ -58,7 +69,6 @@ class Scraper():
             html = requests.get(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
-            # break
 
 
     def extract_videos(self):
@@ -71,22 +81,23 @@ class Scraper():
         """
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
-            self.videos.append(url)
             self.extract_video_info(url)
-            break
 
 
     def extract_video_info(self, url):
         """
         Extract the meta-data of the video:
-        Speaker, the profession of the speaker, a short biography of 
-        the speaker, the link to a picture of the speaker, title, 
-        publishing date, view count, description of the TED talk, 
+        Speaker, the profession of the speaker, a short biography of
+        the speaker, the link to a picture of the speaker, title,
+        publishing date, view count, description of the TED talk,
         direct download link to the video, download link to the subtitle
         files and a link to a thumbnail of the video.
         """
         self.soup = BeautifulSoup(requests.get(url).text)
 
+        # Every TED video page has a <script>-tag with a Javascript
+        # object with JSON in it. We will just stip away the object
+        # signature and load the json to extract meta-data out of it.
         json_data = self.soup.select('div.talks-main script')[-1].text
         json_data = ' '.join(json_data.split(',', 1)[1].split(')')[:-1])
         json_data = json.loads(json_data)
@@ -95,8 +106,8 @@ class Scraper():
         speaker = json_data['talks'][0]['speaker']
 
         # Extract the profession of the speaker of the TED talk
-        speaker_profession = self.soup.select('div.talk-speaker__description') \
-            [0].text.strip()
+        speaker_profession = \
+            self.soup.select('div.talk-speaker__description')[0].text.strip()
 
         # Extract the short biography of the speaker of the TED talk
         speaker_bio = self.soup.select('div.talk-speaker__bio')[0].text.strip()
@@ -118,33 +129,66 @@ class Scraper():
 
         # Extract the view count of the TED talk
         views = self.soup.select('span.talk-sharing__value')[0].text.strip()
-        
+
         # Extract the thumbnail of the of the TED talk video
         thumbnail = json_data['talks'][0]['thumb']
 
         # Extract the download link of the TED talk video
-        video_download = json_data['talks'][0]['nativeDownloads']['medium']
+        video_link = json_data['talks'][0]['nativeDownloads']['medium']
 
-        # Extract the video Id of the TED talk video. 
-        # We need this to generate the subtitle page 
+        # Extract the video Id of the TED talk video.
+        # We need this to generate the subtitle page
         video_id = json_data['talks'][0]['id']
 
         # Generate a list of all subtitle languages with the link to
         # its subtitles page. It will be in this format:
         # [
         #     {
-        #         'languageCode': u'bg',
-        #         'link': 'http://www.ted.com/talks/subtitles/id/1907/lang/bg',
-        #         'languageName': u'Bulgarian'
+        #         'languageCode': u'en',
+        #         'link': 'http://www.ted.com/talks/subtitles/id/1907/lang/en',
+        #         'languageName': u'English'
         #     }
         # ]
-        subtitles = [{'languageName':lang['languageName'], \
-        'languageCode':lang['languageCode']} \
-        for lang in json_data['talks'][0]['languages']]
+        subtitles = [{'languageName': lang['languageName'],
+                      'languageCode':lang['languageCode']}
+                     for lang in json_data['talks'][0]['languages']]
         subtitles = utils.build_subtitle_pages(video_id, subtitles)
 
-        print subtitles
+        # Append the meta-data to a list
+        self.videos.append([{
+            'title':title, 
+            'description':description,
+            'speaker':speaker, 
+            'speaker_profession':speaker_profession, 
+            'speaker_bio':speaker_bio, 
+            'speaker_picture':speaker_picture,  
+            'date':date,
+            'views':views, 
+            'thumbnail':thumbnail, 
+            'video_link':video_link, 
+            'subtitles':subtitles}])
 
+        
+    def dump_data(self):
+        """
+        Dump all the data about every TED talk in a json file 
+        inside the 'build' folder.
+        """
+        # Prettified json dump 
+        data = json.dumps(self.videos, indent=4, separators=(',', ': '))       
+
+        # Get the direction of the 'build' folder. 
+        # This folder my or may not exist yet.
+        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
+
+        # Check, if the folder exists. Create it, if it doesn't.
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
+        
+        # Create or override the 'TED.json' file in the build 
+        # directory with the video data gathered from the scraper.
+        with open(build_dir + '/TED.json', 'w') as ted_file:
+             ted_file.write(data)
 
 
 if __name__ == '__main__':
