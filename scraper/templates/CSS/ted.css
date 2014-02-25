@@ -97,3 +97,8 @@ hr {
     margin:0px;
     font-family: "RobotoLight";
 }
+
+#date {
+    text-align:right;
+    width:640px;
+}
