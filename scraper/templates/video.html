@@ -7,20 +7,36 @@
         <link href="../CSS/ted.css" rel="stylesheet" type="text/css">
         <script src="../JS/video.js"></script>
     </head>
-
     <body>
         <div id="content">
-            <h2>{{ speaker }}</h2>
-            <h1>{{ title }}</h1>
+            <p id="speaker">{{ speaker }}</p>
+            <p id="title">{{ title }}</p>
             <video class="video-js vjs-default-skin" controls preload="none" width="640" height="264"
                 poster="{{ thumbnail }}" data-setup="{}">
                 <source src="video.mp4" type='video/mp4'>
-                <track kind="subtitles" src="subs_eng.vtt" srclang="en" label="English"</track>
-                <track kind="subtitles" src="subs_eng.vtt" srclang="ro" label="Romanian"</track>
-                <track kind="subtitles" src="subs_alb.vtt" srclang="sq" label="Albanian"</track>
+                {% for language in languages %}
+                <track kind="subtitles" src="subs_eng.vtt" srclang="{{ language.code }}"
+                label="{{ language.language }}"</track>
+                {% endfor %}
             </video>
-
-            <div id="description">{{ description }}</div>
+            <div>
+                <div id="views">{{ views }}</div>
+                <div>Total Views</div>
+            </div>
+            <div id="description">
+                <p id="description">{{ description }}</p>
+            </div>
+            <hr>
+            <div id="speaker_box_img">
+                <div>
+                    <img id="speaker_img" src="http://images.ted.com/images/ted/8aeab0f4d32170291aed751f24936b8b27ea124e_254x191.jpg">
+                    <div id="speaker_info">
+                        <div id="speaker_info_box">{{ speaker }}</div>
+                        <div id="speaker_info_profession">{{ profession }}</div>
+                    </div>
+                    <p id="speaker_desc">{{ speakerbio }}</p>
+                </div>
+            </div>
         </div>
     </body>
 </html>
