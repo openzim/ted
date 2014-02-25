@@ -72,6 +72,7 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
+            break
 
 
     def extract_videos(self):
@@ -234,7 +235,7 @@ class Scraper():
 
             html =  html.encode('ascii', 'ignore')
 
-            with open(path+'/' + 'index.html', 'w') as html_page:
+            with open(path + '/' + 'index.html', 'w') as html_page:
                  html_page.write(html)
 
 
