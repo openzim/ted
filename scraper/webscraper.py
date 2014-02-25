@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 from urlparse import urljoin
 import utils
 import json
+from jinja2 import Environment, FileSystemLoader
 
 
 class Scraper():
@@ -39,7 +40,8 @@ class Scraper():
         
         self.pages = self.extract_page_number()
         self.extract_all_video_links()
-        self.dump_data()
+        # self.dump_data()
+        self.render_html_pages()
 
         # Print the execution time of the script
         if '-d' in sys.argv: print('The script took {} to run' \
@@ -114,7 +116,7 @@ class Scraper():
         speaker_bio = self.soup.select('div.talk-speaker__bio')[0].text.strip()
 
         # Extract the Url to the picture of the speaker of the TED talk
-        speaker_picture = self.soup.select('img.thumb__image')[0]['src']
+        speaker_img = self.soup.select('img.thumb__image')[0]['src']
 
         # Extract the title of the TED talk
         title = json_data['talks'][0]['title']
@@ -175,7 +177,7 @@ class Scraper():
             'speaker':speaker, 
             'speaker_profession':speaker_profession, 
             'speaker_bio':speaker_bio, 
-            'speaker_picture':speaker_picture,  
+            'speaker_img':speaker_img,  
             'date':date,
             'length':length,
             'views':views, 
@@ -206,6 +208,35 @@ class Scraper():
         # directory with the video data gathered from the scraper.
         with open(build_dir + '/TED.json', 'w') as ted_file:
              ted_file.write(data)
+
+
+    def render_html_pages(self):
+        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
+        env = Environment(loader=FileSystemLoader('templates'))
+        template = env.get_template('video.html')
+
+        for video in self.videos:
+            path = build_dir + '/TED/' + str(video[0]['id'])
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+            html = template.render(
+                title=video[0]['title'],
+                speaker=video[0]['speaker'],
+                thumbnail=video[0]['thumbnail'],
+                description=video[0]['description'],
+                languages=video[0]['subtitles'], 
+                views=video[0]['views'],
+                speaker_bio=video[0]['speaker_bio'],
+                speaker_img=video[0]['speaker_img'],
+                date=video[0]['date'],
+                profession=video[0]['speaker_profession'])
+
+            html =  html.encode('ascii', 'ignore')
+
+            with open(path+'/' + 'index.html', 'w') as html_page:
+                 html_page.write(html)
+
 
 
 if __name__ == '__main__':
