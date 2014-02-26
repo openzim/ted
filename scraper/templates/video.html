@@ -12,11 +12,11 @@
             <p id="speaker">{{ speaker }}</p>
             <p id="title">{{ title }}</p>
             <video class="video-js vjs-default-skin" controls preload="none" width="640" height="264"
-                poster="{{ thumbnail }}" data-setup="{}">
+                poster="thumbnail.jpg" data-setup="{}">
                 <source src="video.webm" type='video/webm'>
                 <source src="video.mp4" type='video/mp4'>
                 {% for language in languages %}
-                <track kind="subtitles" src="subs{{ language.languageCode }}.vtt" 
+                <track kind="subtitles" src="subs_{{ language.languageCode }}.vtt" 
                 srclang="{{ language.languageCode }}"
                 label="{{ language.languageName }}"</track>
                 {% endfor %}
@@ -32,7 +32,7 @@
             <hr>
             <div id="speaker_box_img">
                 <div>
-                    <img id="speaker_img" src="{{speaker_img}}">
+                    <img id="speaker_img" src="speaker.jpg">
                     <div id="speaker_info">
                         <div id="speaker_info_box">{{ speaker }}</div>
                         <div id="speaker_info_profession">{{ profession }}</div>

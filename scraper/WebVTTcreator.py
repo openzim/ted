@@ -14,21 +14,20 @@ import requests
 
 class WebVTTcreator():
 
-    WebVTTdocument = 'WEBVTT\n'
+    WebVTTdocument = 'WEBVTT\n\n'
 
 
-    def __init__(self, url):
+    def __init__(self, url, offset=0):
         """
         Loads the json representation of the subtitles form the given
         Url and decodes it.
         Creates a WebVtt document off it and saves it in a .vtt file.
         """
         subtitles_json = requests.get(url).text
-        self.create_WebVtt(json.loads(subtitles_json))
-        print self.WebVTTdocument
+        self.create_WebVtt(json.loads(subtitles_json), offset)
 
 
-    def create_WebVtt(self, json):
+    def create_WebVtt(self, json, offset):
         """
         Create the WebVTT file from the given decoded json.
         Structure of a WebVTT file:
@@ -40,7 +39,7 @@ class WebVTTcreator():
         'content'
         """
         for subtitle in json['captions']:
-            startTime = int(subtitle['startTime'])
+            startTime = int(subtitle['startTime']) + offset
             duration = int(subtitle['duration'])
             content = subtitle['content']
 
@@ -59,9 +58,8 @@ class WebVTTcreator():
         return '%.2d:%.2d:%.2d.%.3d' % (hours, minutes, seconds, miliseconds)
 
 
-    def create_file(self):
-        pass
-
+    def get_content(self):
+        return self.WebVTTdocument
 
 if __name__ == '__main__':
     WebVTTcreator('http://www.ted.com/talks/subtitles/id/1907/lang/en')
