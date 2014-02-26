@@ -73,7 +73,6 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
-            break
 
 
     def extract_videos(self):
@@ -118,7 +117,7 @@ class Scraper():
         speaker_bio = self.soup.select('div.talk-speaker__bio')[0].text.strip()
 
         # Extract the Url to the picture of the speaker of the TED talk
-        speaker_img = self.soup.select('img.thumb__image')[0]['src']
+        speaker_picture = self.soup.select('img.thumb__image')[0]['src']
 
         # Extract the title of the TED talk
         title = json_data['talks'][0]['title']
@@ -179,7 +178,7 @@ class Scraper():
             'speaker':speaker.encode('ascii', 'ignore'), 
             'speaker_profession':speaker_profession.encode('ascii', 'ignore'), 
             'speaker_bio':speaker_bio.encode('ascii', 'ignore'), 
-            'speaker_img':speaker_img.encode('ascii', 'ignore'),  
+            'speaker_picture':speaker_picture.encode('ascii', 'ignore'),  
             'date':date.encode('ascii', 'ignore'),
             'views':views.encode('ascii', 'ignore'), 
             'thumbnail':thumbnail.encode('ascii', 'ignore'), 
@@ -266,13 +265,15 @@ class Scraper():
 
             build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
             path = build_dir + '/TED/' + str(video[0]['id'])
+            if not os.path.isfile(path): 
+                sys.exit("Run the script with the '-r' flag first.")
 
             print 'Downloading video...'
             urllib.urlretrieve(video[0]['video_link'], path + '/' + "video.mp4")
 
             # download an image of the speaker 
             print 'Downloading speaker image...'
-            urllib.urlretrieve(video[0]['speaker_img'], path + '/' + "speaker.jpg")
+            urllib.urlretrieve(video[0]['speaker_picture'], path + '/' + "speaker.jpg")
 
             # download the thumbnail of the video 
             print 'Downloading video thumbnail...'
