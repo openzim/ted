@@ -265,8 +265,6 @@ class Scraper():
 
             build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
             path = build_dir + '/TED/' + str(video[0]['id'])
-            if not os.path.isfile(path): 
-                sys.exit("Run the script with the '-r' flag first.")
 
             print 'Downloading video...'
             urllib.urlretrieve(video[0]['video_link'], path + '/' + "video.mp4")
