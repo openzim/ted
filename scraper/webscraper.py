@@ -73,6 +73,7 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
+            break
 
 
     def extract_videos(self):
@@ -218,10 +219,10 @@ class Scraper():
         """
         print 'Rendering template...'
 
-        meta_data_path = build_dir = os.path.dirname(os.path.abspath(__file__)) \
+        meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
             + '/../build/TED.json'
 
-        if not os.path.isfile(meta_data_path): 
+        if not os.path.exists(meta_data_path): 
             sys.exit("TED.json file not found. Run the script with the '-m' flag")
 
         self.load_json()
@@ -231,7 +232,7 @@ class Scraper():
         template = env.get_template('video.html')
 
         for video in self.videos:
-            path = build_dir + '/TED/' + str(video[0]['id'])
+            path = build_dir + '/TED/html/' + str(video[0]['id'])
             if not os.path.exists(path):
                 os.makedirs(path)
 
@@ -264,7 +265,9 @@ class Scraper():
         for video in self.videos:
 
             build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-            path = build_dir + '/TED/' + str(video[0]['id'])
+            path = build_dir + '/TED/Scraper/' + str(video[0]['id'])
+            if not os.path.exists(path): 
+                os.makedirs(path)
 
             print 'Downloading video...'
             urllib.urlretrieve(video[0]['video_link'], path + '/' + "video.mp4")
@@ -285,9 +288,11 @@ class Scraper():
         TED/build/{video id}/subs_{language code}.vtt.
         """
         self.load_json()
-        for video in self.videos:
+        for video in self.videos: 
             build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-            path = build_dir + '/TED/' + str(video[0]['id'])
+            path = build_dir + '/TED/Scraper/' + str(video[0]['id'])
+            if not os.path.exists(path): 
+                os.makedirs(path)
             # download subtitles
             print 'Downloading subtitles...'
             for subtitle in video[0]['subtitles']:
@@ -302,7 +307,7 @@ class Scraper():
         Load the dumped json meta-data file.
         """
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-        meta_data_path = build_dir = os.path.dirname(os.path.abspath(__file__)) \
+        meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
             + '/../build/TED.json'
         with open(meta_data_path) as data_file:    
             self.videos = json.load(data_file)
