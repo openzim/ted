@@ -42,16 +42,20 @@ class App():
 			and not self.args['video'] and not self.args['subs']:
 			scraper.extract_all_video_links()
 			scraper.dump_data()
-			scraper.render_html_pages()
 			scraper.download_subtitles()
 			scraper.download_video_data()
+			scraper.render_welcome_page()
+			scraper.render_video_pages()
+			scraper.copy_files_to_rendering_directory()
 
 		if self.args['metadata']:
 			scraper.extract_all_video_links()
 			scraper.dump_data()
 
 		if self.args['render']:
-			scraper.render_html_pages()
+			scraper.render_welcome_page()
+			scraper.render_video_pages()
+			scraper.copy_files_to_rendering_directory()
 
 		if self.args['video']:
 			scraper.download_video_data()

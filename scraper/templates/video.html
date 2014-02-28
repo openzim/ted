@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>{{ title }}</title>
-        
+        <meta charset="utf-8">
         <link href="../CSS/video.css" rel="stylesheet" type="text/css">
         <link href="../CSS/ted.css" rel="stylesheet" type="text/css">
         <script src="../JS/video.js"></script>
@@ -16,7 +16,7 @@
                 <source src="video.webm" type='video/webm'>
                 <source src="video.mp4" type='video/mp4'>
                 {% for language in languages %}
-                <track kind="subtitles" src="subs_{{ language.languageCode }}.vtt" 
+                <track kind="subtitles" src="subs/subs_{{ language.languageCode }}.vtt" 
                 srclang="{{ language.languageCode }}"
                 label="{{ language.languageName }}"</track>
                 {% endfor %}
