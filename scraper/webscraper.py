@@ -76,7 +76,6 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
-            break
 
 
     def extract_videos(self):
@@ -90,7 +89,6 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
-            break   
 
 
     def extract_video_info(self, url):
@@ -369,7 +367,6 @@ class Scraper():
             
 
         command = """{} -i "{}" -codec:v libvpx -quality good -cpu-used 0 -b:v 600k -qmin 10 -qmax 42 -maxrate 500k -bufsize 1000k -threads 2 -vf scale=-1:480 -codec:a libvorbis -b:a 128k -f webm "{}" """.format(ffmpeg, from_path, to_path)
-        print command
 
         print 'converting video...'
         os.system(command)
