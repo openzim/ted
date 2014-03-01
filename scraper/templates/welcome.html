@@ -33,7 +33,7 @@
                             <img src="{{ ted[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ ted[0].speaker }}</p>
                             <p id="title">{{ ted[0].title }}</p>
-                            <p id="meta-data">{{ ted[0].date }} | {{ ted[0].minutes }} Minutes</p>
+                            <p id="meta-data">{{ ted[0].date }}</p>
                         </li>
                         {% endfor %}
                     </ul>
@@ -47,7 +47,7 @@
                             <img src="{{ item[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ item[0].speaker }}</p>
                             <p id="title">{{ item[0].title }}</p>
-                            <p id="meta-data">{{ item[0].date }} | {{ item[0].minutes }} Minutes</p>
+                            <p id="meta-data">{{ item[0].date }}</p>
                         </li>
                         {% endfor %}
                         {% endfor %}
@@ -58,7 +58,7 @@
             </div>
         </div>
         
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript"></script>
+        <script src="JS/jquery.js" type="text/javascript"></script>
         <script type="text/javascript">
             $(document).ready(function () {
                 $('.menu ul li a').on('click', function (event) {

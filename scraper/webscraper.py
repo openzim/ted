@@ -11,7 +11,9 @@ import sys
 import os.path
 import shutil
 import distutils.dir_util
+import subprocess
 from datetime import datetime
+from sys import platform as _platform
 import requests
 from bs4 import BeautifulSoup
 from urlparse import urljoin
@@ -41,7 +43,6 @@ class Scraper():
         """
         # Time the script, if the script has been called with a '-d' flag
         if '-d' in sys.argv: self.startTime = datetime.now()
-        self.render_welcome_page()
         # self.extract_all_video_links()
         # self.dump_data()
         # self.render_video_pages()
@@ -89,6 +90,7 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
+            break
 
 
     def extract_video_info(self, url):
@@ -142,7 +144,9 @@ class Scraper():
         thumbnail = json_data['talks'][0]['thumb']
 
         # Extract the download link of the TED talk video
+        if not json_data['talks'][0]['nativeDownloads']: return
         video_link = json_data['talks'][0]['nativeDownloads']['medium']
+        if not video_link: return 
 
         # Extract the video Id of the TED talk video.
         # We need this to generate the subtitle page.
@@ -165,7 +169,6 @@ class Scraper():
         # Extract the keywords for the TED talk
         keywords = self.soup.find('meta', attrs={'name':'keywords'})['content']
         keywords = [key.strip() for key in keywords.split(',')]
-        keywords.remove('TED')
 
         # Extract the ratings list for the TED talk
         ratings = json_data['ratings']
@@ -231,23 +234,25 @@ class Scraper():
         template = env.get_template('video.html')
 
         for video in self.videos:
-            path = build_dir + '/TED/html/' + str(video[0]['id'])
-            if not os.path.exists(path):
-                os.makedirs(path)
+            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
+                if i in video[0]['keywords']:
+                    path = build_dir + '/TED/html/' + i + '/' + str(video[0]['id'])
+                    if not os.path.exists(path):
+                        os.makedirs(path)
 
-            html = template.render(
-                title=video[0]['title'],
-                speaker=video[0]['speaker'],
-                description=video[0]['description'],
-                languages=video[0]['subtitles'], 
-                speaker_bio=video[0]['speaker_bio'],
-                date=video[0]['date'],
-                profession=video[0]['speaker_profession'])
+                    html = template.render(
+                        title=video[0]['title'],
+                        speaker=video[0]['speaker'],
+                        description=video[0]['description'],
+                        languages=video[0]['subtitles'], 
+                        speaker_bio=video[0]['speaker_bio'],
+                        date=video[0]['date'],
+                        profession=video[0]['speaker_profession'])
 
-            html =  html.encode('utf-8')
+                    html =  html.encode('utf-8')
 
-            with open(path + '/' + 'index.html', 'w') as html_page:
-                 html_page.write(html)
+                    with open(path + '/' + 'index.html', 'w') as html_page:
+                         html_page.write(html)
 
 
     def render_welcome_page(self):
@@ -263,17 +268,26 @@ class Scraper():
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         env = Environment(loader=FileSystemLoader('templates'))
         template = env.get_template('welcome.html')
-        
-        path = build_dir + '/TED/html/'
-        if not os.path.exists(path):
-            os.makedirs(path)
 
+        for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
+            path = build_dir + '/TED/html/' + i + '/'
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+            with open(path + 'index.html', 'w') as html_page:
+                html_page.write(self.create_welcome_page_data(i, template))
+
+
+    def create_welcome_page_data(self, keyword, template):
         teds = []
         languages = []
         languagelist = []
 
         for video in self.videos:
-            teds.append(video)
+            if keyword in video[0]['keywords']:
+                teds.append(video)
+            else:
+                continue
 
             for language in video[0]['subtitles']:
                 languages.append({'languageCode': language['languageCode'], 
@@ -305,32 +319,60 @@ class Scraper():
             teds=teds,
             languagelist=languagelist)
 
-        html =  html.encode('utf-8')
+        html = html.encode('utf-8')
 
-        with open(path + 'index.html', 'w') as html_page:
-            html_page.write(html)
+        return html
 
 
     def copy_files_to_rendering_directory(self):
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
+        templates_dir = os.path.dirname(os.path.abspath(__file__)) + '/../scraper/templates'
+
         for video in self.videos:
-            path = build_dir + '/TED/scraper/' + str(video[0]['id'])
-            copy_path = build_dir + '/TED/html/' + str(video[0]['id'])
+            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
+                if i in video[0]['keywords']:
+                    path = build_dir + '/TED/scraper/' + str(video[0]['id'])
+                    copy_path = build_dir + '/TED/html/' + i + '/'+ str(video[0]['id'])
 
-            thumbnail = path + '/thumbnail.jpg'
-            subs = path + '/subs/'
-            speaker = path + '/speaker.jpg'
-            
-            if os.path.exists(thumbnail):
-                shutil.copy(thumbnail, copy_path)
+                    thumbnail = path + '/thumbnail.jpg'
+                    subs = path + '/subs/'
+                    speaker = path + '/speaker.jpg'
+                    video_ = path + '/video.mp4'
+                    
+                    if os.path.exists(thumbnail):
+                        shutil.copy(thumbnail, copy_path)
 
-            if os.path.exists(thumbnail):
-                distutils.dir_util.copy_tree(subs, copy_path+'/subs')
+                    if os.path.exists(thumbnail):
+                        distutils.dir_util.copy_tree(subs, copy_path+'/subs')
 
-            if os.path.exists(thumbnail):
-                shutil.copy(speaker, copy_path)
+                    if os.path.exists(thumbnail):
+                        shutil.copy(speaker, copy_path)
+
+                    if os.path.exists(video_):
+                        self.convert_video_and_move_to_rendering(video_, copy_path+ '/video.webm')
 
 
+        for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
+            copy_path = build_dir + '/TED/html/' + i 
+            if os.path.exists(templates_dir + '/CSS'):
+                distutils.dir_util.copy_tree(templates_dir + '/CSS', copy_path+'/CSS')
+            if os.path.exists(templates_dir + '/JS'):
+                distutils.dir_util.copy_tree(templates_dir + '/JS', copy_path+'/JS')
+
+
+    def convert_video_and_move_to_rendering(self, from_path, to_path):
+        ffmpeg = ''
+        if _platform == "linux" or _platform == "linux2":
+            ffmpeg = 'ffmpeg'
+        elif _platform == "darwin":
+            ffmpeg_dir = os.path.dirname(os.path.abspath(__file__)) + '/../ffmpeg'
+            ffmpeg = '.' + ffmpeg_dir
+
+        command = """ffmpeg -i "{}" -codec:v libvpx -quality good -cpu-used 0 -b:v 600k -qmin 10 -qmax 42 -maxrate 500k -bufsize 1000k -threads 2 -vf scale=-1:480 -codec:a libvorbis -b:a 128k -f webm "{}" """.format(ffmpeg, from_path, to_path)
+
+        print 'converting video...'
+        subprocess.call(command)
+    
     def download_video_data(self):
         """
         Download all the TED talk videos and the meta-data for it.

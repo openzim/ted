@@ -5,18 +5,18 @@
 
 @font-face {
     font-family: "RobotoLight";
-    src: url("Roboto-Light.ttf");
+    src: url("font/Roboto-Light.ttf");
 }
 
 
 @font-face {
     font-family: "RobotoLightItalic";
-    src: url("Roboto-LightItalic.ttf");
+    src: url("font/Roboto-LightItalic.ttf");
 }
 
 @font-face {
     font-family: "RobotoBold";
-    src: url("Roboto-Bold.ttf");
+    src: url("font/Roboto-Bold.ttf");
 }
 
 body {
@@ -27,12 +27,11 @@ body {
 }
 
 h1 {
-	font-family: 'Oswald', sans-serif;
+	font-family: "RobotoBold";
 	font-size: 4em;
 	font-weight: 400;
 	margin: 0 0 20px;
 	text-align: center;
-	text-shadow: 1px 1px 0 #fff, 2px 2px 0 #bbb;
 }
 
 hr {
