@@ -76,7 +76,6 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
-            break
 
 
     def extract_videos(self):
@@ -90,7 +89,6 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
-            break
 
 
     def extract_video_info(self, url):
