@@ -420,28 +420,34 @@ class Scraper():
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            print 'Downloading video... ' + video[0]['title']
-            urllib.urlretrieve(
-                video[0]['video_link'],
-                path +
-                '/' +
-                "video.mp4")
+            if not os.path.exists(path+ '/video.mp4'):
+                print 'Downloading video... ' + video[0]['title']
+                urllib.urlretrieve(
+                    video[0]['video_link'],
+                    path +
+                    '/' +
+                    "video.mp4")
+            else: print 'video.mp4 already exist. Skipping video ' + video[0]['title'] 
 
             # download an image of the speaker
-            print 'Downloading speaker image... ' + video[0]['title']
-            urllib.urlretrieve(
-                video[0]['speaker_picture'],
-                path +
-                '/' +
-                "speaker.jpg")
+            if not os.path.exists(path+ '/speaker.jpg'):
+                print 'Downloading speaker image... ' + video[0]['title']
+                urllib.urlretrieve(
+                    video[0]['speaker_picture'],
+                    path +
+                    '/' +
+                    "speaker.jpg")
+            else: print 'speaker.jpg already exist. Skipping video ' + video[0]['title'] 
 
             # download the thumbnail of the video
-            print 'Downloading video thumbnail... ' + video[0]['title']
-            urllib.urlretrieve(
-                video[0]['thumbnail'],
-                path +
-                '/' +
-                "thumbnail.jpg")
+            if not os.path.exists(path+ '/thumbnail.jpg'):
+                print 'Downloading video thumbnail... ' + video[0]['title']
+                urllib.urlretrieve(
+                    video[0]['thumbnail'],
+                    path +
+                    '/' +
+                    'thumbnail.jpg')
+            else: print 'thumbnail.jpg already exist. Skipping video ' + video[0]['title'] 
 
 
     def download_subtitles(self):
@@ -458,7 +464,8 @@ class Scraper():
             if not os.path.exists(path):
                 os.makedirs(path)
             else:
-                print 'Subtitles already exist. Skipping video.' 
+                print 'Subtitles already exist. Skipping video ' + video[0]['title'] 
+                continue
             # download subtitles
             print 'Downloading subtitles... ' + video[0]['title']
             for subtitle in video[0]['subtitles']:
