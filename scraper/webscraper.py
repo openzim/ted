@@ -262,6 +262,9 @@ class Scraper():
 
 
     def render_welcome_page(self):
+        """
+        Create the data for the index.html page (the summary page).
+        """
 
         meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
             + '/../build/TED/scraper/TED.json'
@@ -286,6 +289,9 @@ class Scraper():
 
 
     def create_welcome_page_data(self, keyword, template):
+        """
+        Create the data for the index.html page (the summary page).
+        """
         teds = []
         languages = []
         languagelist = []
@@ -333,6 +339,9 @@ class Scraper():
 
 
     def copy_files_to_rendering_directory(self):
+        """
+        Copy files from the /scraper directory to the /html/{zimfile} directory.
+        """
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         templates_dir = os.path.dirname(
             os.path.abspath(__file__)) + '/../scraper/templates'
@@ -366,6 +375,11 @@ class Scraper():
 
 
     def encode_videos(self):
+        """
+        Encode the videos from mp4 to webm. We will use ffmpeg over the 
+        command line for this. There is a static binary version
+        in the kiwix-other/TED/ directory, that we will use on macs. 
+        """
 
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
 
@@ -383,7 +397,6 @@ class Scraper():
                         self.convert_video_and_move_to_rendering(
                             video_, copy_path +'/video.webm')
                         print 'Converting Video... ' + video[0]['title']
-
 
 
 
