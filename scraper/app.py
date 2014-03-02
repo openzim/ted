@@ -25,14 +25,15 @@ class App():
 		parser.add_argument('--metadata', '-m', action='store_true',
 			help="""Download the meta data for all TED talks 
 			and dump it in a json file""")
-		parser.add_argument('--render', '-r', action='store_true', 
-			help="""Render HTML pages for the videos""")
+		parser.add_argument('--subs', '-s', action='store_true', 
+			help="Download Subtitles") 
 		parser.add_argument('--video', '-v', action='store_true', 
 			help="Download the TED videos in mp4")
 		parser.add_argument('--encode', '-e', action='store_true', 
 			help="Encode the mp4 videos to webm")
-		parser.add_argument('--subs', '-s', action='store_true', 
-			help="Download Subtitles") 
+		parser.add_argument('--render', '-r', action='store_true', 
+			help="""Render HTML pages for the videos""")
+		
 
 		self.args = vars(parser.parse_args())
 
