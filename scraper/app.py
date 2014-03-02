@@ -29,6 +29,8 @@ class App():
 			help="""Render HTML pages for the videos""")
 		parser.add_argument('--video', '-v', action='store_true', 
 			help="Download the TED videos in mp4")
+		parser.add_argument('--encode', '-e', action='store_true', 
+			help="Encode the mp4 videos to webm")
 		parser.add_argument('--subs', '-s', action='store_true', 
 			help="Download Subtitles") 
 
@@ -39,7 +41,8 @@ class App():
 		scraper = Scraper()
 
 		if not self.args['metadata'] and not self.args['render'] \
-			and not self.args['video'] and not self.args['subs']:
+			and not self.args['video'] and not self.args['subs']\
+			and not self.args['encode']:
 			scraper.extract_all_video_links()
 			scraper.dump_data()
 			scraper.download_subtitles()
@@ -47,6 +50,7 @@ class App():
 			scraper.render_welcome_page()
 			scraper.render_video_pages()
 			scraper.copy_files_to_rendering_directory()
+			scraper.encode_videos()
 		else:
 			if self.args['metadata']:
 				scraper.extract_all_video_links()
@@ -62,6 +66,9 @@ class App():
 
 			if self.args['subs']:
 				scraper.download_subtitles()
+
+			if self.args['encode']:
+				scraper.encode_videos()
 
 
 if __name__ == '__main__':

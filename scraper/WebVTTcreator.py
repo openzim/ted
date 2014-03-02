@@ -24,7 +24,7 @@ class WebVTTcreator():
         Creates a WebVtt document off it and saves it in a .vtt file.
         """
         subtitles_json = requests.get(url).text
-        if subtitles_json.strip():
+        if self.is_json(json.loads(subtitles_json)):
             self.create_WebVtt(json.loads(subtitles_json), offset)
 
 
@@ -61,6 +61,14 @@ class WebVTTcreator():
 
     def get_content(self):
         return self.WebVTTdocument
+
+
+    def is_json(json):
+      try:
+        json_object = json.loads(json)
+      except ValueError, e:
+        return False
+      return True
 
 if __name__ == '__main__':
     WebVTTcreator('http://www.ted.com/talks/subtitles/id/1907/lang/en')
