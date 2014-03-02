@@ -457,6 +457,8 @@ class Scraper():
             path = build_dir + '/TED/scraper/' + str(video[0]['id']) + '/subs'
             if not os.path.exists(path):
                 os.makedirs(path)
+            else:
+                print 'Subtiles already exist. Skipping video.' 
             # download subtitles
             print 'Downloading subtitles... ' + video[0]['title']
             for subtitle in video[0]['subtitles']:

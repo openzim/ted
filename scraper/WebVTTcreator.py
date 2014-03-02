@@ -24,7 +24,7 @@ class WebVTTcreator():
         Creates a WebVtt document off it and saves it in a .vtt file.
         """
         subtitles_json = requests.get(url).text
-        if self.is_json(json.loads(subtitles_json)):
+        if self.is_json(subtitles_json):
             self.create_WebVtt(json.loads(subtitles_json), offset)
 
 
@@ -63,9 +63,9 @@ class WebVTTcreator():
         return self.WebVTTdocument
 
 
-    def is_json(json):
+    def is_json(self, json_data):
       try:
-        json_object = json.loads(json)
+        json_object = json.loads(json_data)
       except ValueError, e:
         return False
       return True
