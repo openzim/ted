@@ -78,6 +78,7 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
+            break
 
 
     def extract_videos(self):
@@ -91,6 +92,7 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
+            break
 
 
     def extract_video_info(self, url):
@@ -392,6 +394,10 @@ class Scraper():
                         i + '/' + str(video[0]['id'])
 
                     video_ = path + '/video.mp4'
+
+                    if  os.path.exists(copy_path +'/video.webm'):
+                        print 'Video already encoded. Skipping.'
+                        continue
 
                     if os.path.exists(video_):
                         self.convert_video_and_move_to_rendering(
