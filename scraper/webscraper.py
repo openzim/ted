@@ -346,6 +346,14 @@ class Scraper():
         templates_dir = os.path.dirname(
             os.path.abspath(__file__)) + '/../scraper/templates'
 
+        for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
+            copy_path = build_dir + '/TED/html/' + i 
+            if os.path.exists(templates_dir + '/CSS'):
+                distutils.dir_util.copy_tree(templates_dir + '/CSS', copy_path+'/CSS')
+            if os.path.exists(templates_dir + '/JS'):
+                distutils.dir_util.copy_tree(templates_dir + '/JS', copy_path+'/JS')
+
+
         for video in self.videos:
             for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
                 if i in video[0]['keywords']:
@@ -487,6 +495,7 @@ class Scraper():
             print 'Downloading subtitles... ' + video[0]['title']
             for subtitle in video[0]['subtitles']:
                 subtitle_file = WebVTTcreator(
+                    
                     subtitle['link'],
                     11820).get_content()
                 subtitle_file = subtitle_file.encode('utf-8')
