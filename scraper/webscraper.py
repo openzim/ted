@@ -22,6 +22,7 @@ import json
 from jinja2 import Environment, FileSystemLoader
 import urllib
 from WebVTTcreator import WebVTTcreator
+from collections import defaultdict
 
 
 class Scraper():
@@ -232,7 +233,7 @@ class Scraper():
             sys.exit(
                 "TED.json file not found. Run the script with the '-m' flag")
 
-        self.load_json()
+        self.load_metadata()
 
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         env = Environment(loader=FileSystemLoader('templates'))
@@ -241,8 +242,7 @@ class Scraper():
         for video in self.videos:
             for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
                 if i in video[0]['keywords']:
-                    path = build_dir + '/TED/html/' + \
-                        i + '/' + str(video[0]['id'])
+                    path = build_dir + '/TED/html/' + i + '/' + str(video[0]['id'])
                     if not os.path.exists(path):
                         os.makedirs(path)
 
@@ -273,7 +273,7 @@ class Scraper():
             sys.exit(
                 "TED.json file not found. Run the script with the '-m' flag")
 
-        self.load_json()
+        self.load_metadata()
 
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         env = Environment(loader=FileSystemLoader('templates'))
@@ -358,9 +358,7 @@ class Scraper():
             for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
                 if i in video[0]['keywords']:
                     path = build_dir + '/TED/scraper/' + str(video[0]['id'])
-                    copy_path = build_dir + '/TED/html/' + \
-                        i + '/' + str(video[0]['id'])
-
+                    copy_path = build_dir + '/TED/html/' + i + '/' + str(video[0]['id'])
                     thumbnail = path + '/thumbnail.jpg'
                     subs = path + '/subs/'
                     speaker = path + '/speaker.jpg'
@@ -377,10 +375,55 @@ class Scraper():
 
                     if os.path.exists(video_):
                         self.convert_video_and_move_to_rendering(
-                            video_,
-                            copy_path +
-                            '/video.webm')
+                            video_, copy_path + '/video.webm')
 
+
+    def generate_category_data(self):
+        """
+        Generate the json page data for every category.
+        """
+
+        self.load_metadata()
+        keyword_list = defaultdict(list)
+        language_list = defaultdict(lambda : defaultdict(list))
+        languages = set()
+        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
+
+        for video in self.videos:
+            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
+                if i in video[0]['keywords']:
+                    keyword_list[i].append(video[0])
+
+        for video in self.videos:
+           for lang in video[0]['subtitles']:
+                languages.add(lang['languageCode'])
+        languages = list(languages)
+
+
+        for keyword in keyword_list:
+            for video in keyword_list[keyword]:
+                for lang in video['subtitles']:
+                    language_list[keyword][lang['languageCode']].append(video)
+
+
+        for k, v in language_list.items():
+            copy_path = build_dir + '/TED/html/' + k + '/' + 'page'
+            
+            for language in v:
+                path = copy_path + '/' + language
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+                page_chunks = chunks(v[language])
+
+                for i, page in enumerate(page_chunks, start=1):
+                    with open(path + '/'+ str(i) + '.json', 'w') as page_file:
+                        page_file.write(json.dumps(page, indent=4, separators=(',', ': ')))
+
+                with open(path + '/' + 'data.json', 'w') as page_data:
+                    pages = {'pages':len(list(page_chunks))}
+                    page_data.write(json.dumps(pages, indent=4, separators=(',', ': ')))
+            
 
     def encode_videos(self):
         """
@@ -391,7 +434,7 @@ class Scraper():
 
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
 
-        self.load_json()
+        self.load_metadata()
         for video in self.videos:
             for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
                 if i in video[0]['keywords']:
@@ -436,7 +479,7 @@ class Scraper():
         Save the image of the speaker in TED/build/{video id}/speaker.jpg.
         """
 
-        self.load_json()
+        self.load_metadata()
         for video in self.videos:
 
             build_dir = os.path.dirname(
@@ -481,7 +524,7 @@ class Scraper():
         and save the subtitles in
         TED/build/{video id}/subs_{language code}.vtt.
         """
-        self.load_json()
+        self.load_metadata()
         for video in self.videos:
             build_dir = os.path.dirname(
                 os.path.abspath(__file__)) + '/../build'
@@ -503,7 +546,7 @@ class Scraper():
                     sub_file.write(subtitle_file)
 
 
-    def load_json(self):
+    def load_metadata(self):
         """
         Load the dumped json meta-data file.
         """
@@ -514,6 +557,13 @@ class Scraper():
             self.videos = json.load(data_file)
 
 
+def chunks(l, n=40):
+    """ 
+    Yield chunks from l.
+    """
+    for i in range(0, len(l), n):
+        yield l[i:i+n]
+
 
 if __name__ == '__main__':
-    Scraper()
+    Scraper().generate_category_data()
