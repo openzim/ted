@@ -246,3 +246,21 @@ nav ul li ul li a:hover{
     color: #333;
     background-color: #FAFAFA !important;
 }
+
+/* Remove "link style" */
+a.nostyle:link {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:visited {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:hover {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:active {
+    text-decoration: none;
+    color: #000000;
+}
