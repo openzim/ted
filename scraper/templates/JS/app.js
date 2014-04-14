@@ -1,80 +1,81 @@
-/**
- * @file The main logic for the Todo List App.
- * @author Matt West <matt.west@kojilabs.com>
- * @license MIT {@link http://opensource.org/licenses/MIT}.
- */
-
 
 window.onload = function() {
   window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
   window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
   window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
   
-  // Display the todo items.
-  videoDb.open(refreshTodos);
+  // Display the video items.
+  videoDB.open(createDataStore);
   
-  // Get references to the form elements.
-  var newTodoForm = document.getElementById('new-todo-form');
-  var newTodoInput = document.getElementById('new-todo');
+  return false;
+};
+
+function createDataStore() {
+  getDataCount(function(count){
+    setupListener(count);
+  });
   
-  
-  // Handle new todo item form submissions.
-  newTodoForm.onsubmit = function() {
-    // Get the todo text.
-    var text = newTodoInput.value;
-    
-    // Check to make sure the text is not blank (or just spaces).
-    if (text.replace(/ /g,'') != '') {
-      // Create the todo item.
-      videoDb.createTodo(text, function(todo) {
-        refreshTodos();
-      });
-    }
-    
-    // Reset the input field.
-    newTodoInput.value = '';
-    
-    // Don't send the form.
-    return false;
-  };
-  
+  videoDB.createVideo(function(){
+    refreshVideos();
+  });
 }
 
-// Update the list of todo items.
-function refreshTodos() {  
-  videoDb.fetchTodos(function(todos) {
-    var todoList = document.getElementById('todo-items');
-    todoList.innerHTML = '';
+function getDataCount(callback){
+  videoDB.fetchVideos(0, 0, function(count){
+    callback(count.length);
+  });
+}
+
+function setupListener(dbCount){
+  var page = 1;
+  var count =  Math.ceil(dbCount / 40);
+
+console.log(count);
+console.log(dbCount);
+
+  var leftArrow = document.getElementsByClassName('left-arrow')[0];
+  var rightArrow = document.getElementsByClassName('right-arrow')[0];
+  var pageText = document.getElementsByClassName('pagination-text')[0];
+
+  leftArrow.onclick = function() {
+    if (page != 1){
+      --page;
+    }
+    pageText.innerHTML = 'Page ' + page;
+  };
+
+  rightArrow.onclick = function() {
+    if (page < count){
+      ++page;  
+    }
+    pageText.innerHTML = 'Page ' + page;
+  };
+}
+
+// Update the list of video items.
+function refreshVideos() {  
+  videoDB.fetchVideos(0, 20, function(videos) {
+    var videoList = document.getElementById('video-items');
+    videoList.innerHTML = '';
     
-    for(var i = 0; i < todos.length; i++) {
-      // Read the todo items backwards (most recent first).
-      var todo = todos[(todos.length - 1 - i)];
+    for(i in videos) {
+      // Read the video items backwards (most recent first).
+      var video = videos[i];
 
       var li = document.createElement('li');
       var checkbox = document.createElement('input');
       checkbox.type = "checkbox";
-      checkbox.className = "todo-checkbox";
-      checkbox.setAttribute("data-id", todo.timestamp);
+      checkbox.className = "video-checkbox";
+      checkbox.setAttribute("data-id", video.id);
       
       li.appendChild(checkbox);
       
       var span = document.createElement('span');
-      span.innerHTML = todo.text;
+      span.innerHTML = video.title;
       
       li.appendChild(span);
+      videoList.appendChild(li);
       
-      todoList.appendChild(li);
-      
-      // Setup an event listener for the checkbox.
-      checkbox.addEventListener('click', function(e) {
-        var id = parseInt(e.target.getAttribute('data-id'));
-
-        videoDb.deleteTodo(id, refreshTodos);
-      });
     }
-
   });
 }
-
-
-

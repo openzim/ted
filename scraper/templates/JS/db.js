@@ -1,23 +1,23 @@
 
-var videoDb = (function() {
-  var vDb = {};
+var videoDB = (function() {
+  var vDB = {};
   var datastore = null;
 
   /**
    * Open a connection to the datastore.
    */
-  vDb.open = function(callback) {
+  vDB.open = function(callback) {
     // Database version.
     var version = 1;
 
     // Open a connection to the datastore.
-    var request = indexedDB.open('video-db', version);
+    var request = indexedDB.open('videos-db', version);
 
     // Handle datastore upgrades.
     request.onupgradeneeded = function(e) {
       var db = e.target.result;
 
-      e.target.transaction.onerror = vDb.onerror;
+      e.target.transaction.onerror = vDB.onerror;
 
       // Delete the old datastore.
       if (db.objectStoreNames.contains('videos')) {
@@ -26,8 +26,18 @@ var videoDb = (function() {
 
       // Create a new datastore.
       var store = db.createObjectStore('videos', {
-        keyPath: 'data'
+        keypath: 'id', autoIncrement: true
       });
+
+      store.createIndex('id', 'id', { unique: true });
+      store.createIndex('languages', 'languages', { unique: false });
+      store.createIndex('title', 'title', { unique: false });
+      store.createIndex('speaker', 'speaker', { unique: false });
+      store.createIndex('description', 'description', { unique: false });
+      
+      for (i in json_data){
+        var request = store.put(json_data[i]);  
+      }
     };
 
     // Handle successful datastore access.
@@ -40,29 +50,35 @@ var videoDb = (function() {
     };
 
     // Handle errors when opening the datastore.
-    request.onerror = vDb.onerror;
+    request.onerror = vDB.onerror;
   };
 
 
   /**
-   * Fetch all of the todo items in the datastore.
+   * Fetch all of the video items in the datastore.
    * @param {function} callback A function that will be executed once the items
    *                            have been retrieved. Will be passed a param with
-   *                            an array of the todo items.
+   *                            an array of the video items.
    */
-  vDb.fetchVideos = function(callback) {
+  vDB.fetchVideos = function(lower, upper, callback) {
     var db = datastore;
     var transaction = db.transaction(['videos'], 'readwrite');
     var objStore = transaction.objectStore('videos');
 
-    var keyRange = IDBKeyRange.lowerBound(0);
+    if (lower == 0 && upper == 0){
+      var keyRange = IDBKeyRange.lowerBound(0);  
+    }
+    else {
+      var keyRange = IDBKeyRange.bound(lower, upper);  
+    }
+    
     var cursorRequest = objStore.openCursor(keyRange);
 
     var videos = [];
 
     transaction.oncomplete = function(e) {
       // Execute the callback function.
-      callback(Videos);
+      callback(videos);
     };
 
     cursorRequest.onsuccess = function(e) {
@@ -73,19 +89,18 @@ var videoDb = (function() {
       }
       
       videos.push(result.value);
-
       result.continue();
     };
 
-    cursorRequest.onerror = vDb.onerror;
+    cursorRequest.onerror = vDB.onerror;
   };
 
 
   /**
-   * Create a new todo item.
-   * @param {string} text The todo item.
+   * Create a new video item.
+   * @param {string} text The video item.
    */
-  vDb.createVideos = function(text, callback) {
+  vDB.createVideo = function(callback) {
     // Get a reference to the db.
     var db = datastore;
 
@@ -94,46 +109,19 @@ var videoDb = (function() {
 
     // Get the datastore.
     var objStore = transaction.objectStore('videos');
+
     
-    // Create the datastore request.
-    for (var i in json_data){
-      var request = objStore.put(i);  
+    if(!db.objectStoreNames.contains("videos")) {
+      for (i in json_data){
+        var request = objStore.put(json_data[i]);  
+      }
+      // Handle errors.
+      request.onerror = vDB.onerror;
     }
 
-    // Handle a successful datastore put.
-    request.onsuccess = function(e) {
-      // Execute the callback function.
-      callback(todo);
-    };
-
-    // Handle errors.
-    request.onerror = vDb.onerror;
+    callback();
   };
 
-
-  /**
-   * Delete a todo item.
-   * @param {int} id The timestamp (id) of the todo item to be deleted.
-   * @param {function} callback A callback function that will be executed if the 
-   *                            delete is successful.
-   */
-  vDb.deleteTodo = function(id, callback) {
-    var db = datastore;
-    var transaction = db.transaction(['videos'], 'readwrite');
-    var objStore = transaction.objectStore('videos');
-    
-    var request = objStore.delete(id);
-    
-    request.onsuccess = function(e) {
-      callback();
-    }
-    
-    request.onerror = function(e) {
-      console.log(e);
-    }
-  };
-
-
-  // Export the vDb object.
-  return vDb;
+  // Export the vDB object.
+  return vDB;
 }());
