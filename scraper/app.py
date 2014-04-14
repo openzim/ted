@@ -51,6 +51,7 @@ class App():
 			scraper.render_welcome_page()
 			scraper.render_video_pages()
 			scraper.copy_files_to_rendering_directory()
+			scraper.generate_category_data()
 			scraper.encode_videos()
 		else:
 			if self.args['metadata']:
@@ -61,6 +62,7 @@ class App():
 				scraper.render_welcome_page()
 				scraper.render_video_pages()
 				scraper.copy_files_to_rendering_directory()
+				scraper.generate_category_data()
 
 			if self.args['video']:
 				scraper.download_video_data()

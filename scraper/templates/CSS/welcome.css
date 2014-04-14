@@ -246,3 +246,35 @@ nav ul li ul li a:hover{
     color: #333;
     background-color: #FAFAFA !important;
 }
+
+.pagination {
+  margin: 2.5em auto;
+  background: #FFF;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border-radius: 3px;
+  width: 200px;
+  text-align: center;
+  height: 50px;
+  display: flex; 
+  display: -webkit-flex;
+}
+
+.pagination-text {
+    margin: auto;
+}
+
+.left-arrow {
+    cursor: pointer;
+    width:20px;
+    padding-left:20px;
+    padding-right:20px;
+    margin: auto auto auto auto;
+}
+
+.right-arrow {
+    cursor: pointer;
+    width:20px;
+    padding-left:20px;
+    padding-right:20px;
+    margin: auto auto auto auto;
+ }

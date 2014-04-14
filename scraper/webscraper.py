@@ -384,46 +384,32 @@ class Scraper():
         """
 
         self.load_metadata()
-        keyword_list = defaultdict(list)
-        language_list = defaultdict(lambda : defaultdict(list))
-        languages = set()
+        video_list = defaultdict(list)
         build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
 
         for video in self.videos:
             for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
                 if i in video[0]['keywords']:
-                    keyword_list[i].append(video[0])
+                    json_data = \
+                        {'languages': [lang['languageCode'] for lang in video[0]['subtitles']],
+                         'id': video[0]['id'],
+                         'description': video[0]['description'],
+                         'title': video[0]['title'],
+                         'speaker': video[0]['speaker'],
+                         }
+                    video_list[i].append(json_data)
 
-        for video in self.videos:
-           for lang in video[0]['subtitles']:
-                languages.add(lang['languageCode'])
-        languages = list(languages)
-
-
-        for keyword in keyword_list:
-            for video in keyword_list[keyword]:
-                for lang in video['subtitles']:
-                    language_list[keyword][lang['languageCode']].append(video)
-
-
-        for k, v in language_list.items():
-            copy_path = build_dir + '/TED/html/' + k + '/' + 'page'
+        for k, v in video_list.items():
+            path = build_dir + '/TED/html/' + k 
             
-            for language in v:
-                path = copy_path + '/' + language
-                if not os.path.exists(path):
-                    os.makedirs(path)
-
-                page_chunks = chunks(v[language])
-
-                for i, page in enumerate(page_chunks, start=1):
-                    with open(path + '/'+ str(i) + '.json', 'w') as page_file:
-                        page_file.write(json.dumps(page, indent=4, separators=(',', ': ')))
-
-                with open(path + '/' + 'data.json', 'w') as page_data:
-                    pages = {'pages':len(list(page_chunks))}
-                    page_data.write(json.dumps(pages, indent=4, separators=(',', ': ')))
+            if not os.path.exists(path):
+                os.makedirs(path)
             
+            with open(path + '/data.js', 'w') as page_file:
+                json_data = json.dumps(v, indent=4, separators=(',', ': '))
+                json_data = 'json_data = ' + json_data 
+                page_file.write(json_data)
+
 
     def encode_videos(self):
         """
