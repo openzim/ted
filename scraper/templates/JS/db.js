@@ -56,9 +56,11 @@ var videoDB = (function() {
 
   /**
    * Fetch all of the video items in the datastore.
+   * @param {lower} lower boundry for the database
+   * @param {upper} upper boundry for the database
    * @param {function} callback A function that will be executed once the items
-   *                            have been retrieved. Will be passed a param with
-   *                            an array of the video items.
+   *        have been retrieved. Will be passed a param with
+   *        an array of the video items.
    */
   vDB.fetchVideos = function(lower, upper, callback) {
     var db = datastore;
@@ -98,7 +100,8 @@ var videoDB = (function() {
 
   /**
    * Create a new video item.
-   * @param {string} text The video item.
+   * @param {callback} Callback, that'll be executed after 
+   *        the Videos are created.
    */
   vDB.createVideo = function(callback) {
     // Get a reference to the db.
@@ -122,6 +125,6 @@ var videoDB = (function() {
     callback();
   };
 
-  // Export the vDB object.
+  // Return the vDB object.
   return vDB;
 }());
