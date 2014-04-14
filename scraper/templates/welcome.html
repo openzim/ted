@@ -29,10 +29,12 @@
                 <div id="language-all" class="grid-container" style="display:block;">
                     <ul class="rig grid">
                         {% for ted in teds %}
-                        <li onclick="location.href='{{ ted[0].id }}/index.html';">
+                        <li>
+			  <a href="{{ ted[0].id }}/index.html" style="nostyle">
                             <img src="{{ ted[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ ted[0].speaker }}</p>
                             <p id="title">{{ ted[0].title }}</p>
+			  </a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -42,10 +44,12 @@
                     <ul class="rig grid">
                         {% for language in list %}
                         {% for item in list[language] %}
-                        <li onclick="location.href='{{ item[0].id }}/index.html';">
+                        <li>
+			  <a href="{{ item[0].id }}/index.html" style="nostyle">
                             <img src="{{ item[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ item[0].speaker }}</p>
                             <p id="title">{{ item[0].title }}</p>
+			  </a>
                         </li>
                         {% endfor %}
                         {% endfor %}

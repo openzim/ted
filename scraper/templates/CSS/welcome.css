@@ -247,6 +247,7 @@ nav ul li ul li a:hover{
     background-color: #FAFAFA !important;
 }
 
+<<<<<<< HEAD
 .pagination {
   margin: 2.5em auto;
   background: #FFF;
@@ -278,3 +279,22 @@ nav ul li ul li a:hover{
     padding-right:20px;
     margin: auto auto auto auto;
  }
+=======
+/* Remove "link style" */
+a.nostyle:link {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:visited {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:hover {
+    text-decoration: none;
+    color: #000000;
+}
+a.nostyle:active {
+    text-decoration: none;
+    color: #000000;
+}
+>>>>>>> 886547edab3581ceca84f185d00352e4ad8e02a0
