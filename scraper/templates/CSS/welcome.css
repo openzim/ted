@@ -178,10 +178,7 @@ nav ul {
     padding: 0px;
     margin: 0px;
     margin-right: 10px;
-    /* width: 400px; */
     box-shadow: 2px 2px 2px #dfdfdf;
-    -moz-box-shadow: 2px 2px 2px #dfdfdf;
-    -webkit-box-shadow: 2px 2px 2px #dfdfdf;
 }
 
 nav ul:after {
