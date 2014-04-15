@@ -30,11 +30,11 @@
                     <ul class="rig grid">
                         {% for ted in teds %}
                         <li>
-			  <a href="{{ ted[0].id }}/index.html" style="nostyle">
+		                  <a href="{{ ted[0].id }}/index.html" style="nostyle">
                             <img src="{{ ted[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ ted[0].speaker }}</p>
                             <p id="title">{{ ted[0].title }}</p>
-			  </a>
+			             </a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -45,11 +45,11 @@
                         {% for language in list %}
                         {% for item in list[language] %}
                         <li>
-			  <a href="{{ item[0].id }}/index.html" style="nostyle">
+		                  <a href="{{ item[0].id }}/index.html" style="nostyle">
                             <img src="{{ item[0].id }}/thumbnail.jpg" />
                             <p id="author">{{ item[0].speaker }}</p>
                             <p id="title">{{ item[0].title }}</p>
-			  </a>
+			             </a>
                         </li>
                         {% endfor %}
                         {% endfor %}

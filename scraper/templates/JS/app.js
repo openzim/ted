@@ -24,7 +24,7 @@ function createDataStore() {
 }
 
 function getDataCount(callback){
-  videoDB.fetchVideos(0, 0, function(count){
+  videoDB.fetchVideos(0, 0, 0, function(count){
     callback(count.length);
   });
 }
@@ -44,7 +44,7 @@ function setupListener(dbCount){
       pageText.innerHTML = 'Page ' + page;
       var pageStart = (page-1)*ITEMS_PER_PAGE+1;
       var pageEnd = (page*ITEMS_PER_PAGE);
-      console.log('start ' + pageStart + ' end' + pageEnd);
+      // console.log('start ' + pageStart + ' end' + pageEnd);
       refreshVideos(pageStart, pageEnd);
     }
   };
@@ -67,7 +67,7 @@ function setupListener(dbCount){
  * @param {upper} upper boundry for the database
  */
 function refreshVideos(upper, lower) {  
-  videoDB.fetchVideos(upper, lower, function(videos) {
+  videoDB.fetchVideos(upper, lower, 'en', function(videos) {
     var videoList = document.getElementById('video-items');
     videoList.innerHTML = '';
     

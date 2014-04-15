@@ -30,7 +30,7 @@ var videoDB = (function() {
       });
 
       store.createIndex('id', 'id', { unique: true });
-      store.createIndex('languages', 'languages', { unique: false });
+      store.createIndex('languages', 'languages', { unique: false, multiEntry:true });
       store.createIndex('title', 'title', { unique: false });
       store.createIndex('speaker', 'speaker', { unique: false });
       store.createIndex('description', 'description', { unique: false });
@@ -62,39 +62,52 @@ var videoDB = (function() {
    *        have been retrieved. Will be passed a param with
    *        an array of the video items.
    */
-  vDB.fetchVideos = function(lower, upper, callback) {
+  vDB.fetchVideos = function(lower, upper, language, callback) {
     var db = datastore;
     var transaction = db.transaction(['videos'], 'readwrite');
     var objStore = transaction.objectStore('videos');
-
-    if (lower == 0 && upper == 0){
-      var keyRange = IDBKeyRange.lowerBound(0);  
-    }
-    else {
-      var keyRange = IDBKeyRange.bound(lower, upper);  
-    }
-    
-    var cursorRequest = objStore.openCursor(keyRange);
-
     var videos = [];
 
+    var i = 0;
+
+    if (language != 0) {
+      var index = objStore.index("languages");
+      var keyRange = IDBKeyRange.only(language);
+      
+      index.openCursor(keyRange).onsuccess = function(e) {
+        var result = e.target.result;
+
+        if (result) {
+          if (i > lower && i < upper){
+            videos.push(result.value); 
+          }
+           result.continue(); 
+          i++;
+        }
+      };
+    }
+    else {
+      if (lower == 0 && upper == 0) {
+        var keyRange = IDBKeyRange.lowerBound(0);  
+      }
+      else {
+        var keyRange = IDBKeyRange.bound(lower, upper);  
+      } 
+
+      objStore.openCursor(keyRange).onsuccess = function(e) {
+        var result = e.target.result;
+        
+        if (result) {
+          videos.push(result.value);
+          result.continue(); 
+        }
+      };
+    }
+    
     transaction.oncomplete = function(e) {
       // Execute the callback function.
       callback(videos);
     };
-
-    cursorRequest.onsuccess = function(e) {
-      var result = e.target.result;
-      
-      if (!!result == false) {
-        return;
-      }
-      
-      videos.push(result.value);
-      result.continue();
-    };
-
-    cursorRequest.onerror = vDB.onerror;
   };
 
 
