@@ -38,6 +38,19 @@ hr {
 	margin: 25px 0;
 }
 
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+a:visited {
+    color: purple;
+}
+
+a:hover {
+    color: red;
+}
+
 #author {
     font-family: "RobotoLight";
     font-size: 15px;
@@ -166,6 +179,7 @@ div#menuwrapper {
     margin-left: auto;
     margin-right: auto;
     width: 700px;
+    text-align: center;
 }
 
 div#content {

@@ -400,7 +400,7 @@ class Scraper():
                     video_list[i].append(json_data)
 
         for k, v in video_list.items():
-            path = build_dir + '/TED/html/' + k 
+            path = build_dir + '/TED/html/' + k + '/JS'
             
             if not os.path.exists(path):
                 os.makedirs(path)
