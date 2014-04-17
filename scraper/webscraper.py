@@ -373,10 +373,6 @@ class Scraper():
                     if os.path.exists(speaker):
                         shutil.copy(speaker, copy_path)
 
-                    if os.path.exists(video_):
-                        self.convert_video_and_move_to_rendering(
-                            video_, copy_path + '/video.webm')
-
 
     def generate_category_data(self):
         """
