@@ -3,7 +3,7 @@ window.onload = function() {
   setupLanguageFilter();
   setupPagination();
 
-  // Load initial data. 
+  // Load the initial data. 
   // This will display all data without any language filter.
   videoDB.loadData(undefined, function() {
     var data = videoDB.getPage(videoDB.getPageNumber());

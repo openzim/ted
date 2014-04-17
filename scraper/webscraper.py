@@ -367,10 +367,10 @@ class Scraper():
                     if os.path.exists(thumbnail):
                         shutil.copy(thumbnail, copy_path)
 
-                    if os.path.exists(thumbnail):
+                    if os.path.exists(subs):
                         distutils.dir_util.copy_tree(subs, copy_path + '/subs')
 
-                    if os.path.exists(thumbnail):
+                    if os.path.exists(speaker):
                         shutil.copy(speaker, copy_path)
 
                     if os.path.exists(video_):
