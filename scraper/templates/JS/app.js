@@ -68,11 +68,7 @@ function refreshVideos(pageData) {
     for (i in pageData) {
       var video = pageData[i];
       var li = document.createElement('li');
-      var checkbox = document.createElement('input');
-      checkbox.type = "checkbox";
-      checkbox.className = "video-checkbox";
-      checkbox.setAttribute("data-id", video.id);
-
+      
       var a = document.createElement('a')
       a.href =  video['id']+'/index.html';
       a.style = 'nosytyle'
