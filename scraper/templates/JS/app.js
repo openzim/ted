@@ -102,7 +102,7 @@ function refreshVideos(pageData) {
       
       var a = document.createElement('a')
       a.href =  video['id']+'/index.html';
-      a.style = 'nosytyle'
+      a.className = 'nostyle'
 
       var img = document.createElement('img');
       img.src = video['id']+'/thumbnail.jpg'; 
