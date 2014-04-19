@@ -10,6 +10,7 @@ window.onload = function() {
     refreshVideos(data);
   });
 
+  refreshPagination();
   return false;
 };
 
@@ -21,7 +22,6 @@ window.onload = function() {
  */
 function setupLanguageFilter() {
   $('.chosen-select').chosen().change(function(){
-    resetPaginationText();
     language = arguments[1].selected;
 
     // If 'lang-all' is selected the user wants to
@@ -33,10 +33,12 @@ function setupLanguageFilter() {
 
     // Load the data for the selected language and 
     // generate the video list.
+    videoDB.resetPage();
     videoDB.loadData(language, function() {
       var data = videoDB.getPage(videoDB.getPageNumber());
       refreshVideos(data);
-    });    
+      refreshPagination();
+    });
   });
 }
 
@@ -50,30 +52,22 @@ function setupPagination(){
   var pageText = document.getElementsByClassName('pagination-text')[0];
 
   leftArrow.onclick = function() {
-    var shouldChange;
-    videoDB.pageBackwards(function(change){
-      shouldChange = change;
+    videoDB.pageBackwards(function() {
+      handlePagination();
     });
-    handlePagination(shouldChange);
   }
 
   rightArrow.onclick = function() {
-    var shouldChange; 
-    videoDB.pageForward(function(change){
-      shouldChange = change;
+    videoDB.pageForward(function(){
+      handlePagination();
     });
-    handlePagination(shouldChange);
   }
 
   function handlePagination(shouldChange){
-    if (shouldChange) {
-      var data = videoDB.getPage(videoDB.getPageNumber());
-      refreshVideos(data);
-      pageText.innerHTML = 'Page ' + videoDB.getPageNumber();
-
-      // Scroll back to the top.
-      window.scrollTo(0, 0);
-    }
+    var data = videoDB.getPage(videoDB.getPageNumber());
+    refreshVideos(data);
+    refreshPagination();
+    window.scrollTo(0, 0);
   }
 }
 
@@ -81,10 +75,34 @@ function setupPagination(){
  * Reset the page text on the pagination widget, 
  * if a new language has been applied.
  */
-function resetPaginationText() {
-  var pageText = document.getElementsByClassName('pagination-text')[0];
-  videoDB.resetPage();
-  pageText.innerHTML = 'Page ' + videoDB.getPageNumber();
+function refreshPagination() {
+  var pageBox = document.getElementsByClassName('pagination')[0];
+  var pageCount = videoDB.getPageCount();
+  var leftArrow = document.getElementsByClassName('left-arrow')[0];
+  var rightArrow = document.getElementsByClassName('right-arrow')[0];
+  
+  if (pageCount > 1) {
+    var pageText = document.getElementsByClassName('pagination-text')[0];
+    var pageNumber = videoDB.getPageNumber();
+    pageText.innerHTML = 'Page ' + pageNumber + '/' + pageCount;
+
+    if (videoDB.getPageNumber() == 1) {
+      leftArrow.style.visibility = 'hidden';
+      rightArrow.style.visibility = 'visible';
+    } else if (pageNumber == pageCount) {
+      leftArrow.style.visibility = 'visible';
+      rightArrow.style.visibility = 'hidden';	
+    } else {
+      leftArrow.style.visibility = 'visible';
+      rightArrow.style.visibility = 'visible';	
+    }
+
+    pageBox.style.visibility = 'visible';
+  } else {
+    pageBox.style.visibility = 'hidden';
+    leftArrow.style.visibility = 'hidden';
+    rightArrow.style.visibility = 'hidden';	
+  }
 }
 
 /**
@@ -102,7 +120,7 @@ function refreshVideos(pageData) {
       
       var a = document.createElement('a')
       a.href =  video['id']+'/index.html';
-      a.style = 'nosytyle'
+      a.className = 'nostyle'
 
       var img = document.createElement('img');
       img.src = video['id']+'/thumbnail.jpg'; 

@@ -299,6 +299,7 @@ a.nostyle:visited {
     color: #000000;
 }
 a.nostyle:hover {
+    background-color: #FF2B06;
     text-decoration: none;
     color: #000000;
 }

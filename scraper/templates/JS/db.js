@@ -54,12 +54,10 @@ var videoDB = (function() {
    *                   you have to load a new page. 
    */
   db.pageForward = function(callback) {
-    var change = false;
-    if (page <=  db.getPageCount()) {
+    if (page < db.getPageCount()) {
       page++;
-      change = true;
+      callback();
     }
-    callback(change);
   }
 
   /**
@@ -68,12 +66,10 @@ var videoDB = (function() {
    *                   you have to load a new page. 
    */
   db.pageBackwards = function(callback) {
-    var change = false;
     if (page != 1) {
       page--;
-      change = true;
+      callback();
     }
-    callback(change);
   }
 
   /**
