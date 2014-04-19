@@ -35,18 +35,18 @@ hr {
     margin-top: 25px;
     margin-left: 0px;
     text-align: left;
-    width: 640px;
+    width: 480px;
 }
 
 #content {
     margin: 0 auto;
-    width: 740px;
+    width: 480px;
 }
 
 #description {
     font-family: 'RobotoLight';
     color: #333;
-    width: 640px;
+    width: 480px;
     font-size: 18px;
 }
 
@@ -69,14 +69,14 @@ hr {
 }
 
 #speaker_img {
-    width:125px;
-    height:auto;
+    width: 125px;
+    height: auto;
     display: inline-block;
 }
 
 #speaker_info {
     display: inline-block;
-    margin-left:10px;
+    margin-left: 10px;
     padding-bottom: 20px;
 }
 
@@ -85,7 +85,7 @@ hr {
 }
 
 #speaker_box_img {
-    margin-top:20px
+    margin-top: 20px
 }
 
 #speaker_info_profession {
@@ -93,12 +93,12 @@ hr {
 }
 
 #speaker_desc {
-    width:640px;
-    margin:0px;
+    width: 480px;
+    margin: 0px;
     font-family: "RobotoLight";
 }
 
 #date {
-    text-align:right;
-    width:640px;
+    text-align: right;
+    width: 480px;
 }
