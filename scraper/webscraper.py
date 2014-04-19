@@ -108,7 +108,9 @@ class Scraper():
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
-        json_data = self.soup.select('div.talks-main script')[-1].text
+        json_data = self.soup.select('div.talks-main script')
+        if len(json_data)==0: return
+        json_data = json_data[-1].text
         json_data = ' '.join(json_data.split(',', 1)[1].split(')')[:-1])
         json_data = json.loads(json_data)
 
@@ -555,7 +557,7 @@ def resize_image(image_path):
     from PIL import Image
     image = Image.open(image_path)
     w, h = image.size
-    image = image.resize((int(w * 0.8), int(h * 0.8)))
+    image = image.resize((226, 170))
     image.save(image_path)
 
 
