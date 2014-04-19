@@ -4,3 +4,4 @@ autopep8==1.0
 beautifulsoup4==4.3.2
 pep8==1.4.6
 requests==2.2.1
+wsgiref==0.1.2

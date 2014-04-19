@@ -407,6 +407,18 @@ class Scraper():
                 page_file.write(json_data)
 
 
+    def resize_thumbnails(self):
+        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build/TED/html/'
+        thumbnails = [os.path.join(root, name)
+                for root, dirs, files in os.walk(build_dir)
+                for name in files
+                if name == 'thumbnail.jpg']
+
+        for thumbnail in thumbnails:
+            resize_image(thumbnail)
+            print 'Resizing...' + thumbnail
+
+
     def encode_videos(self):
         """
         Encode the videos from mp4 to webm. We will use ffmpeg over the 
@@ -539,12 +551,12 @@ class Scraper():
             self.videos = json.load(data_file)
 
 
-def chunks(l, n=40):
-    """ 
-    Yield chunks from l.
-    """
-    for i in range(0, len(l), n):
-        yield l[i:i+n]
+def resize_image(image_path):
+    from PIL import Image
+    image = Image.open(image_path)
+    w, h = image.size
+    image = image.resize((int(w * 0.8), int(h * 0.8)))
+    image.save(image_path)
 
 
 if __name__ == '__main__':
