@@ -41,6 +41,8 @@ hr {
 #content {
     margin: 0 auto;
     width: 480px;
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 #description {
@@ -48,6 +50,8 @@ hr {
     color: #333;
     width: 480px;
     font-size: 18px;
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 #speaker {
@@ -60,6 +64,8 @@ hr {
     font-family: "RobotoBold";
     margin-top: 10px;
     font-size: 30px;
+    text-align: left;
+    text-justify: none;
 }
 
 #views {
