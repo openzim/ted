@@ -416,7 +416,7 @@ class Scraper():
 
         for thumbnail in thumbnails:
             resize_image(thumbnail)
-            print 'Resizing...' + thumbnail
+            print 'Resizing ' + thumbnail
 
 
     def encode_videos(self):
