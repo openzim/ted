@@ -251,7 +251,7 @@ class Scraper():
                         speaker=video[0]['speaker'],
                         description=video[0]['description'],
                         languages=video[0]['subtitles'],
-                        speaker_bio=video[0]['speaker_bio'],
+                        speaker_bio=video[0]['speaker_bio'].replace('Full bio', ''),
                         date=video[0]['date'],
                         profession=video[0]['speaker_profession'])
 
