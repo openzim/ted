@@ -9,11 +9,12 @@
     <body>
         <div class="wrapper">
             <div class="container">
-                <h1>TED Talks</h1>
+	        <center><img src="CSS/img/TED.png" /></center>
+                <h1>{{ selection }}</h1>
                 <div id="menuwrapper">
-                     <select data-placeholder="Subtitle Language" class="chosen-select" style="width:350px;" tabindex="2">
+                     <select data-placeholder="Subtitle Language" class="chosen-select" style="width:480px;" tabindex="2">
                         <option value=""></option>
-                        <option value="lang-all">All Languages</option>
+                        <option value="lang-all">Filter videos by subtitle language</option>
                         {% for language in languages %}
                         <option value="{{ language.languageCode }}">{{ language.languageName }}</option>
                         {% endfor %}
