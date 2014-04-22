@@ -557,7 +557,7 @@ def resize_image(image_path):
     from PIL import Image
     image = Image.open(image_path)
     w, h = image.size
-    image = image.resize((226, 170))
+    image = image.resize((248, 187))
     image.save(image_path)
 
 

@@ -121,7 +121,7 @@ ul.grid-nav li a.active {
 ul.rig {
 	list-style: none;
 	font-size: 0px;
-	margin-left: -2.5%; /* should match li left margin */
+	margin-left: -2.5%;
 }
 ul.rig li {
 	display: inline-block;
@@ -136,8 +136,6 @@ ul.rig li {
 }
 
 ul.rig li img {
-	max-width: 100%;
-	height: auto;
 	margin: 0 0 10px;
 }
 
@@ -155,28 +153,42 @@ ul.rig.grid li {
 	cursor: pointer;
 }
 
+
 @media (max-width: 1199px) {
-	.container {
-		width: auto;
-		padding: 0 10px;
-	}
+    .container {
+        width: auto;
+        padding: 0 10px;
+    }
+
+    ul.rig.grid li {
+        width: 30.83%;
+    }
 }
 
-@media (max-width: 480px) {
-	ul.grid-nav li {
-		display: block;
-		margin: 0 0 5px;
-	}
-	ul.grid-nav li a {
-		display: block;
-	}
-	ul.rig {
-		margin-left: 0;
-	}
-	ul.rig li {
-		width: 100% !important; /* over-ride all li styles */
-		margin: 0 0 20px;
-	}
+@media (max-width: 820px) {
+    .container {
+        width: auto;
+        padding: 0 10px;
+    }
+
+    ul.rig.grid li {
+        width: 47.5%;
+    }
+}
+
+@media (max-width: 530px) {
+    .container {
+        width: auto;
+        padding: 0 10px;
+    }
+
+    #video-items {
+        padding: 20px;
+    }
+
+    ul.rig.grid li {
+        width: 100%;
+    }
 }
 
 div#menuwrapper {
@@ -293,20 +305,22 @@ nav ul li ul li a:hover{
     margin: auto auto auto auto;
  }
 
-/* Remove "link style" */
 a.nostyle:link {
     text-decoration: none;
     color: #000000;
 }
+
 a.nostyle:visited {
     text-decoration: none;
     color: #000000;
 }
+
 a.nostyle:hover {
     background-color: #FF2B06;
     text-decoration: none;
     color: #000000;
 }
+
 a.nostyle:active {
     text-decoration: none;
     color: #000000;

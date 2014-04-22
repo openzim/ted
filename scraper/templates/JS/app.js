@@ -21,7 +21,7 @@ window.onload = function() {
  * subtitles in the selected language.
  */
 function setupLanguageFilter() {
-  $('.chosen-select').chosen().change(function(){
+  $('.chosen-select').chosen({width: "380px"}).change(function(){
     language = arguments[1].selected;
 
     // If 'lang-all' is selected the user wants to
