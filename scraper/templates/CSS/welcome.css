@@ -61,6 +61,10 @@ a:hover {
     font-size: 18px;
 }
 
+#title-img {
+    width: 280px;
+}
+
 #meta-data {
 	font-family: "RobotoLight";
 }
