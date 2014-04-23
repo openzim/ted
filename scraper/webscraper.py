@@ -459,8 +459,8 @@ class Scraper():
             ffmpeg = os.path.dirname(os.path.abspath(__file__)) + '/../ffmpeg'
 
 
-        command = ''.join(("""{} -i "{}" -codec:v libvpx -quality good -cpu-used 0 -b:v 600k""",
-            """ -qmin 10 -qmax 42 -maxrate 500k -bufsize 1000k -threads 2 -vf scale=480:-1""",
+        command = ''.join(("""{} -i "{}" -codec:v libvpx -quality best -cpu-used 0 -b:v 300k""",
+            """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
             """ -codec:a libvorbis -b:a 128k -f webm "{}" """)).format(
                 ffmpeg, from_path, to_path)
 
