@@ -7,11 +7,11 @@ __title__ = 'webscraper'
 __author__ = 'Rashiq Ahmad'
 __license__ = 'GPLv3'
 
+import os
+from os import path
 import sys
-import os.path
 import shutil
 import distutils.dir_util
-import os
 from datetime import datetime
 from sys import platform as _platform
 import requests
@@ -35,25 +35,20 @@ class Scraper():
     pages = None
     # List of links to all TED talks
     videos = []
-
+    # Categories of the TED talks
+    categories = ['technology', 'entertainment',
+                  'design', 'business', 'science', 'global issues']
 
     def __init__(self):
         """
         Extract number of video pages. Generate the specific
         video page from it and srape it.
         """
-        # Time the script, if the script has been called with a '-d' flag
-        if '-d' in sys.argv:
-            self.startTime = datetime.now()
-        # self.extract_all_video_links()
-        # self.dump_data()
-        # self.render_video_pages()
-
-        # Print the execution time of the script
-        if '-d' in sys.argv:
-            print('The script took {} to run'
-                  .format(datetime.now() - self.startTime))
-
+        self.build_dir = path.join(os.getcwd(), '..', 'build')
+        self.scraper_dir = path.join(self.build_dir, 'TED', 'scraper')
+        self.html_dir = path.join(self.build_dir, 'TED', 'html')
+        self.meta_data_dir = path.join(self.scraper_dir, 'TED.json')
+        self.templates_dir = path.join(os.getcwd(), '..', 'scraper', 'templates')
 
     def extract_page_number(self):
         """
@@ -64,7 +59,6 @@ class Scraper():
         self.soup = BeautifulSoup(requests.get(self.BASE_URL).text)
         pages = self.soup.select('div.pagination a.pagination__item')[-1]
         return int(pages.text)
-
 
     def extract_all_video_links(self):
         """
@@ -79,7 +73,7 @@ class Scraper():
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
-
+            break
 
     def extract_videos(self):
         """
@@ -92,7 +86,7 @@ class Scraper():
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
-
+            break
 
     def extract_video_info(self, url):
         """
@@ -109,7 +103,7 @@ class Scraper():
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
         json_data = self.soup.select('div.talks-main script')
-        if len(json_data)==0: return
+        if len(json_data) == 0: return
         json_data = json_data[-1].text
         json_data = ' '.join(json_data.split(',', 1)[1].split(')')[:-1])
         json_data = json.loads(json_data)
@@ -197,7 +191,6 @@ class Scraper():
             'keywords': keywords,
             'ratings': ratings}])
 
-
     def dump_data(self):
         """
         Dump all the data about every TED talk in a json file
@@ -206,20 +199,14 @@ class Scraper():
         # Prettified json dump
         data = json.dumps(self.videos, indent=4, separators=(',', ': '))
 
-        # Get the direction of the 'build' folder.
-        # This folder my or may not exist yet.
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-        scraper_dir = build_dir + '/TED/scraper'
-
         # Check, if the folder exists. Create it, if it doesn't.
-        if not os.path.exists(scraper_dir):
-            os.makedirs(scraper_dir)
+        if not path.exists(self.scraper_dir):
+            os.makedirs(self.scraper_dir)
 
         # Create or override the 'TED.json' file in the build
         # directory with the video data gathered from the scraper.
-        with open(scraper_dir + '/TED.json', 'w') as ted_file:
+        with open(self.scraper_dir + '/TED.json', 'w') as ted_file:
             ted_file.write(data)
-
 
     def render_video_pages(self):
         """
@@ -228,25 +215,22 @@ class Scraper():
         """
         print 'Rendering template...'
 
-        meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
-            + '/../build/TED/scraper/TED.json'
-
-        if not os.path.exists(meta_data_path):
+        if not path.exists(self.meta_data_dir):
             sys.exit(
                 "TED.json file not found. Run the script with the '-m' flag")
 
         self.load_metadata()
 
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         env = Environment(loader=FileSystemLoader('templates'))
         template = env.get_template('video.html')
 
         for video in self.videos:
-            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
+            for i in self.categories:
                 if i in video[0]['keywords']:
-                    path = build_dir + '/TED/html/' + i + '/' + str(video[0]['id'])
-                    if not os.path.exists(path):
-                        os.makedirs(path)
+                    video_id = str(video[0]['id'])
+                    video_path = path.join(self.html_dir, i, video_id)
+                    if not path.exists(video_path):
+                        os.makedirs(video_path)
 
                     html = template.render(
                         title=video[0]['title'],
@@ -258,123 +242,89 @@ class Scraper():
                         profession=video[0]['speaker_profession'])
 
                     html = html.encode('utf-8')
-
-                    with open(path + '/' + 'index.html', 'w') as html_page:
+                    index_path = path.join(video_path, 'index.html')
+                    with open(index_path, 'w') as html_page:
                         html_page.write(html)
-
 
     def render_welcome_page(self):
         """
         Create the data for the index.html page (the summary page).
         """
-
-        meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
-            + '/../build/TED/scraper/TED.json'
-
-        if not os.path.exists(meta_data_path):
+        if not path.exists(self.meta_data_dir):
             sys.exit(
                 "TED.json file not found. Run the script with the '-m' flag")
 
         self.load_metadata()
 
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
         env = Environment(loader=FileSystemLoader('templates'))
         template = env.get_template('welcome.html')
 
-        for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
-            path = build_dir + '/TED/html/' + i + '/'
-            if not os.path.exists(path):
-                os.makedirs(path)
-
-            with open(path + 'index.html', 'w') as html_page:
+        for i in self.categories:
+            video_path = path.join(self.html_dir, i)
+            if not path.exists(video_path):
+                os.makedirs(video_path)
+            
+            index_path = path.join(video_path, 'index.html')
+            with open(index_path, 'w') as html_page:
                 html_page.write(self.create_welcome_page_data(i, template))
-
 
     def create_welcome_page_data(self, keyword, template):
         """
         Create the data for the index.html page (the summary page).
         """
-        teds = []
         languages = []
-        languagelist = []
 
         for video in self.videos:
-            if keyword in video[0]['keywords']:
-                teds.append(video)
-            else:
-                continue
+            if not keyword in video[0]['keywords']: continue
 
             for language in video[0]['subtitles']:
                 languages.append({'languageCode': language['languageCode'],
                                   'languageName': language['languageName']})
 
-                language_code = language['languageCode']
+        languages = [dict(tpl) for tpl in set(tuple(item.items()) for item in languages)]
+        languages = sorted(languages, key=lambda x: x['languageName'])
 
-                languages_already_in = []
-                for i in languagelist:
-                    languages_already_in.append(i.keys()[0])
-
-                if not language_code in languages_already_in:
-                    lang_dict = {language_code: []}
-                    lang_dict[language_code].append(video)
-                    languagelist.append(lang_dict)
-                else:
-                    lst = languagelist[
-                        languages_already_in.index(language_code)]
-                    lst[language_code].append(video)
-
-        sorted_languages = []
-        for x in languages:
-            if x not in sorted_languages:
-                sorted_languages.append(x)
-
-        languages = sorted(sorted_languages, key=lambda x: x['languageName'])
-
-        html = template.render(
-            languages=languages,
-            teds=teds,
-            languagelist=languagelist)
-
+        html = template.render(languages=languages)
         html = html.encode('utf-8')
-
         return html
-
 
     def copy_files_to_rendering_directory(self):
         """
         Copy files from the /scraper directory to the /html/{zimfile} directory.
         """
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-        templates_dir = os.path.dirname(
-            os.path.abspath(__file__)) + '/../scraper/templates'
 
-        for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues' ]:
-            copy_path = build_dir + '/TED/html/' + i 
-            if os.path.exists(templates_dir + '/CSS'):
-                distutils.dir_util.copy_tree(templates_dir + '/CSS', copy_path+'/CSS')
-            if os.path.exists(templates_dir + '/JS'):
-                distutils.dir_util.copy_tree(templates_dir + '/JS', copy_path+'/JS')
+        for i in self.categories:
+            copy_dir = path.join(self.html_dir, i)
+            css_dir = path.join(self.templates_dir, 'CSS')
+            js_dir = path.join(self.templates_dir, 'JS')
+            copy_css_dir = path.join(copy_dir, 'CSS')
+            copy_js_dir = path.join(copy_dir, 'JS')
 
+            if path.exists(css_dir):
+                distutils.dir_util.copy_tree(css_dir, copy_css_dir)
+            if path.exists(js_dir):
+                distutils.dir_util.copy_tree(js_dir, copy_js_dir)
 
         for video in self.videos:
-            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
+            for i in self.categories:
                 if i in video[0]['keywords']:
-                    path = build_dir + '/TED/scraper/' + str(video[0]['id'])
-                    copy_path = build_dir + '/TED/html/' + i + '/' + str(video[0]['id'])
-                    thumbnail = path + '/thumbnail.jpg'
-                    subs = path + '/subs/'
-                    speaker = path + '/speaker.jpg'
-                    video_ = path + '/video.mp4'
+                    video_id = str(video[0]['id'])
+                    video_path = path.join(self.scraper_dir, video_id)
+                    copy_video_path = path.join(self.html_dir, i, video_id)
+                    copy_subs_path = path.join(copy_video_path, 'subs')
+                    thumbnail = path.join(video_path, 'thumbnail.jpg')
+                    subs = path.join(video_path, 'subs')
+                    speaker = path.join(video_path, 'speaker.jpg')
+                    video_ = path.join(video_path, 'video.mp4')
 
-                    if os.path.exists(thumbnail):
-                        shutil.copy(thumbnail, copy_path)
+                    if path.exists(thumbnail):
+                        shutil.copy(thumbnail, copy_video_path)
 
-                    if os.path.exists(subs):
-                        distutils.dir_util.copy_tree(subs, copy_path + '/subs')
+                    if path.exists(subs):
+                        distutils.dir_util.copy_tree(subs, copy_subs_path)
 
-                    if os.path.exists(speaker):
-                        shutil.copy(speaker, copy_path)
-
+                    if path.exists(speaker):
+                        shutil.copy(speaker, copy_video_path)
 
     def generate_category_data(self):
         """
@@ -383,43 +333,39 @@ class Scraper():
 
         self.load_metadata()
         video_list = defaultdict(list)
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
 
         for video in self.videos:
-            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
+            for i in self.categories:
                 if i in video[0]['keywords']:
                     json_data = \
                         {'languages': [lang['languageCode'] for lang in video[0]['subtitles']],
                          'id': video[0]['id'],
                          'description': video[0]['description'],
                          'title': video[0]['title'],
-                         'speaker': video[0]['speaker'],
-                         }
+                         'speaker': video[0]['speaker']}
                     video_list[i].append(json_data)
 
         for k, v in video_list.items():
-            path = build_dir + '/TED/html/' + k + '/JS'
-            
-            if not os.path.exists(path):
-                os.makedirs(path)
-            
-            with open(path + '/data.js', 'w') as page_file:
+            js_path = path.join(self.html_dir, k, 'JS')
+            data_path = path.join(js_path, 'data.js')
+
+            if not path.exists(js_path):
+                os.makedirs(js_path)
+
+            with open(data_path, 'w') as page_file:
                 json_data = json.dumps(v, indent=4, separators=(',', ': '))
-                json_data = 'json_data = ' + json_data 
+                json_data = 'json_data = ' + json_data
                 page_file.write(json_data)
 
-
     def resize_thumbnails(self):
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build/TED/html/'
-        thumbnails = [os.path.join(root, name)
-                for root, dirs, files in os.walk(build_dir)
-                for name in files
-                if name == 'thumbnail.jpg']
+        thumbnails = [path.join(root, name)
+                      for root, dirs, files in os.walk(self.html_dir)
+                      for name in files
+                      if name == 'thumbnail.jpg']
 
         for thumbnail in thumbnails:
             resize_image(thumbnail)
             print 'Resizing ' + thumbnail
-
 
     def encode_videos(self):
         """
@@ -428,41 +374,33 @@ class Scraper():
         in the kiwix-other/TED/ directory, that we will use on macs. 
         """
 
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-
         self.load_metadata()
         for video in self.videos:
-            for i in ['technology', 'entertainment', 'design', 'business', 'science', 'global issues']:
+            for i in self.categories:
                 if i in video[0]['keywords']:
-                    path = build_dir + '/TED/scraper/' + str(video[0]['id'])
-                    copy_path = build_dir + '/TED/html/' + \
-                        i + '/' + str(video[0]['id'])
+                    video_id =  str(video[0]['id'])
+                    video_path = path.join(self.scraper_dir, video_id, 'video.mp4')
+                    video_copy_path = path.join(self.html_dir, i, video_id, 'video.webm')
 
-                    video_ = path + '/video.mp4'
-
-                    if  os.path.exists(copy_path +'/video.webm'):
+                    if path.exists(video_copy_path):
                         print 'Video already encoded. Skipping.'
                         continue
 
-                    if os.path.exists(video_):
-                        self.convert_video_and_move_to_rendering(
-                            video_, copy_path +'/video.webm')
+                    if path.exists(video_path):
+                        self.convert_video_and_move_to_rendering(video_path, video_copy_path)
                         print 'Converting Video... ' + video[0]['title']
-
-
 
     def convert_video_and_move_to_rendering(self, from_path, to_path):
         ffmpeg = ''
         if _platform == "linux" or _platform == "linux2":
             ffmpeg = 'ffmpeg'
         elif _platform == "darwin":
-            ffmpeg = os.path.dirname(os.path.abspath(__file__)) + '/../ffmpeg'
-
+            ffmpeg = path.join(os.getcwd(), '..', 'ffmpeg')
 
         command = ''.join(("""{} -i "{}" -codec:v libvpx -quality good -cpu-used 0 -b:v 600k""",
             """ -qmin 10 -qmax 42 -maxrate 500k -bufsize 1000k -threads 2 -vf scale=480:-1""",
             """ -codec:a libvorbis -b:a 128k -f webm "{}" """)).format(
-                ffmpeg, from_path, to_path)
+            ffmpeg, from_path, to_path)
 
         os.system(command)
 
@@ -477,42 +415,38 @@ class Scraper():
 
         self.load_metadata()
         for video in self.videos:
+            video_id = str(video[0]['id'])
+            video_title = video[0]['title']
+            video_link = video[0]['video_link']
+            video_speaker = video[0]['speaker_picture']
+            video_thumbnail = video[0]['thumbnail']
+            video_dir = path.join(self.scraper_dir, video_id)
+            video_file_path = path.join(video_dir, 'video.mp4')
+            speaker_path = path.join(video_dir, 'speaker.jpg')
+            thumbnail_path = path.join(video_dir, 'thumbnail.jpg')
 
-            build_dir = os.path.dirname(
-                os.path.abspath(__file__)) + '/../build'
-            path = build_dir + '/TED/scraper/' + str(video[0]['id'])
-            if not os.path.exists(path):
-                os.makedirs(path)
+            if not path.exists(video_dir):
+                os.makedirs(video_dir)
 
-            if not os.path.exists(path+ '/video.mp4'):
-                print 'Downloading video... ' + video[0]['title']
-                urllib.urlretrieve(
-                    video[0]['video_link'],
-                    path +
-                    '/' +
-                    "video.mp4")
-            else: print 'video.mp4 already exist. Skipping video ' + video[0]['title'] 
+            if not path.exists(video_file_path):
+                print 'Downloading video... ' + video_title
+                urllib.urlretrieve(video_link, video_file_path)
+            else:
+                print 'video.mp4 already exist. Skipping video ' + video_title
 
             # download an image of the speaker
-            if not os.path.exists(path+ '/speaker.jpg'):
-                print 'Downloading speaker image... ' + video[0]['title']
-                urllib.urlretrieve(
-                    video[0]['speaker_picture'],
-                    path +
-                    '/' +
-                    "speaker.jpg")
-            else: print 'speaker.jpg already exist. Skipping video ' + video[0]['title'] 
+            if not path.exists(speaker_path):
+                print 'Downloading speaker image... ' + video_title
+                urllib.urlretrieve(video_speaker, speaker_path)
+            else:
+                print 'speaker.jpg already exist. Skipping video ' + video_title
 
             # download the thumbnail of the video
-            if not os.path.exists(path+ '/thumbnail.jpg'):
-                print 'Downloading video thumbnail... ' + video[0]['title']
-                urllib.urlretrieve(
-                    video[0]['thumbnail'],
-                    path +
-                    '/' +
-                    'thumbnail.jpg')
-            else: print 'thumbnail.jpg already exist. Skipping video ' + video[0]['title'] 
-
+            if not path.exists(thumbnail_path):
+                print 'Downloading video thumbnail... ' + video_title
+                urllib.urlretrieve(video_thumbnail, thumbnail_path)
+            else:
+                print 'thumbnail.jpg already exist. Skipping video ' + video_title
 
     def download_subtitles(self):
         """
@@ -522,34 +456,33 @@ class Scraper():
         """
         self.load_metadata()
         for video in self.videos:
-            build_dir = os.path.dirname(
-                os.path.abspath(__file__)) + '/../build'
-            path = build_dir + '/TED/scraper/' + str(video[0]['id']) + '/subs'
-            if not os.path.exists(path):
-                os.makedirs(path)
-            else:
-                print 'Subtitles already exist. Skipping video ' + video[0]['title'] 
-                continue
-            # download subtitles
-            print 'Downloading subtitles... ' + video[0]['title']
-            for subtitle in video[0]['subtitles']:
-                subtitle_file = WebVTTcreator(
-                    
-                    subtitle['link'],
-                    11820).get_content()
-                subtitle_file = subtitle_file.encode('utf-8')
-                with open(path + '/' + 'subs_{}.vtt'.format(subtitle['languageCode']), 'w') as sub_file:
-                    sub_file.write(subtitle_file)
+            video_id = str(video[0]['id'])
+            video_title = video[0]['title']
+            video_subtitles = video[0]['subtitles']
+            subs_dir = path.join(self.scraper_dir, video_id, 'subs')
 
+            if not path.exists(subs_dir):
+                os.makedirs(subs_dir)
+            else:
+                print 'Subtitles already exist. Skipping video ' 
+                continue
+
+            # download subtitles
+            print 'Downloading subtitles... ' + video_title
+            for subtitle in video_subtitles:
+                subtitle_file = WebVTTcreator(subtitle['link'], 11820).get_content()
+                subtitle_file = subtitle_file.encode('utf-8')
+                subtitle_file_name = 'subs_{}.vtt'.format(subtitle['languageCode'])
+                subtitle_file_name = path.join (subs_dir, subtitle_file_name)
+                with open(subtitle_file_name, 'w') as sub_file:
+                    sub_file.write(subtitle_file)
 
     def load_metadata(self):
         """
         Load the dumped json meta-data file.
         """
-        build_dir = os.path.dirname(os.path.abspath(__file__)) + '/../build'
-        meta_data_path = os.path.dirname(os.path.abspath(__file__)) \
-            + '/../build/TED/scraper/TED.json'
-        with open(meta_data_path) as data_file:
+
+        with open(self.meta_data_dir) as data_file:
             self.videos = json.load(data_file)
 
 
@@ -562,4 +495,4 @@ def resize_image(image_path):
 
 
 if __name__ == '__main__':
-    Scraper().generate_category_data()
+    pass
