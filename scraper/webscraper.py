@@ -490,9 +490,8 @@ def resize_image(image_path):
     from PIL import Image
     image = Image.open(image_path)
     w, h = image.size
-    image = image.resize((248, 187))
+    image = image.resize((248, 187), Image.ANTIALIAS)
     image.save(image_path)
-
 
 if __name__ == '__main__':
     pass
