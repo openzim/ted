@@ -123,7 +123,8 @@ function refreshVideos(pageData) {
       a.className = 'nostyle'
 
       var img = document.createElement('img');
-      img.src = video['id']+'/thumbnail.jpg'; 
+      /* img.src = video['id']+'/thumbnail.jpg'; */
+      img.src = '../I/'+video['id']+'/thumbnail.jpg'; 
 
       var author = document.createElement('p');
       author.id = 'author';
