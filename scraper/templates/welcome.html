@@ -9,10 +9,10 @@
         <link href="CSS/chosen.css" rel="stylesheet" type="text/css">
     </head>
     <body>
-        <div class="wrapper">
             <div class="container">
-	        <center><img src="CSS/img/TED.png" id="title-img"/></center>
-                <div id="menuwrapper">
+                <img src="CSS/img/TED.png" id="title-img"/>
+                <table style="width: 100%;"><tr>
+                   <td style="text-align: left; margin: 0 auto; width: 100%;">
                      <select data-placeholder="Subtitle Language" class="chosen-select" tabindex="2">
                         <option value=""></option>
                         <option value="lang-all">Filter videos by subtitle language</option>
@@ -20,20 +20,23 @@
                         <option value="{{ language.languageCode }}">{{ language.languageName }}</option>
                         {% endfor %}
                     </select>
-                </div>
+                   </td>
+                   <td>
+		     <div class="pagination" style="visibility: hidden;">
+                       <div class="left-arrow">&#10096;</div>
+                       <span class="pagination-text"></span>
+                       <div class="right-arrow">&#10097;</div>
+                    </div>
+		  </td>
+		</tr></table>
                 <hr/>
                 
                 <div id="grid-container" style="display:block;">
                     <ul id="video-items" class="rig grid"></ul>
                 </div>
                 
-                <div class="pagination" style="visibility: hidden;">
-                    <div class="left-arrow">&#10096;</div>
-                    <span class="pagination-text"></span>
-                    <div class="right-arrow">&#10097;</div>
-                </div>
             </div>
-        </div>
+
         <script src="JS/jquery.js" type="text/javascript"></script>
         <script src="JS/chosen.jquery.js" type="text/javascript"></script>
         <script src="JS/data.js"></script>

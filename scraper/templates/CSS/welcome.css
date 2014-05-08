@@ -23,7 +23,6 @@ body {
     background: #fafafa;
     font-family: Helvetica, Arial, sans-serif;
     font-weight: 400;
-    margin-top: 30px;
 }
 
 h1 {
@@ -63,6 +62,7 @@ a:hover {
 
 #title-img {
     width: 280px;
+    padding-top: 10px;
 }
 
 #meta-data {
@@ -71,11 +71,6 @@ a:hover {
 
 .centered {
 	text-align: center;
-}
-
-.wrapper {
-	width: 100%;
-	padding: 30px 0;
 }
 
 .container {
@@ -193,14 +188,12 @@ ul.rig.grid li {
 
 div#menuwrapper {
     margin-top: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
+    margin: 0px auto;
+    text-align: left;
 }
 
 div#content {
     clear: both;
-
     margin-top: 100px;
 }
 
@@ -275,13 +268,12 @@ nav ul li ul li a:hover{
 }
 
 .pagination {
-  margin: 2.5em auto;
-  background: #FFF;
+  margin: auto 0px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  border-radius: 3px;
+  border-radius: 5px;
   width: 200px;
   text-align: center;
-  height: 50px;
+  height: 35px;
   display: flex; 
   display: -webkit-flex;
 }
