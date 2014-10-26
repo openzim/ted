@@ -6,7 +6,7 @@ var videoDB = (function() {
   var ITEMS_PER_PAGE = 40;
   var db = {};
   var data;
-  var page = 1;
+  var page;
 
   /**
    * Load the data with or without an 
@@ -56,6 +56,7 @@ var videoDB = (function() {
   db.pageForward = function(callback) {
     if (page < db.getPageCount()) {
       page++;
+      window.location.hash = '#' + page;  
       callback();
     }
   }
@@ -68,6 +69,7 @@ var videoDB = (function() {
   db.pageBackwards = function(callback) {
     if (page != 1) {
       page--;
+      window.location.hash = '#' + page;
       callback();
     }
   }
@@ -77,13 +79,18 @@ var videoDB = (function() {
    */
   db.resetPage = function() {
     page = 1;
+    window.location.hash = '#' + page;
   }
 
   /**
    * Get the current page number.
    */
   db.getPageNumber = function() {
-    return page;
+      if ( !page ) {
+	  page = location.hash.replace( '#', '' );
+      }
+
+      return page || 1;
   }
 
   /**
