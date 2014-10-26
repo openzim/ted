@@ -46,29 +46,32 @@ function setupLanguageFilter() {
 * This function handles the pagination:
 * Clicking the back and forward button.
 */
-function setupPagination(){
-  var leftArrow = document.getElementsByClassName('left-arrow')[0];
-  var rightArrow = document.getElementsByClassName('right-arrow')[0];
-  var pageText = document.getElementsByClassName('pagination-text')[0];
+function setupPagination() {
 
-  leftArrow.onclick = function() {
-    videoDB.pageBackwards(function() {
-      handlePagination();
-    });
-  }
+    function handlePagination(shouldChange){
+	var data = videoDB.getPage(videoDB.getPageNumber());
+	refreshVideos(data);
+	refreshPagination();
+	window.scrollTo(0, 0);
+    }
 
-  rightArrow.onclick = function() {
-    videoDB.pageForward(function(){
-      handlePagination();
-    });
-  }
-
-  function handlePagination(shouldChange){
-    var data = videoDB.getPage(videoDB.getPageNumber());
-    refreshVideos(data);
-    refreshPagination();
-    window.scrollTo(0, 0);
-  }
+    for (var i = 0 ; i<2 ; i++) {
+	var leftArrow = document.getElementsByClassName('left-arrow')[i];
+	var rightArrow = document.getElementsByClassName('right-arrow')[i];
+	var pageText = document.getElementsByClassName('pagination-text')[i];
+	
+	leftArrow.onclick = function() {
+	    videoDB.pageBackwards(function() {
+		handlePagination();
+	    });
+	}
+	
+	rightArrow.onclick = function() {
+	    videoDB.pageForward(function(){
+		handlePagination();
+	    });
+	}
+    }
 }
 
 /**
@@ -76,33 +79,36 @@ function setupPagination(){
  * if a new language has been applied.
  */
 function refreshPagination() {
-  var pageBox = document.getElementsByClassName('pagination')[0];
-  var pageCount = videoDB.getPageCount();
-  var leftArrow = document.getElementsByClassName('left-arrow')[0];
-  var rightArrow = document.getElementsByClassName('right-arrow')[0];
-  
-  if (pageCount > 1) {
-    var pageText = document.getElementsByClassName('pagination-text')[0];
-    var pageNumber = videoDB.getPageNumber();
-    pageText.innerHTML = 'Page ' + pageNumber + '/' + pageCount;
+    var pageCount = videoDB.getPageCount();
 
-    if (videoDB.getPageNumber() == 1) {
-      leftArrow.style.visibility = 'hidden';
-      rightArrow.style.visibility = 'visible';
-    } else if (pageNumber == pageCount) {
-      leftArrow.style.visibility = 'visible';
-      rightArrow.style.visibility = 'hidden';	
-    } else {
-      leftArrow.style.visibility = 'visible';
-      rightArrow.style.visibility = 'visible';	
+    for (var i = 0 ; i<2 ; i++) {
+	var pageBox = document.getElementsByClassName('pagination')[i];
+	var leftArrow = document.getElementsByClassName('left-arrow')[i];
+	var rightArrow = document.getElementsByClassName('right-arrow')[i];
+	
+	if (pageCount > 1) {
+	    var pageText = document.getElementsByClassName('pagination-text')[i];
+	    var pageNumber = videoDB.getPageNumber();
+	    pageText.innerHTML = 'Page ' + pageNumber + '/' + pageCount;
+	    
+	    if (videoDB.getPageNumber() == 1) {
+		leftArrow.style.visibility = 'hidden';
+		rightArrow.style.visibility = 'visible';
+	    } else if (pageNumber == pageCount) {
+		leftArrow.style.visibility = 'visible';
+		rightArrow.style.visibility = 'hidden';	
+	    } else {
+		leftArrow.style.visibility = 'visible';
+		rightArrow.style.visibility = 'visible';	
+	    }
+	    
+	    pageBox.style.visibility = 'visible';
+	} else {
+	    pageBox.style.visibility = 'hidden';
+	    leftArrow.style.visibility = 'hidden';
+	    rightArrow.style.visibility = 'hidden';	
+	}
     }
-
-    pageBox.style.visibility = 'visible';
-  } else {
-    pageBox.style.visibility = 'hidden';
-    leftArrow.style.visibility = 'hidden';
-    rightArrow.style.visibility = 'hidden';	
-  }
 }
 
 /**
