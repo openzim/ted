@@ -295,6 +295,7 @@ class Scraper():
             copy_dir = path.join(self.html_dir, i)
             css_dir = path.join(self.templates_dir, 'CSS')
             js_dir = path.join(self.templates_dir, 'JS')
+
             copy_css_dir = path.join(copy_dir, 'CSS')
             copy_js_dir = path.join(copy_dir, 'JS')
 
@@ -302,6 +303,11 @@ class Scraper():
                 distutils.dir_util.copy_tree(css_dir, copy_css_dir)
             if path.exists(js_dir):
                 distutils.dir_util.copy_tree(js_dir, copy_js_dir)
+
+            favicon_file = path.join(self.templates_dir, 'favicon.png')
+            copy_favicon_file = path.join(copy_dir, 'favicon.png')
+            shutil.copy(favicon_file, copy_favicon_file)
+
 
         for video in self.videos:
             for i in self.categories:
