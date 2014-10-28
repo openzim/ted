@@ -276,6 +276,7 @@ nav ul li ul li a:hover{
   height: 35px;
   display: flex; 
   display: -webkit-flex;
+  float: right;
 }
 
 .pagination-text {
