@@ -6,3 +6,4 @@ pep8==1.4.6
 requests==2.2.1
 wsgiref==0.1.2
 envoy==0.0.2
+pillow==2.6.1
