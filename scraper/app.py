@@ -23,8 +23,7 @@ class App():
 		parser = argparse.ArgumentParser(description='Scrape www.TED.com')
 
 		parser.add_argument('--metadata', '-m', action='store_true',
-			help="""Download the meta data for all TED talks 
-			and dump it in a json file""")
+			help="Download the meta data for all TED talks and dump it in a json file")
 		parser.add_argument('--subs', '-s', action='store_true', 
 			help="Download Subtitles") 
 		parser.add_argument('--video', '-v', action='store_true', 
@@ -34,8 +33,9 @@ class App():
 		parser.add_argument('--thumbnail', '-t', action='store_true', 
 			help="Resize thumbnails in the build directory")
 		parser.add_argument('--render', '-r', action='store_true', 
-			help="""Render HTML pages for the videos""")
-		
+			help="Render HTML pages for the videos")
+		parser.add_argument('--zim', '-z', action='store_true', 
+			help="Create the ZIM files")
 
 		self.args = vars(parser.parse_args())
 
@@ -45,7 +45,8 @@ class App():
 
 		if not self.args['metadata'] and not self.args['render'] \
 			and not self.args['video'] and not self.args['subs']\
-			and not self.args['encode'] and not self.args['thumbnail']:
+			and not self.args['encode'] and not self.args['thumbnail']\
+			and not self.args['zim']:
 			scraper.extract_all_video_links()
 			scraper.dump_data()
 			scraper.download_subtitles()
@@ -56,6 +57,7 @@ class App():
 			scraper.generate_category_data()
 			scraper.encode_videos()
 			scraper.resize_thumbnails()
+			scraper.create_zims()
 		else:
 			if self.args['metadata']:
 				scraper.extract_all_video_links()
@@ -78,6 +80,9 @@ class App():
 
 			if self.args['thumbnail']:
 				scraper.resize_thumbnails()
+
+			if self.args['zim']:
+				scraper.create_zims()
 
 
 if __name__ == '__main__':

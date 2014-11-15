@@ -14,6 +14,9 @@ import shutil
 import distutils.dir_util
 from datetime import datetime
 from sys import platform as _platform
+import envoy
+import subprocess
+import datetime
 import requests
 from bs4 import BeautifulSoup
 from urlparse import urljoin
@@ -47,8 +50,12 @@ class Scraper():
         self.build_dir = path.join(os.getcwd(), '..', 'build')
         self.scraper_dir = path.join(self.build_dir, 'TED', 'scraper')
         self.html_dir = path.join(self.build_dir, 'TED', 'html')
+        self.zim_dir = path.join(self.build_dir, 'TED', 'zim')
         self.meta_data_dir = path.join(self.scraper_dir, 'TED.json')
         self.templates_dir = path.join(os.getcwd(), '..', 'scraper', 'templates')
+
+        if not bin_is_present("zimwriterfs"):
+            sys.exit("zimwriterfs is not available, please install it.")
 
     def extract_page_number(self):
         """
@@ -489,6 +496,19 @@ class Scraper():
         with open(self.meta_data_dir) as data_file:
             self.videos = json.load(data_file)
 
+    def create_zims(self):
+        print 'Creatin ZIM files'
+
+        # Check, if the folder exists. Create it, if it doesn't.
+        if not path.exists(self.zim_dir):
+            os.makedirs(self.zim_dir)
+
+        for i in self.categories:
+            html_dir = path.join(self.html_dir, i)
+            zim_path = path.join(self.zim_dir, "ted_{category}_{date}.zim".format(category=i.replace(' ', '_'),date=datetime.datetime.now().strftime('%Y-%m')))
+            title = "TED talks - " + i[0].upper() + i[1:]
+            description = "Ideas worth spreading"
+            create_zim(html_dir, zim_path, title, description)
 
 def resize_image(image_path):
     from PIL import Image
@@ -496,6 +516,52 @@ def resize_image(image_path):
     w, h = image.size
     image = image.resize((248, 187), Image.ANTIALIAS)
     image.save(image_path)
+
+def exec_cmd(cmd):
+    return envoy.run(str(cmd.encode('utf-8')))
+
+def create_zim(static_folder, zim_path, title, description):
+
+    print "\tWritting ZIM for {}".format(title)
+
+    context = {
+        'languages': 'eng',
+        'title': title,
+        'description': description,
+        'creator': 'TED',
+        'publisher': 'Kiwix',
+
+        'home': 'index.html',
+        'favicon': 'favicon.png',
+
+        'static': static_folder,
+        'zim': zim_path
+    }
+
+    cmd = ('zimwriterfs --welcome=\\"{home}\\" --favicon=\\"{favicon}\\" '
+           '--language=\\"{languages}\\" --title=\\"{title}\\" '
+           '--description=\\"{description}\\" '
+           '--creator=\\"{creator}\\" --publisher=\\"{publisher}\\" \\"{static}\\" \\"{zim}\\"'
+           .format(**context))
+
+    if exec_cmd(cmd):
+        print "Successfuly created ZIM file at {}".format(zim_path)
+    else:
+        print "Unable to create ZIM file :("
+
+def bin_is_present(binary):
+    try:
+        subprocess.Popen(binary,
+                         universal_newlines=True,
+                         shell=False,
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         bufsize=0)
+    except OSError:
+        return False
+    else:
+        return True
 
 if __name__ == '__main__':
     pass
