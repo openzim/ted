@@ -107,3 +107,9 @@ hr {
     text-align: right;
     width: 480px;
 }
+
+#backtolist {
+    float: right;
+    width: 80px;
+    cursor: pointer;
+}
