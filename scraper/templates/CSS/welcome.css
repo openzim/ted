@@ -267,7 +267,7 @@ nav ul li ul li a:hover{
     background-color: #FAFAFA !important;
 }
 
-#backtotop {
+div.backtotop {
     margin: auto 0px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     border-radius: 5px;
@@ -277,6 +277,8 @@ nav ul li ul li a:hover{
     display: flex; 
     display: -webkit-flex;
     float: left;
+    color: #000000;
+    cursor: pointer;
 }
 
 .pagination {
@@ -289,6 +291,7 @@ nav ul li ul li a:hover{
     display: flex; 
     display: -webkit-flex;
     float: right;
+    color: #000000;
 }
 
 .pagination-text {

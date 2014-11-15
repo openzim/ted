@@ -9,7 +9,6 @@
         <link href="CSS/chosen.css" rel="stylesheet" type="text/css">
     </head>
     <body>
-            <a name="top" />
             <div class="container">
                 <img src="CSS/img/TED.png" id="title-img"/>
                 <table style="width: 100%;"><tr>
@@ -38,11 +37,9 @@
                 
                 <hr/>
 		
-		<a href="#top">
-		<div id="backtotop">
+		<div class="backtotop" onclick="$('html, body').animate({ scrollTop: 0 }, 'slow');">
 		  <span style="margin: auto;">Back to the top</span>
                 </div>
-		</a>
 		
 		<div class="pagination" style="visibility: hidden; margin-bottom: 1em;">
                   <div class="left-arrow">&#10096;</div>
