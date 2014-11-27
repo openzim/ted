@@ -505,7 +505,7 @@ class Scraper():
 
         for i in self.categories:
             html_dir = path.join(self.html_dir, i)
-            zim_path = path.join(self.zim_dir, "ted_{category}_{date}.zim".format(category=i.replace(' ', '_'),date=datetime.datetime.now().strftime('%Y-%m')))
+            zim_path = path.join(self.zim_dir, "ted_en_{category}_{date}.zim".format(category=i.replace(' ', '_'),date=datetime.datetime.now().strftime('%Y-%m')))
             title = "TED talks - " + i[0].upper() + i[1:]
             description = "Ideas worth spreading"
             create_zim(html_dir, zim_path, title, description)
