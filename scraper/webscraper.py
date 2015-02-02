@@ -133,7 +133,7 @@ class Scraper():
         description = self.soup.select('p.talk-description')[0].text.strip()
 
         # Extract the upload date of the TED talk
-        date = self.soup.find('div', class_="talk-hero__meta")
+        date = self.soup.find('div', class_="player-hero__meta")
         date = date.find_all('span')[1]
         date.strong.replace_with('')
         date = date.text.strip()
@@ -497,7 +497,7 @@ class Scraper():
             self.videos = json.load(data_file)
 
     def create_zims(self):
-        print 'Creatin ZIM files'
+        print 'Creating ZIM files'
 
         # Check, if the folder exists. Create it, if it doesn't.
         if not path.exists(self.zim_dir):
@@ -538,11 +538,12 @@ def create_zim(static_folder, zim_path, title, description):
         'zim': zim_path
     }
 
-    cmd = ('zimwriterfs --welcome=\\"{home}\\" --favicon=\\"{favicon}\\" '
-           '--language=\\"{languages}\\" --title=\\"{title}\\" '
-           '--description=\\"{description}\\" '
-           '--creator=\\"{creator}\\" --publisher=\\"{publisher}\\" \\"{static}\\" \\"{zim}\\"'
+    cmd = ('zimwriterfs --welcome="{home}" --favicon="{favicon}" '
+           '--language="{languages}" --title="{title}" '
+           '--description="{description}" '
+           '--creator="{creator}" --publisher="{publisher}" "{static}" "{zim}"'
            .format(**context))
+    print cmd
 
     if exec_cmd(cmd):
         print "Successfuly created ZIM file at {}".format(zim_path)
