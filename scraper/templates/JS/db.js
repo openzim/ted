@@ -45,7 +45,7 @@ var videoDB = (function() {
    * Get the count pages that we need to set up.
    */
   db.getPageCount = function() {
-    return Math.floor(data.length / ITEMS_PER_PAGE);
+    return Math.ceil(data.length / ITEMS_PER_PAGE);
   }
 
   /**
