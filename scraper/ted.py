@@ -3,7 +3,7 @@
 """
 Class to run the Scraper for www.TED.com.
 """
-__title__ = 'app'
+__title__ = 'ted'
 __author__ = 'Rashiq Ahmad'
 __license__ = 'GPLv3'
 
