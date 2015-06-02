@@ -461,7 +461,7 @@ class Scraper():
             if not path.exists(speaker_path):
                 print 'Downloading speaker image... ' + video_title
                 r = requests.get(video_speaker)
-                with open(speaker_path, "wb") as code:
+                with open(speaker_path, 'wb') as code:
                     code.write(r.content)
             else:
                 print 'speaker.jpg already exist. Skipping video ' + video_title
@@ -469,8 +469,8 @@ class Scraper():
             # download the thumbnail of the video
             if not path.exists(thumbnail_path):
                 print 'Downloading video thumbnail... ' + video_title
-                r = requests.get((video_thumbnail)
-                with open(thumbnail_path, "wb") as code:
+                r = requests.get(video_thumbnail)
+                with open(thumbnail_path, 'wb') as code:
                     code.write(r.content)
             else:
                 print 'thumbnail.jpg already exist. Skipping video ' + video_title
