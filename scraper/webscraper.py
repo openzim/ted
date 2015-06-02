@@ -18,6 +18,7 @@ import envoy
 import subprocess
 import datetime
 import requests
+from time import sleep
 from bs4 import BeautifulSoup
 from urlparse import urljoin
 import utils
@@ -441,7 +442,16 @@ class Scraper():
 
             if not path.exists(video_file_path):
                 print 'Downloading video... ' + video_title
-                urllib.urlretrieve(video_link, video_file_path)
+                try:
+                    urllib.urlretrieve(video_link, video_file_path)
+                except Exception, e:
+                    for i in range(5):
+                        sleep(5)
+                        try:
+                            urllib.urlretrieve(video_link, video_file_path)
+                        except Exception, e:
+                            raise e
+                    
             else:
                 print 'video.mp4 already exist. Skipping video ' + video_title
 
