@@ -24,7 +24,6 @@ from urlparse import urljoin
 import utils
 import json
 from jinja2 import Environment, FileSystemLoader
-import urllib
 from WebVTTcreator import WebVTTcreator
 from collections import defaultdict
 
@@ -445,7 +444,9 @@ class Scraper():
                 for i in range(5):
                     while True:
                         try:
-                            urllib.urlretrieve(video_link, video_file_path)
+                            r = requests.get(video_link)
+                            with open(video_file_path, "wb") as code:
+                                code.write(r.content)
                         except Exception, e:
                             raise e
                             sleep(5)
@@ -459,14 +460,18 @@ class Scraper():
             # download an image of the speaker
             if not path.exists(speaker_path):
                 print 'Downloading speaker image... ' + video_title
-                urllib.urlretrieve(video_speaker, speaker_path)
+                r = requests.get(video_speaker)
+                with open(speaker_path, "wb") as code:
+                    code.write(r.content)
             else:
                 print 'speaker.jpg already exist. Skipping video ' + video_title
 
             # download the thumbnail of the video
             if not path.exists(thumbnail_path):
                 print 'Downloading video thumbnail... ' + video_title
-                urllib.urlretrieve(video_thumbnail, thumbnail_path)
+                r = requests.get((video_thumbnail)
+                with open(thumbnail_path, "wb") as code:
+                    code.write(r.content)
             else:
                 print 'thumbnail.jpg already exist. Skipping video ' + video_title
 
