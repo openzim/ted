@@ -442,15 +442,16 @@ class Scraper():
 
             if not path.exists(video_file_path):
                 print 'Downloading video... ' + video_title
-                try:
-                    urllib.urlretrieve(video_link, video_file_path)
-                except Exception, e:
-                    for i in range(5):
-                        sleep(5)
+                for i in range(5):
+                    while True:
                         try:
                             urllib.urlretrieve(video_link, video_file_path)
                         except Exception, e:
                             raise e
+                            sleep(5)
+                            continue
+                        break
+
                     
             else:
                 print 'video.mp4 already exist. Skipping video ' + video_title
