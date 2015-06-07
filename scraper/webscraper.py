@@ -369,14 +369,17 @@ class Scraper():
                 page_file.write(json_data)
 
     def resize_thumbnails(self):
-        thumbnails = [path.join(root, name)
+        try:
+            thumbnails = [path.join(root, name)
                       for root, dirs, files in os.walk(self.html_dir)
                       for name in files
                       if name == 'thumbnail.jpg']
 
-        for thumbnail in thumbnails:
-            resize_image(thumbnail)
-            print 'Resizing ' + thumbnail
+            for thumbnail in thumbnails:
+                resize_image(thumbnail)
+                print 'Resizing ' + thumbnail
+        except Exception, e:
+            raise e
 
     def encode_videos(self):
         """
