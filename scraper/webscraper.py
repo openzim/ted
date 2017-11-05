@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
 """
 Class for scraping www.TED.com.
 """
@@ -17,6 +17,7 @@ from sys import platform as _platform
 import envoy
 import subprocess
 import datetime
+import dateutil.parser
 import requests
 from time import sleep
 from bs4 import BeautifulSoup
@@ -110,51 +111,55 @@ class Scraper():
         json_data = self.soup.select('div.talks-main script')
         if len(json_data) == 0: return
         json_data = json_data[-1].text
+
         json_data = ' '.join(json_data.split(',', 1)[1].split(')')[:-1])
-        json_data = json.loads(json_data)
+        json_data = json.loads(json_data)['__INITIAL_DATA__']
 
         # Extract the speaker of the TED talk
-        speaker = json_data['talks'][0]['speaker']
+        talk_info = json_data['talks'][0]
+        speaker_info = talk_info['speakers'][0]
+        speaker = ' '.join([
+            speaker_info.get('firstname'),
+            speaker_info.get('middleinitial'),
+            speaker_info.get('lastname')
+        ])
 
         # Extract the profession of the speaker of the TED talk
-        speaker_profession = \
-            self.soup.select('div.talk-speaker__description')[0].text.strip()
+        speaker_profession = speaker_info['description']
 
         # Extract the short biography of the speaker of the TED talk
-        speaker_bio = self.soup.select('div.talk-speaker__bio')[0].text.strip()
+        speaker_bio = speaker_info['whotheyare']
 
         # Extract the Url to the picture of the speaker of the TED talk
-        speaker_picture = self.soup.select('img.thumb__image')[0]['src']
+        speaker_picture = speaker_info['photo_url']
 
         # Extract the title of the TED talk
-        title = json_data['talks'][0]['title']
+        title = talk_info['title']
 
         # Extract the description of the TED talk
-        description = self.soup.select('p.talk-description')[0].text.strip()
+        description = talk_info['description']
 
         # Extract the upload date of the TED talk
-        date = self.soup.find('div', class_="player-hero__meta")
-        date = date.find_all('span')[1]
-        date.strong.replace_with('')
-        date = date.text.strip()
+        date = dateutil.parser.parse(talk_info['recorded_at']).strftime("%d.%B %Y")
 
         # Extract the length of the TED talk in minutes
-        length = int(json_data['talks'][0]['duration'])
+        length = int(talk_info['duration'])
         length = divmod(length, 60)[0]
 
         # Extract the thumbnail of the of the TED talk video
-        thumbnail = json_data['talks'][0]['thumb']
+        thumbnail = talk_info['player_talks'][0]['thumb']
 
         # Extract the download link of the TED talk video
-        if not json_data['talks'][0]['nativeDownloads']:
+        downloads = talk_info['downloads']['nativeDownloads']
+        if not downloads:
             return
-        video_link = json_data['talks'][0]['nativeDownloads']['medium']
+        video_link = downloads['medium']
         if not video_link:
             return
 
         # Extract the video Id of the TED talk video.
         # We need this to generate the subtitle page.
-        video_id = json_data['talks'][0]['id']
+        video_id = talk_info['id']
 
         # Generate a list of all subtitle languages with the link to
         # its subtitles page. It will be in this format:
@@ -167,7 +172,7 @@ class Scraper():
         # ]
         subtitles = [{'languageName': lang['languageName'],
                       'languageCode':lang['languageCode']}
-                     for lang in json_data['talks'][0]['languages']]
+                     for lang in talk_info['player_talks'][0]['languages']]
         subtitles = utils.build_subtitle_pages(video_id, subtitles)
 
         # Extract the keywords for the TED talk
@@ -177,7 +182,7 @@ class Scraper():
         keywords = [key.strip() for key in keywords.split(',')]
 
         # Extract the ratings list for the TED talk
-        ratings = json_data['ratings']
+        ratings = talk_info['ratings']
 
         # Append the meta-data to a list
         self.videos.append([{
