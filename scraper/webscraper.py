@@ -273,7 +273,7 @@ class Scraper():
             video_path = path.join(self.html_dir, i)
             if not path.exists(video_path):
                 os.makedirs(video_path)
-            
+
             index_path = path.join(video_path, 'index.html')
             with open(index_path, 'w') as html_page:
                 html_page.write(self.create_welcome_page_data(i, template))
@@ -388,9 +388,9 @@ class Scraper():
 
     def encode_videos(self):
         """
-        Encode the videos from mp4 to webm. We will use ffmpeg over the 
+        Encode the videos from mp4 to webm. We will use ffmpeg over the
         command line for this. There is a static binary version
-        in the kiwix-other/TED/ directory, that we will use on macs. 
+        in the kiwix-other/TED/ directory, that we will use on macs.
         """
 
         self.load_metadata()
@@ -461,7 +461,7 @@ class Scraper():
                             continue
                         break
 
-                    
+
             else:
                 print 'video.mp4 already exist. Skipping video ' + video_title
 
@@ -499,7 +499,7 @@ class Scraper():
             if not path.exists(subs_dir):
                 os.makedirs(subs_dir)
             else:
-                print 'Subtitles already exist. Skipping video ' 
+                print 'Subtitles already exist. Skipping video.'
                 continue
 
             # download subtitles
