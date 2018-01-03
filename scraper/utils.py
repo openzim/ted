@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from urlparse import urljoin
+from time import sleep
+import requests
 
 """
 Utils class for the scraper.
@@ -40,3 +42,14 @@ def build_subtitle_pages(video_id, language_list):
         language['link'] = page
 
     return language_list
+
+def download_from_site(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+    }
+    for i in range(5):
+        sleep(1) #delay requests
+        r = requests.get(url, headers = headers)
+        if r.status_code != 429:
+            return r
+        sleep(30*(i+1)) #if fail we wait
