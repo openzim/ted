@@ -453,7 +453,7 @@ class Scraper():
                 for i in range(5):
                     while True:
                         try:
-                            r = requests.get(video_link)
+                            r = utils.download_from_site(video_link)
                             with open(video_file_path, "wb") as code:
                                 code.write(r.content)
                         except Exception, e:

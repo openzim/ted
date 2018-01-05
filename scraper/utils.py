@@ -53,3 +53,4 @@ def download_from_site(url):
         if r.status_code != 429:
             return r
         sleep(30*(i+1)) #if fail we wait
+    raise ConnectionRefusedError("Too many retry fail")
