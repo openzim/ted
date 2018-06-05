@@ -29,7 +29,9 @@
                 <hr>
                 <div id="speaker_box_img">
                     <div>
-                        <img id="speaker_img" src="speaker.jpg">
+                        {{ if speaker_img != "None" }}
+                          <img id="speaker_img" src="speaker.jpg">
+                        {{ endif }}
                         <div id="speaker_info">
                             <div id="speaker_info_box">{{ speaker }}</div>
                             <div id="speaker_info_profession">{{ profession }}</div>

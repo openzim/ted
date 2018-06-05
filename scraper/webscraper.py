@@ -118,12 +118,19 @@ class Scraper():
 
         # Extract the speaker of the TED talk
         talk_info = json_data['talks'][0]
-        speaker_info = talk_info['speakers'][0]
-        speaker = ' '.join([
-            speaker_info.get('firstname'),
-            speaker_info.get('middleinitial'),
-            speaker_info.get('lastname')
-        ])
+        if len(talk_info['speakers']) != 0:
+            speaker_info = talk_info['speakers'][0]
+            speaker = ' '.join([
+                speaker_info.get('firstname'),
+                speaker_info.get('middleinitial'),
+                speaker_info.get('lastname')
+            ])
+        else:
+            speaker_info = {'description' : "None", 'whotheyare' : "None", 'photo_url' : "None"}
+            if talk_info.has_key("speaker_name"):
+                speaker = talk_info["speaker_name"]
+            else:
+                speaker = "None"
 
         # Extract the profession of the speaker of the TED talk
         speaker_profession = speaker_info['description']
@@ -249,6 +256,7 @@ class Scraper():
                         description=video[0]['description'],
                         languages=video[0]['subtitles'],
                         speaker_bio=video[0]['speaker_bio'].replace('Full bio', ''),
+                        speaker_img=video[0]['speaker_picture'],
                         date=video[0]['date'],
                         profession=video[0]['speaker_profession'])
 
@@ -468,10 +476,14 @@ class Scraper():
 
             # download an image of the speaker
             if not path.exists(speaker_path):
-                print 'Downloading speaker image... ' + video_title
-                r = utils.download_from_site(video_speaker)
-                with open(speaker_path, 'wb') as code:
-                    code.write(r.content)
+                if video_speaker == "None":
+                    print 'Speaker has not image'
+                else:
+                    print 'Downloading speaker image... ' + video_title
+                    print video_speaker
+                    r = utils.download_from_site(video_speaker)
+                    with open(speaker_path, 'wb') as code:
+                        code.write(r.content)
             else:
                 print 'speaker.jpg already exist. Skipping video ' + video_title
 
