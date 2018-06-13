@@ -475,7 +475,7 @@ class Scraper():
                 print 'video.mp4 already exist. Skipping video ' + video_title
 
             # download an image of the speaker
-            if not path.exists(speaker_path):
+            if not path.exists(speaker_path) and video_speaker != "":
                 if video_speaker == "None":
                     print 'Speaker has not image'
                 else:
@@ -516,7 +516,7 @@ class Scraper():
                 continue
 
             # download subtitles
-            print 'Downloading subtitles... ' + video_title
+            print "Downloading subtitles... {}".format(video_title.encode("utf-8"))
             for subtitle in video_subtitles:
                 subtitle_file = WebVTTcreator(subtitle['link'], 11820).get_content()
                 subtitle_file = subtitle_file.encode('utf-8')

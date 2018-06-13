@@ -39,14 +39,15 @@ class WebVTTcreator():
         [start time --> end time]
         'content'
         """
-        for subtitle in json['captions']:
-            startTime = int(subtitle['startTime']) + offset
-            duration = int(subtitle['duration'])
-            content = subtitle['content']
+        if 'captions' in json:
+            for subtitle in json['captions']:
+                startTime = int(subtitle['startTime']) + offset
+                duration = int(subtitle['duration'])
+                content = subtitle['content']
 
-            self.WebVTTdocument += self.time_string(startTime) + ' --> ' + \
-                self.time_string(startTime + duration) + '\n'
-            self.WebVTTdocument += content + '\n\n'
+                self.WebVTTdocument += self.time_string(startTime) + ' --> ' + \
+                    self.time_string(startTime + duration) + '\n'
+                self.WebVTTdocument += content + '\n\n'
 
 
     def time_string(self, ms):
