@@ -64,7 +64,7 @@ class Scraper():
         pagination div at the bottom. Select all <a>-tags in it and
         return the last element in the list. That's our total count
         """
-        self.soup = BeautifulSoup(requests.get(self.BASE_URL).text)
+        self.soup = BeautifulSoup(utils.download_from_site(self.BASE_URL).text)
         pages = self.soup.select('div.pagination a.pagination__item')[-1]
         return int(pages.text)
 
@@ -77,7 +77,7 @@ class Scraper():
         """
         for page in range(1, self.extract_page_number()):
             url = utils.build_video_page(page)
-            html = requests.get(url).text
+            html = utils.download_from_site(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
             print 'Finished scraping page {}'.format(page)
@@ -90,6 +90,7 @@ class Scraper():
         link to the representative TED talk. We have to turn this relative
         link to an absolute link. This is done through the `utils` class.
         """
+        print("Video found : " + str(len(self.soup.select('div.row div.media__image a')))) #DEBUG
         for video in self.soup.select('div.row div.media__image a'):
             url = utils.create_absolute_link(self.BASE_URL, video['href'])
             self.extract_video_info(url)
@@ -103,7 +104,7 @@ class Scraper():
         direct download link to the video, download link to the subtitle
         files and a link to a thumbnail of the video.
         """
-        self.soup = BeautifulSoup(requests.get(url).text)
+        self.soup = BeautifulSoup(utils.download_from_site(url).text)
 
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
@@ -117,12 +118,19 @@ class Scraper():
 
         # Extract the speaker of the TED talk
         talk_info = json_data['talks'][0]
-        speaker_info = talk_info['speakers'][0]
-        speaker = ' '.join([
-            speaker_info.get('firstname'),
-            speaker_info.get('middleinitial'),
-            speaker_info.get('lastname')
-        ])
+        if len(talk_info['speakers']) != 0:
+            speaker_info = talk_info['speakers'][0]
+            speaker = ' '.join([
+                speaker_info.get('firstname'),
+                speaker_info.get('middleinitial'),
+                speaker_info.get('lastname')
+            ])
+        else:
+            speaker_info = {'description' : "None", 'whotheyare' : "None", 'photo_url' : "None"}
+            if talk_info.has_key("speaker_name"):
+                speaker = talk_info["speaker_name"]
+            else:
+                speaker = "None"
 
         # Extract the profession of the speaker of the TED talk
         speaker_profession = speaker_info['description']
@@ -248,6 +256,7 @@ class Scraper():
                         description=video[0]['description'],
                         languages=video[0]['subtitles'],
                         speaker_bio=video[0]['speaker_bio'].replace('Full bio', ''),
+                        speaker_img=video[0]['speaker_picture'],
                         date=video[0]['date'],
                         profession=video[0]['speaker_profession'])
 
@@ -452,7 +461,7 @@ class Scraper():
                 for i in range(5):
                     while True:
                         try:
-                            r = requests.get(video_link)
+                            r = utils.download_from_site(video_link)
                             with open(video_file_path, "wb") as code:
                                 code.write(r.content)
                         except Exception, e:
@@ -466,18 +475,22 @@ class Scraper():
                 print 'video.mp4 already exist. Skipping video ' + video_title
 
             # download an image of the speaker
-            if not path.exists(speaker_path):
-                print 'Downloading speaker image... ' + video_title
-                r = requests.get(video_speaker)
-                with open(speaker_path, 'wb') as code:
-                    code.write(r.content)
+            if not path.exists(speaker_path) and video_speaker != "":
+                if video_speaker == "None":
+                    print 'Speaker has not image'
+                else:
+                    print 'Downloading speaker image... ' + video_title
+                    print video_speaker
+                    r = utils.download_from_site(video_speaker)
+                    with open(speaker_path, 'wb') as code:
+                        code.write(r.content)
             else:
                 print 'speaker.jpg already exist. Skipping video ' + video_title
 
             # download the thumbnail of the video
             if not path.exists(thumbnail_path):
                 print 'Downloading video thumbnail... ' + video_title
-                r = requests.get(video_thumbnail)
+                r = utils.download_from_site(video_thumbnail)
                 with open(thumbnail_path, 'wb') as code:
                     code.write(r.content)
             else:
@@ -503,7 +516,7 @@ class Scraper():
                 continue
 
             # download subtitles
-            print 'Downloading subtitles... ' + video_title
+            print "Downloading subtitles... {}".format(video_title.encode("utf-8"))
             for subtitle in video_subtitles:
                 subtitle_file = WebVTTcreator(subtitle['link'], 11820).get_content()
                 subtitle_file = subtitle_file.encode('utf-8')
