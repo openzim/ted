@@ -8,7 +8,7 @@ __author__ = 'Rashiq Ahmad'
 __license__ = 'GPLv3'
 
 import argparse
-from webscraper import Scraper
+from scraper.webscraper import Scraper
 
 class App():
 
