@@ -20,7 +20,7 @@ setup(
     description=__doc__,
     long_description=readme,
     author="Kiwix",
-    author_email="rashiq.zahid@gmail.com",
+    author_email="contact@kiwix.org",
     url='http://github.com/openzim/ted',
     keywords="ted zim kiwix openzim offline",
     license="GPL-3.0",
