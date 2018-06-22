@@ -16,7 +16,7 @@ with open('requirements.txt', 'r') as f:
 
 setup(
     name='ted2zim',
-    version="1.0.0",
+    version="1.0.1",
     description=__doc__,
     long_description=readme,
     author="Kiwix",
