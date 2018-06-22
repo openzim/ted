@@ -226,7 +226,7 @@ class Scraper():
         with open(self.scraper_dir + '/TED.json', 'w') as ted_file:
             ted_file.write(data)
 
-    def render_video_pages(self):
+    def render_video_pages(self,transcode2webm):
         """
         Render static html pages from the scraped video data and
         save the pages in TED/build/{video id}/index.html.
@@ -239,6 +239,10 @@ class Scraper():
 
         self.load_metadata()
 
+        if transcode2webm:
+            format="webm"
+        else:
+            format="mp4"
         env = Environment(loader=FileSystemLoader('templates'))
         template = env.get_template('video.html')
 
@@ -258,7 +262,8 @@ class Scraper():
                         speaker_bio=video[0]['speaker_bio'].replace('Full bio', ''),
                         speaker_img=video[0]['speaker_picture'],
                         date=video[0]['date'],
-                        profession=video[0]['speaker_profession'])
+                        profession=video[0]['speaker_profession'],
+                        format=format)
 
                     html = html.encode('utf-8')
                     index_path = path.join(video_path, 'index.html')
@@ -395,7 +400,7 @@ class Scraper():
         except Exception, e:
             raise e
 
-    def encode_videos(self):
+    def encode_videos(self,transcode2webm):
         """
         Encode the videos from mp4 to webm. We will use ffmpeg over the
         command line for this. There is a static binary version
@@ -408,27 +413,37 @@ class Scraper():
                 if i in video[0]['keywords']:
                     video_id =  str(video[0]['id'])
                     video_path = path.join(self.scraper_dir, video_id, 'video.mp4')
-                    video_copy_path = path.join(self.html_dir, i, video_id, 'video.webm')
+                    if transcode2webm:
+                        video_copy_path = path.join(self.html_dir, i, video_id, 'video.webm')
+                    else:
+                        video_copy_path = path.join(self.html_dir, i, video_id, 'video.mp4')
+
 
                     if path.exists(video_copy_path):
                         print 'Video already encoded. Skipping.'
                         continue
 
                     if path.exists(video_path):
-                        self.convert_video_and_move_to_rendering(video_path, video_copy_path)
+                        self.convert_video_and_move_to_rendering(video_path, video_copy_path,transcode2webm)
                         print 'Converting Video... ' + video[0]['title']
 
-    def convert_video_and_move_to_rendering(self, from_path, to_path):
+    def convert_video_and_move_to_rendering(self, from_path, to_path,transcode2webm):
         ffmpeg = ''
         if _platform == "linux" or _platform == "linux2":
             ffmpeg = 'ffmpeg'
         elif _platform == "darwin":
             ffmpeg = path.join(os.getcwd(), '..', 'ffmpeg')
 
-        command = ''.join(("""{} -i "{}" -codec:v libvpx -quality best -cpu-used 0 -b:v 300k""",
-            """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
-            """ -codec:a libvorbis -b:a 128k -f webm "{}" """)).format(
-            ffmpeg, from_path, to_path)
+        if transcode2webm:
+            command = ''.join(("""{} -i "{}" -codec:v libvpx -quality best -cpu-used 0 -b:v 300k""",
+                """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
+                """ -codec:a libvorbis -b:a 128k -f webm "{}" """)).format(
+                ffmpeg, from_path, to_path)
+        else:
+            command = ''.join(("""{} -i "{}" -codec:v h264 -quality best -cpu-used 0 -b:v 300k""",
+                """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
+                """ -codec:a mp3 -b:a 128k -f mp4 "{}" """)).format(
+                ffmpeg, from_path, to_path)
 
         os.system(command)
 

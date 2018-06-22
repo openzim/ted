@@ -29,13 +29,15 @@ class App():
 		parser.add_argument('--video', '-v', action='store_true', 
 			help="Download the TED videos in mp4")
 		parser.add_argument('--encode', '-e', action='store_true', 
-			help="Encode the mp4 videos to webm")
+			help="Encode the mp4 videos to resized mp4 (or resized webm if --transcode2webm is pass)")
 		parser.add_argument('--thumbnail', '-t', action='store_true', 
 			help="Resize thumbnails in the build directory")
 		parser.add_argument('--render', '-r', action='store_true', 
 			help="Render HTML pages for the videos")
 		parser.add_argument('--zim', '-z', action='store_true', 
 			help="Create the ZIM files")
+		parser.add_argument('--transcode2webm', action='store_true', 
+			help="Transcode video in webm")
 
 		self.args = vars(parser.parse_args())
 
@@ -52,10 +54,10 @@ class App():
 			scraper.download_subtitles()
 			scraper.download_video_data()
 			scraper.render_welcome_page()
-			scraper.render_video_pages()
+			scraper.render_video_pages(self.args['transcode2webm'])
 			scraper.copy_files_to_rendering_directory()
 			scraper.generate_category_data()
-			scraper.encode_videos()
+			scraper.encode_videos(self.args['transcode2webm'])
 			scraper.resize_thumbnails()
 			scraper.create_zims()
 		else:
@@ -68,7 +70,7 @@ class App():
 
 			if self.args['render']:
 				scraper.render_welcome_page()
-				scraper.render_video_pages()
+				scraper.render_video_pages(self.args['transcode2webm'])
 				scraper.copy_files_to_rendering_directory()
 				scraper.generate_category_data()
 
@@ -76,7 +78,7 @@ class App():
 				scraper.download_subtitles()
 
 			if self.args['encode']:
-				scraper.encode_videos()
+				scraper.encode_videos(self.args['transcode2webm'])
 
 			if self.args['thumbnail']:
 				scraper.resize_thumbnails()
