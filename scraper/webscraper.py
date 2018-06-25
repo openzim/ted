@@ -442,7 +442,7 @@ class Scraper():
         else:
             command = ''.join(("""{} -i "{}" -codec:v h264 -quality best -cpu-used 0 -b:v 300k""",
                 """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
-                """ -codec:a mp3 -b:a 128k -f mp4 "{}" """)).format(
+                """ -codec:a mp3 -b:a 128k -movflags +faststart -f mp4 "{}" """)).format(
                 ffmpeg, from_path, to_path)
 
         os.system(command)
