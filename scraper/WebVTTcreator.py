@@ -10,6 +10,7 @@ __license__ = 'GPLv3'
 
 import json
 import requests
+import time
 
 
 class WebVTTcreator():
@@ -23,9 +24,20 @@ class WebVTTcreator():
         Url and decodes it.
         Creates a WebVtt document off it and saves it in a .vtt file.
         """
-        subtitles_json = requests.get(url).text
+        dl_ok = False
+        while not dl_ok:
+            r = requests.get(url)
+            if r.status_code == 429:
+                time.sleep(30)
+            elif r.status_code == 404:
+                return False
+            else:
+                dl_ok = True
+                subtitles_json = r.text
         if self.is_json(subtitles_json):
             self.create_WebVtt(json.loads(subtitles_json), offset)
+        else:
+            return False
 
 
     def create_WebVtt(self, json, offset):
