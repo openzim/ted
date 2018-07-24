@@ -53,8 +53,7 @@ class Scraper():
         self.html_dir = path.join(self.build_dir, 'TED', 'html')
         self.zim_dir = path.join(self.build_dir, 'TED', 'zim')
         self.meta_data_dir = path.join(self.scraper_dir, 'TED.json')
-        self.templates_dir = path.join(os.getcwd(), '..', 'scraper', 'templates')
-
+        self.templates_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'templates')
         if not bin_is_present("zimwriterfs"):
             sys.exit("zimwriterfs is not available, please install it.")
 
@@ -80,7 +79,7 @@ class Scraper():
             html = utils.download_from_site(url).text
             self.soup = BeautifulSoup(html)
             self.extract_videos()
-            print 'Finished scraping page {}'.format(page)
+            print 'Finished scraping page '+ str(page)
 
     def extract_videos(self):
         """
@@ -243,7 +242,7 @@ class Scraper():
             format="webm"
         else:
             format="mp4"
-        env = Environment(loader=FileSystemLoader('templates'))
+        env = Environment(loader=FileSystemLoader(os.path.join(os.path.abspath(os.path.dirname(__file__)),'templates')))
         template = env.get_template('video.html')
 
         for video in self.videos:
@@ -280,7 +279,7 @@ class Scraper():
 
         self.load_metadata()
 
-        env = Environment(loader=FileSystemLoader('templates'))
+        env = Environment(loader=FileSystemLoader(os.path.join(os.path.abspath(os.path.dirname(__file__)),'templates')))
         template = env.get_template('welcome.html')
 
         for i in self.categories:
@@ -396,7 +395,7 @@ class Scraper():
 
             for thumbnail in thumbnails:
                 resize_image(thumbnail)
-                print 'Resizing ' + thumbnail
+                print 'Resizing ' + thumbnail.encode('utf-8')
         except Exception, e:
             raise e
 
@@ -425,7 +424,7 @@ class Scraper():
 
                     if path.exists(video_path):
                         self.convert_video_and_move_to_rendering(video_path, video_copy_path,transcode2webm)
-                        print 'Converting Video... ' + video[0]['title']
+                        print 'Converting Video... ' + video[0]['title'].encode('utf-8')
 
     def convert_video_and_move_to_rendering(self, from_path, to_path,transcode2webm):
         ffmpeg = ''
@@ -472,7 +471,7 @@ class Scraper():
                 os.makedirs(video_dir)
 
             if not path.exists(video_file_path):
-                print 'Downloading video... ' + video_title
+                print 'Downloading video... ' + video_title.encode('utf-8')
                 for i in range(5):
                     while True:
                         try:
@@ -487,29 +486,29 @@ class Scraper():
 
 
             else:
-                print 'video.mp4 already exist. Skipping video ' + video_title
+                print 'video.mp4 already exist. Skipping video ' + video_title.encode('utf-8')
 
             # download an image of the speaker
             if not path.exists(speaker_path) and video_speaker != "":
                 if video_speaker == "None":
                     print 'Speaker has not image'
                 else:
-                    print 'Downloading speaker image... ' + video_title
-                    print video_speaker
+                    print 'Downloading speaker image... ' + video_title.encode('utf-8')
+                    print video_speaker.encode('utf-8')
                     r = utils.download_from_site(video_speaker)
                     with open(speaker_path, 'wb') as code:
                         code.write(r.content)
             else:
-                print 'speaker.jpg already exist. Skipping video ' + video_title
+                print 'speaker.jpg already exist. Skipping video ' + video_title.encode('utf-8')
 
             # download the thumbnail of the video
             if not path.exists(thumbnail_path):
-                print 'Downloading video thumbnail... ' + video_title
+                print 'Downloading video thumbnail... ' + video_title.encode('utf-8')
                 r = utils.download_from_site(video_thumbnail)
                 with open(thumbnail_path, 'wb') as code:
                     code.write(r.content)
             else:
-                print 'thumbnail.jpg already exist. Skipping video ' + video_title
+                print 'thumbnail.jpg already exist. Skipping video ' + video_title.encode('utf-8')
 
     def download_subtitles(self):
         """
@@ -531,14 +530,19 @@ class Scraper():
                 continue
 
             # download subtitles
-            print "Downloading subtitles... {}".format(video_title.encode("utf-8"))
+            print "Downloading subtitles... " + video_title.encode('utf-8')
             for subtitle in video_subtitles:
+                sleep(0.5)
                 subtitle_file = WebVTTcreator(subtitle['link'], 11820).get_content()
+                if subtitle_file == False:
+                    video[0]['subtitles'].remove(subtitle)
+                    pass
                 subtitle_file = subtitle_file.encode('utf-8')
                 subtitle_file_name = 'subs_{}.vtt'.format(subtitle['languageCode'])
                 subtitle_file_name = path.join (subs_dir, subtitle_file_name)
                 with open(subtitle_file_name, 'w') as sub_file:
                     sub_file.write(subtitle_file)
+        self.dump_data() #To save info than some videos have, finaly not subtitle
 
     def load_metadata(self):
         """
