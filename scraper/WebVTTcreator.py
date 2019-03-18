@@ -84,4 +84,4 @@ class WebVTTcreator():
       return True
 
 if __name__ == '__main__':
-    WebVTTcreator('http://www.ted.com/talks/subtitles/id/1907/lang/en')
+    WebVTTcreator('https://www.ted.com/talks/subtitles/id/1907/lang/en')

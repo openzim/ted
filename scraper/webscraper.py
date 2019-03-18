@@ -32,7 +32,7 @@ from collections import defaultdict
 class Scraper():
 
     # The base Url. The link gives you a grid of all TED talks.
-    BASE_URL = 'http://new.ted.com/talks/browse'
+    BASE_URL = 'https://new.ted.com/talks/browse'
     # BeautifulSoup instance
     soup = None
     # Page count
@@ -173,7 +173,7 @@ class Scraper():
         # [
         #     {
         #         'languageCode': u'en',
-        #         'link': 'http://www.ted.com/talks/subtitles/id/1907/lang/en',
+        #         'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
         #         'languageName': u'English'
         #     }
         # ]
