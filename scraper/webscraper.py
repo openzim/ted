@@ -564,7 +564,8 @@ class Scraper():
             zim_path = path.join(self.zim_dir, "ted_en_{category}_{date}.zim".format(category=i.replace(' ', '_'),date=datetime.datetime.now().strftime('%Y-%m')))
             title = "TED talks - " + i[0].upper() + i[1:]
             description = "Ideas worth spreading"
-            create_zim(html_dir, zim_path, title, description)
+            name="kiwix." + i.replace(' ', '_')
+            create_zim(html_dir, zim_path, title, description, name)
 
 def resize_image(image_path):
     from PIL import Image
@@ -576,7 +577,7 @@ def resize_image(image_path):
 def exec_cmd(cmd):
     return envoy.run(str(cmd.encode('utf-8')))
 
-def create_zim(static_folder, zim_path, title, description):
+def create_zim(static_folder, zim_path, title, description, name):
 
     print "\tWritting ZIM for {}".format(title)
 
@@ -591,13 +592,17 @@ def create_zim(static_folder, zim_path, title, description):
         'favicon': 'favicon.png',
 
         'static': static_folder,
-        'zim': zim_path
+        'zim': zim_path,
+        'scraper' : "Ted scraper : https://github.com/openzim/ted",
+        'source': "https://new.ted.com",
+        'tags' : '_category:ted;ted',
+        'name' : name
     }
 
     cmd = ('zimwriterfs --welcome="{home}" --favicon="{favicon}" '
            '--language="{languages}" --title="{title}" '
            '--description="{description}" '
-           '--creator="{creator}" --publisher="{publisher}" "{static}" "{zim}"'
+           '--creator="{creator}" --publisher="{publisher}" --tags="{tags}" --source="{source}" --scraper="{scraper}" --name="{name}" "{static}" "{zim}"'
            .format(**context))
     print cmd
 
