@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+        <meta charset="utf-8">
+        <meta content="utf-8" http-equiv="encoding">
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="../CSS/video.css" rel="stylesheet" type="text/css">
+        <link href="../CSS/ted.css" rel="stylesheet" type="text/css">
+        <script src="../JS/video.js"></script>
+    </head>
+    <body>
+        <div id="content">
+            <img id="backtolist" src="../CSS/img/TED_small.png" title="Back to the list" onclick="history.go(-1)" />
+            <p id="speaker">{{ speaker }}</p>
+            <p id="title">{{ title }}</p>
+            <video class="video-js vjs-default-skin" controls preload="auto" width="480px" height="270px"
+                data-setup='{"autoplay": true, "preload": "true"}'>
+                <source src="video.{{ format }}" type="video/{{ format }}" />
+                {% for language in languages %}
+                    <track kind="subtitles" src="subs/subs_{{ language.languageCode }}.vtt" srclang="{{ language.languageCode }}" label="{{ language.languageName }}" />
+                    {% endfor %}
+                </video>
+                <div id="description">
+                    <p id="description">{{ description }}</p>
+                </div>
+                <div id="date">{{ date }}</div>
+                <hr>
+                <div id="speaker_box_img">
+                    <div>
+                        {% if speaker_img != "None" %}
+                          <img id="speaker_img" src="speaker.jpg">
+                        {% endif %}
+                        <div id="speaker_info">
+                            <div id="speaker_info_box">{{ speaker }}</div>
+                            <div id="speaker_info_profession">{{ profession }}</div>
+                        </div>
+                        <p id="speaker_desc">{{ speaker_bio }}</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
