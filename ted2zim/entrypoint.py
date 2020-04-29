@@ -34,8 +34,7 @@ def main():
 
     try:
         scraper = Ted2Zim(**dict(args._get_kwargs()))
-        scraper.extract_all_video_links()
-        scraper.dump_data()
+        scraper.run()
     except Exception as exc:
         logger.error(f"FAILED. An error occurred: {exc}")
         if args.debug:
