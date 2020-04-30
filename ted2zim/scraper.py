@@ -3,18 +3,24 @@
 # vim: ai ts=4 sts=4 et sw=4 nu
 
 import dateutil.parser
+import requests
+import json
+import pathlib
+import jinja2
+import shutil
+import datetime
+
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
-import requests
-from .utils import create_absolute_link, download_from_site, build_subtitle_pages
-import json
-import pathlib
-from .constants import ROOT_DIR
 from PIL import Image
-import jinja2
+
+from zimscraperlib.zim import ZimInfo, make_zim_file
+from zimscraperlib.download import save_file
+from .utils import create_absolute_link, download_from_site, build_subtitle_pages
+from .constants import ROOT_DIR, logger, SCRAPER
+from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
-import shutil
 
 
 class Ted2Zim:
@@ -28,7 +34,42 @@ class Ted2Zim:
     # List of links to all TED talks
     videos = []
 
-    def __init__(self, max_pages, categories, debug):
+    def __init__(
+        self,
+        max_pages,
+        categories,
+        debug,
+        name,
+        video_format,
+        low_quality,
+        output_dir,
+        no_zim,
+        fname,
+        language,
+        locale_name,
+        title,
+        description,
+        creator,
+        publisher,
+        tags,
+        keep_build_dir,
+        skip_download,
+    ):
+
+        # video-encoding info
+        self.video_format = video_format
+        self.low_quality = low_quality
+
+        # zim params
+        self.fname = fname
+        self.language = language
+        self.tags = [t.strip() for t in tags.split(",")]
+        self.title = title
+        self.description = description
+        self.creator = creator
+        self.publisher = publisher
+        self.name = name
+
         self.build_dir = pathlib.Path.cwd().joinpath("build")
         self.scraper_dir = self.build_dir.joinpath("TED").joinpath("scraper")
         self.html_dir = self.build_dir.joinpath("TED").joinpath("html")
@@ -41,6 +82,20 @@ class Ted2Zim:
         self.categories = categories
         self.debug = debug
         self.templates_dir = ROOT_DIR.joinpath("templates")
+
+        # zim info
+        self.zim_info = ZimInfo(
+            language=language,
+            tags=tags,
+            title=title,
+            description=description,
+            creator=creator,
+            publisher=publisher,
+            name=name,
+            scraper=SCRAPER,
+            favicon="favicon.jpg",
+        )
+        self.no_zim = no_zim
 
     def extract_page_number(self):
         # Extract the number of video pages by looking at the
@@ -354,63 +409,6 @@ class Ted2Zim:
             json_data = "json_data = " + json_data
             page_file.write(json_data)
 
-    # def resize_thumbnails(self):
-    #     try:
-    #         thumbnails = [path.join(root, name)
-    #                   for root, dirs, files in os.walk(self.html_dir)
-    #                   for name in files
-    #                   if name == 'thumbnail.jpg']
-
-    #         for thumbnail in thumbnails:
-    #             resize_image(thumbnail)
-    #             print 'Resizing ' + thumbnail.encode('utf-8')
-    #     except Exception, e:
-    #         raise e
-
-    # def encode_videos(self,transcode2webm):
-    #     # Encode the videos from mp4 to webm. We will use ffmpeg over the
-    #     # command line for this. There is a static binary version
-    #     # in the kiwix-other/TED/ directory, that we will use on macs.
-
-    #     self.load_meta_from_file()
-    #     for video in self.videos:
-    #         for i in self.categories:
-    #             if i in video[0]['keywords']:
-    #                 video_id =  str(video[0]['id'])
-    #                 video_path = path.join(self.scraper_dir, video_id, 'video.mp4')
-    #                 if transcode2webm:
-    #                     video_copy_path = path.join(self.html_dir, i, video_id, 'video.webm')
-    #                 else:
-    #                     video_copy_path = path.join(self.html_dir, i, video_id, 'video.mp4')
-
-    #                 if path.exists(video_copy_path):
-    #                     print 'Video already encoded. Skipping.'
-    #                     continue
-
-    #                 if path.exists(video_path):
-    #                     self.convert_video_and_move_to_rendering(video_path, video_copy_path,transcode2webm)
-    #                     print 'Converting Video... ' + video[0]['title'].encode('utf-8')
-
-    # def convert_video_and_move_to_rendering(self, from_path, to_path,transcode2webm):
-    #     ffmpeg = ''
-    #     if _platform == "linux" or _platform == "linux2":
-    #         ffmpeg = 'ffmpeg'
-    #     elif _platform == "darwin":
-    #         ffmpeg = path.join(os.getcwd(), '..', 'ffmpeg')
-
-    #     if transcode2webm:
-    #         command = ''.join(("""{} -i "{}" -codec:v libvpx -quality best -cpu-used 0 -b:v 300k""",
-    #             """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
-    #             """ -codec:a libvorbis -b:a 128k -f webm "{}" """)).format(
-    #             ffmpeg, from_path, to_path)
-    #     else:
-    #         command = ''.join(("""{} -i "{}" -codec:v h264 -quality best -cpu-used 0 -b:v 300k""",
-    #             """ -qmin 30 -qmax 42 -maxrate 300k -bufsize 1000k -threads 8 -vf scale=480:-1""",
-    #             """ -codec:a mp3 -b:a 128k -movflags +faststart -f mp4 "{}" """)).format(
-    #             ffmpeg, from_path, to_path)
-
-    #     os.system(command)
-
     def download_video_data(self):
         # Download all the TED talk videos and the meta-data for it.
         # Save the videos in the TED/build/{video id}/video.mp4.
@@ -475,6 +473,14 @@ class Ted2Zim:
             else:
                 print(f"Thumbnail already exists for {video_title}")
 
+            # recompress if necessary
+            post_process_video(
+                video_file_path,
+                video_id,
+                self.video_format,
+                self.low_quality,
+            )
+
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
@@ -513,11 +519,11 @@ class Ted2Zim:
         with open(self.ted_json) as data_file:
             self.videos = json.load(data_file)
 
-    def resize_image(self, image_path):
-        image = Image.open(image_path)
-        w, h = image.size
-        image = image.resize((248, 187), Image.ANTIALIAS)
-        image.save(image_path)
+    # def resize_image(self, image_path):
+    #     image = Image.open(image_path)
+    #     w, h = image.size
+    #     image = image.resize((248, 187), Image.ANTIALIAS)
+    #     image.save(image_path)
 
     def run(self):
         self.extract_all_video_links()
@@ -528,4 +534,16 @@ class Ted2Zim:
         self.render_video_pages()
         self.copy_files_to_rendering_directory()
         self.generate_category_data()
+
+        # create ZIM file
+        if not self.no_zim:
+            period = datetime.datetime.now().strftime("%Y-%m")
+            self.fname = pathlib.Path(self.fname if self.fname else f"{self.name}_{period}.zim")
+            logger.info("building ZIM file")
+            print(self.zim_info.to_zimwriterfs_args())
+            make_zim_file(self.html_dir, self.zim_dir, self.fname, self.zim_info)
+            logger.info("removing HTML folder")
+            # if not self.keep_build_dir:
+            # shutil.rmtree(self.html_dir, ignore_errors=True)
+            # pass
         print("DONE")
