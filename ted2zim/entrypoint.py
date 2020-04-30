@@ -15,14 +15,15 @@ def main():
     )
 
     parser.add_argument(
-        "--categories", help="List of topics to scrape", required=True, nargs="+",
+        "--categories", 
+        help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks", 
+        required=True
     )
 
     parser.add_argument(
-        "--max-pages",
-        help="Number of pages to scrape in each topic. Pass 'max' if you want to scrape all",
+        "--max-videos",
+        help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
         required=True,
-        dest="max_pages",
     )
 
     parser.add_argument(
@@ -79,16 +80,19 @@ def main():
     parser.add_argument(
         "--title",
         help="Custom title for your project and ZIM. Default to Channel name (of first video if playlists)",
+        required=True
     )
 
     parser.add_argument(
         "--description",
         help="Custom description for your project and ZIM. Default to Channel name (of first video if playlists)",
+        required=True
     )
 
     parser.add_argument(
         "--creator",
         help="Name of content creator. Defaults to Channel name or “Youtue Channels”",
+        required=True
     )
 
     parser.add_argument(
@@ -98,7 +102,7 @@ def main():
     parser.add_argument(
         "--tags",
         help="List of comma-separated Tags for the ZIM file. _videos:yes added automatically",
-        default="youtube",
+        default="ted",
     )
 
     parser.add_argument(

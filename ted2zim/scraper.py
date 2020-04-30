@@ -9,16 +9,18 @@ import pathlib
 import jinja2
 import shutil
 import datetime
+import sys
+import time
+import math
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
-from PIL import Image
-
 from zimscraperlib.zim import ZimInfo, make_zim_file
-from zimscraperlib.download import save_file
+from zimscraperlib.download import save_file, save_large_file
+
 from .utils import create_absolute_link, download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, logger, SCRAPER
+from .constants import ROOT_DIR, logger, SCRAPER, MAX_SOURCE_VIDEOS_PER_PAGE
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
@@ -36,7 +38,7 @@ class Ted2Zim:
 
     def __init__(
         self,
-        max_pages,
+        max_videos,
         categories,
         debug,
         name,
@@ -70,76 +72,103 @@ class Ted2Zim:
         self.publisher = publisher
         self.name = name
 
-        self.build_dir = pathlib.Path.cwd().joinpath("build")
-        self.scraper_dir = self.build_dir.joinpath("TED").joinpath("scraper")
-        self.html_dir = self.build_dir.joinpath("TED").joinpath("html")
-        self.zim_dir = self.build_dir.joinpath("TED").joinpath("zim")
-        self.ted_json = self.scraper_dir.joinpath("TED.json")
-        if max_pages.isdigit():
-            self.max_pages = int(max_pages)
-        elif max_pages == "max":
-            self.max_pages = "max"
-        self.categories = categories
-        self.debug = debug
-        self.templates_dir = ROOT_DIR.joinpath("templates")
+        # output directory
+        self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
+        
+        if max_videos.isdigit():
+            self.max_videos = int(max_videos)
+        elif max_videos == "max":
+            self.max_videos = "max"
+        
+        self.categories = [c.strip().replace(" ", "+") for c in categories.split(",")]
 
         # zim info
         self.zim_info = ZimInfo(
-            language=language,
-            tags=tags,
-            title=title,
-            description=description,
-            creator=creator,
-            publisher=publisher,
-            name=name,
+            homepage="index.html",
+            language=self.language,
+            tags=self.tags,
+            title=self.title,
+            description=self.description,
+            creator=self.creator,
+            publisher=self.publisher,
+            name=self.name,
             scraper=SCRAPER,
-            favicon="favicon.jpg",
+            favicon="favicon.png",
         )
-        self.no_zim = no_zim
 
-    def extract_page_number(self):
-        # Extract the number of video pages by looking at the
-        # pagination div at the bottom. Select all <a>-tags in it and
-        # return the last element in the list. That's our total count
-        pages = self.soup.select("div.pagination a.pagination__item")[-1]
-        return int(pages.text)
+        # debug/developer options
+        self.no_zim = no_zim
+        self.keep_build_dir = keep_build_dir
+        self.debug = debug
+
+    @property
+    def root_dir(self):
+        return ROOT_DIR
+
+    @property
+    def templates_dir(self):
+        return self.root_dir.joinpath("templates")
+
+    @property
+    def build_dir(self):
+        return self.output_dir.joinpath("build")
+
+    @property
+    def ted_videos_json(self):
+        return self.output_dir.joinpath("ted_videos.json")
+
+    @property
+    def ted_categories_json(self):
+        return self.output_dir.joinpath("ted_categories.json")
 
     def extract_all_video_links(self):
         # This method will build the specifiv video site by appending
         # the page number to the 'page' parameter to the url.
         # We will iterate through every page and extract every
-        # video link. The video link is extracted in `extract_videos()`.
+        # video link. The video link is extracted in `extract_videos()`
+        print(self.categories)
         for category in self.categories:
             print(category)
             category_url = f"{self.BASE_URL}?topics%5B%5D={category}"
             self.soup = BeautifulSoup(
                 download_from_site(category_url).text, features="html.parser"
             )
-            max_page_no = None
-            if self.max_pages == "max":
-                max_page_no = self.extract_page_number()
+            video_allowance = None
+            page = 1
+            tot_videos_scraped = 0
+            if self.max_videos == "max":
+                video_allowance = 9999
             else:
-                max_page_no = min(self.max_pages, self.extract_page_number())
-            for page in range(1, max_page_no + 1):
+                video_allowance = self.max_videos
+            while video_allowance:
                 url = f"{category_url}&page={page}"
                 html = download_from_site(url).text
                 self.soup = BeautifulSoup(html, features="html.parser")
-                # print(f"{page} {category}")
-                self.extract_videos()
+                num_videos_extracted = self.extract_videos(video_allowance)
+                if(num_videos_extracted == 0):
+                    break
+                video_allowance -= num_videos_extracted
+                tot_videos_scraped += num_videos_extracted
+                page += 1
+            print(f"Total videos found in {category}: {tot_videos_scraped}")
 
-    def extract_videos(self):
+    def extract_videos(self, video_allowance):
         # All videos are embedded in a <div> with the class name 'row'.
         # We are searching for the div inside this div, that has an <a>-tag
         # with the class name 'media__image', because this is the relative
         # link to the representative TED talk. We have to turn this relative
         # link to an absolute link. This is done through the `utils` class.
+        videos = self.soup.select("div.row div.media__image a")
+        if len(videos) > video_allowance:
+            videos = videos[0:video_allowance]
         print(
-            "Videos found : " + str(len(self.soup.select("div.row div.media__image a")))
+            "Videos found : " + str(len(videos))
         )  # DEBUG
-        for video in self.soup.select("div.row div.media__image a"):
+        for video in videos:
             url = create_absolute_link(self.BASE_URL, video["href"])
             self.extract_video_info(url)
             print(f"Done {video['href']}")
+        return len(videos)
 
     def extract_video_info(self, url):
 
@@ -159,6 +188,7 @@ class Ted2Zim:
         div = self.soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
+            print("WOHO")
             return
         json_data_tag = script_tags_within_div[-1]
         json_data = json_data_tag.string
@@ -215,9 +245,11 @@ class Ted2Zim:
         # Extract the download link of the TED talk video
         downloads = talk_info["downloads"]["nativeDownloads"]
         if not downloads:
+            print("No download link")
             return
         video_link = downloads["medium"]
         if not video_link:
+            print("No video link")
             return
 
         # Extract the video Id of the TED talk video.
@@ -243,10 +275,7 @@ class Ted2Zim:
         keywords = self.soup.find("meta", attrs={"name": "keywords"})["content"]
         keywords = [key.strip() for key in keywords.split(",")]
 
-        # Extract the ratings list for the TED talk
-        # ratings = talk_info['ratings']
-
-        # Check ifvideo ID already exists. If not, append data to self.videos
+        # Check if video ID already exists. If not, append data to self.videos
         if not any(video[0].get("id", None) == video_id for video in self.videos):
             self.videos.append(
                 [
@@ -267,27 +296,34 @@ class Ted2Zim:
                     }
                 ]
             )
+            print("Successfully inserted")
+            print(len(self.videos))
+        print(video_id)
 
     def dump_data(self):
+        print(f"About to dump {len(self.videos)}")
         # Dump all the data about every TED talk in a json file
         # inside the 'build' folder.
-        data = json.dumps(self.videos, indent=4, separators=(",", ": "))
+        video_data = json.dumps(self.videos, indent=4, separators=(",", ": "))
+        categories_data = json.dumps(self.categories, indent=4, separators=(",", ": "))
 
         # Check, if the folder exists. Create it, if it doesn't.
-        if not self.scraper_dir.exists():
-            self.scraper_dir.mkdir(parents=True)
+        if not self.build_dir.exists():
+            self.build_dir.mkdir(parents=True)
 
         # Create or override the 'TED.json' file in the build
         # directory with the video data gathered from the scraper.
-        with open(self.ted_json, "w") as f:
-            f.write(data)
+        with open(self.ted_videos_json, "w") as f:
+            f.write(video_data)
+        with open(self.ted_categories_json, "w") as f:
+            f.write(categories_data)
 
     def render_video_pages(self):
         # Render static html pages from the scraped video data and
         # save the pages in TED/build/{video id}/index.html.
         print("Rendering Template")
 
-        if not self.ted_json.exists():
+        if not self.ted_videos_json.exists():
             sys.exit("TED.json file not found. Run the script with the '-m' flag")
         # load data from file
         self.load_meta_from_file()
@@ -304,7 +340,7 @@ class Ted2Zim:
         )
         for video in self.videos:
             video_id = str(video[0]["id"])
-            video_path = self.html_dir.joinpath(video_id)
+            video_path = self.build_dir.joinpath(video_id)
             if not video_path.exists():
                 video_path.mkdir(parents=True)
 
@@ -324,7 +360,7 @@ class Ted2Zim:
                 html_page.write(html)
 
     def render_welcome_page(self):
-        if not self.ted_json.exists():
+        if not self.ted_videos_json.exists():
             sys.exit("TED.json file not found. Run the script with the '-m' flag")
 
         self.load_meta_from_file()
@@ -333,8 +369,8 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
 
-        if not self.html_dir.exists():
-            self.html_dir.mkdir(parents=True)
+        if not self.build_dir.exists():
+            self.build_dir.mkdir(parents=True)
         languages = []
         for video in self.videos:
             for language in video[0]["subtitles"]:
@@ -349,47 +385,27 @@ class Ted2Zim:
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
         html = env.get_template("welcome.html").render(languages=languages)
-        welcome_page_path = self.html_dir.joinpath("index.html")
+        welcome_page_path = self.build_dir.joinpath("index.html")
         with open(welcome_page_path, "w", encoding="utf-8") as html_page:
             html_page.write(html)
 
-    def copy_files_to_rendering_directory(self):
+    def copy_files_to_build_directory(self):
         # Copy files from the /scraper directory to the /html/{zimfile} directory.
         css_dir = self.templates_dir.joinpath("CSS")
         js_dir = self.templates_dir.joinpath("JS")
-        copy_css_dir = self.html_dir.joinpath("CSS")
-        copy_js_dir = self.html_dir.joinpath("JS")
+        copy_css_dir = self.build_dir.joinpath("CSS")
+        copy_js_dir = self.build_dir.joinpath("JS")
         if css_dir.exists():
             shutil.copytree(css_dir, copy_css_dir, dirs_exist_ok=True)
         if js_dir.exists():
             shutil.copytree(js_dir, copy_js_dir, dirs_exist_ok=True)
         favicon_file = self.templates_dir.joinpath("favicon.png")
-        copy_favicon_file = self.html_dir.joinpath("favicon.png")
+        copy_favicon_file = self.build_dir.joinpath("favicon.png")
         shutil.copy(favicon_file, copy_favicon_file)
-        for video in self.videos:
-            video_id = str(video[0]["id"])
-            video_path = self.scraper_dir.joinpath(video_id)
-            copy_video_path = self.html_dir.joinpath(video_id)
-            copy_subs_path = copy_video_path.joinpath("subs")
-            thumbnail = video_path.joinpath("thumbnail.jpg")
-            subs = video_path.joinpath("subs")
-            speaker = video_path.joinpath("speaker.jpg")
-            video_ = video_path.joinpath("video.mp4")
-            if thumbnail.exists():
-                shutil.copy(thumbnail, copy_video_path)
-            if subs.exists():
-                shutil.copytree(subs, copy_subs_path, dirs_exist_ok=True)
-            if speaker.exists():
-                shutil.copy(speaker, copy_video_path)
-            if video_.exists():
-                shutil.copy(video_, copy_video_path)
 
-    def generate_category_data(self):
-        # Generate the json page data for every category.
-
+    def generate_datafile(self):
         self.load_meta_from_file()
         video_list = []
-
         for video in self.videos:
             json_data = {
                 "languages": [lang["languageCode"] for lang in video[0]["subtitles"]],
@@ -399,8 +415,7 @@ class Ted2Zim:
                 "speaker": video[0]["speaker"],
             }
             video_list.append(json_data)
-
-        js_path = self.html_dir.joinpath("JS")
+        js_path = self.build_dir.joinpath("JS")
         data_path = js_path.joinpath("data.js")
         if not js_path.exists():
             js_path.mkdir(parents=True)
@@ -426,7 +441,7 @@ class Ted2Zim:
             video_link = video[0]["video_link"]
             video_speaker = video[0]["speaker_picture"]
             video_thumbnail = video[0]["thumbnail"]
-            video_dir = self.scraper_dir.joinpath(video_id)
+            video_dir = self.build_dir.joinpath(video_id)
             video_file_path = video_dir.joinpath("video.mp4")
             speaker_path = video_dir.joinpath("speaker.jpg")
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
@@ -441,12 +456,10 @@ class Ted2Zim:
                 for i in range(5):
                     while True:
                         try:
-                            r = download_from_site(video_link)
-                            with open(video_file_path, "wb") as code:
-                                code.write(r.content)
+                            save_large_file(video_link, video_file_path)
                         except Exception as e:
                             raise e
-                            sleep(5)
+                            time.sleep(5)
                             continue
                         break
             else:
@@ -458,24 +471,20 @@ class Ted2Zim:
                     print("Speaker doesn't have an image")
                 else:
                     print(f"Downloading Speaker image for {video_title}")
-                    r = download_from_site(video_speaker)
-                    with open(speaker_path, "wb") as f:
-                        f.write(r.content)
+                    save_large_file(video_speaker, speaker_path)
             else:
                 print(f"Speaker.jpg already exists for {video_title}")
 
             # download the thumbnail of the video
             if not thumbnail_path.exists():
                 print(f"Downloading thumbnail for {video_title}")
-                r = download_from_site(video_thumbnail)
-                with open(thumbnail_path, "wb") as f:
-                    f.write(r.content)
+                save_large_file(video_thumbnail, thumbnail_path)
             else:
                 print(f"Thumbnail already exists for {video_title}")
 
             # recompress if necessary
             post_process_video(
-                video_file_path,
+                video_dir,
                 video_id,
                 self.video_format,
                 self.low_quality,
@@ -490,7 +499,7 @@ class Ted2Zim:
             video_id = str(video[0]["id"])
             video_title = video[0]["title"]
             video_subtitles = video[0]["subtitles"]
-            video_dir = self.scraper_dir.joinpath(video_id)
+            video_dir = self.build_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
                 subs_dir.mkdir(parents=True)
@@ -516,14 +525,10 @@ class Ted2Zim:
 
     def load_meta_from_file(self):
         # Load the dumped json meta-data file.
-        with open(self.ted_json) as data_file:
+        with open(self.ted_videos_json) as data_file:
             self.videos = json.load(data_file)
-
-    # def resize_image(self, image_path):
-    #     image = Image.open(image_path)
-    #     w, h = image.size
-    #     image = image.resize((248, 187), Image.ANTIALIAS)
-    #     image.save(image_path)
+        with open(self.ted_categories_json) as data_file:
+            self.categories = json.load(data_file)
 
     def run(self):
         self.extract_all_video_links()
@@ -532,8 +537,8 @@ class Ted2Zim:
         self.download_subtitles()
         self.render_welcome_page()
         self.render_video_pages()
-        self.copy_files_to_rendering_directory()
-        self.generate_category_data()
+        self.copy_files_to_build_directory()
+        self.generate_datafile()
 
         # create ZIM file
         if not self.no_zim:
@@ -541,9 +546,8 @@ class Ted2Zim:
             self.fname = pathlib.Path(self.fname if self.fname else f"{self.name}_{period}.zim")
             logger.info("building ZIM file")
             print(self.zim_info.to_zimwriterfs_args())
-            make_zim_file(self.html_dir, self.zim_dir, self.fname, self.zim_info)
+            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
             logger.info("removing HTML folder")
-            # if not self.keep_build_dir:
-            # shutil.rmtree(self.html_dir, ignore_errors=True)
-            # pass
+            if not self.keep_build_dir:
+                shutil.rmtree(self.build_dir, ignore_errors=True)
         print("DONE")

@@ -26,7 +26,7 @@ def post_process_video(video_dir, video_id, video_format, low_quality, skip_reco
     # resize thumbnail. we use max width:248x187px in listing
     # but our posters are 480x270px
     resize_image(
-        src_path.parent.joinpath("thumbnail.jpg"), width=480, height=270, method="cover"
+        src_path.parent.joinpath("thumbnail.jpg"), width=248, height=187, method="cover"
     )
 
     # don't reencode if not requesting low-quality and received wanted format
