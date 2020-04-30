@@ -492,9 +492,8 @@ class Ted2Zim:
             for subtitle in video_subtitles:
                 sleep(0.5)
                 subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
-                if subtitle_file == False:
+                if not subtitle_file:
                     video[0]["subtitles"].remove(subtitle)
-                    pass
                 subtitle_file_name = subs_dir.joinpath(
                     f"subs_{subtitle['languageCode']}.vtt"
                 )
