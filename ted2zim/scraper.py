@@ -20,7 +20,7 @@ from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_file, save_large_file
 
 from .utils import create_absolute_link, download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, logger, SCRAPER, MAX_SOURCE_VIDEOS_PER_PAGE
+from .constants import ROOT_DIR, SCRAPER, MAX_SOURCE_VIDEOS_PER_PAGE, logger
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
@@ -122,13 +122,11 @@ class Ted2Zim:
         return self.output_dir.joinpath("ted_categories.json")
 
     def extract_all_video_links(self):
-        # This method will build the specifiv video site by appending
-        # the page number to the 'page' parameter to the url.
-        # We will iterate through every page and extract every
-        # video link. The video link is extracted in `extract_videos()`
-        print(self.categories)
+
+        # extracts all video links for different categories
+        # it iterates over the categories and then over pages to get required number of video links
         for category in self.categories:
-            print(category)
+            logger.debug(f"Fetching video links for category: {category}")
             category_url = f"{self.BASE_URL}?topics%5B%5D={category}"
             self.soup = BeautifulSoup(
                 download_from_site(category_url).text, features="html.parser"
@@ -150,22 +148,23 @@ class Ted2Zim:
                 video_allowance -= num_videos_extracted
                 tot_videos_scraped += num_videos_extracted
                 page += 1
-            print(f"Total videos found in {category}: {tot_videos_scraped}")
+            logger.info(f"Total video links found in {category}: {tot_videos_scraped}")
 
     def extract_videos(self, video_allowance):
-        # All videos are embedded in a <div> with the class name 'row'.
-        # We are searching for the div inside this div, that has an <a>-tag
+
+        # all videos are embedded in a <div> with the class name 'row'.
+        # we are searching for the div inside this div, that has an <a>-tag
         # with the class name 'media__image', because this is the relative
         # link to the representative TED talk. We have to turn this relative
-        # link to an absolute link. This is done through the `utils` class.
+        # link to an absolute link. This is done through the `utils` class
         videos = self.soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
-        print("Videos found : " + str(len(videos)))  # DEBUG
+        logger.debug(f"{str(len(videos))} videos found on current page")
         for video in videos:
             url = create_absolute_link(self.BASE_URL, video["href"])
             self.extract_video_info(url)
-            print(f"Done {video['href']}")
+            logger.debug(f"Done {video['href']}")
         return len(videos)
 
     def extract_video_info(self, url):
@@ -176,17 +175,14 @@ class Ted2Zim:
         # publishing date, view count, description of the TED talk,
         # direct download link to the video, download link to the subtitle
         # files and a link to a thumbnail of the video.
-        self.soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
-        # print(self.soup.prettify())
-
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
-        # json_data = self.soup.select('div.talks-main script')
+        self.soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
         div = self.soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
-            print("WOHO")
+            logger.error("The required script tag containing video meta is not present")
             return
         json_data_tag = script_tags_within_div[-1]
         json_data = json_data_tag.string
@@ -243,11 +239,11 @@ class Ted2Zim:
         # Extract the download link of the TED talk video
         downloads = talk_info["downloads"]["nativeDownloads"]
         if not downloads:
-            print("No download link")
+            logger.error("No direct download links found for the video")
             return
         video_link = downloads["medium"]
         if not video_link:
-            print("No video link")
+            logger.error("No link to download video in medium quality")
             return
 
         # Extract the video Id of the TED talk video.
@@ -294,14 +290,17 @@ class Ted2Zim:
                     }
                 ]
             )
-            print("Successfully inserted")
-            print(len(self.videos))
-        print(video_id)
+            logger.debug(f"Successfully inserted video {video_id} into video list")
+        else:
+            logger.debug(f"Video {video_id} already present in video list")
 
     def dump_data(self):
-        print(f"About to dump {len(self.videos)}")
+
         # Dump all the data about every TED talk in a json file
         # inside the 'build' folder.
+        logger.debug(
+            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.categories)} categories into {self.ted_categories_json}"
+        )
         video_data = json.dumps(self.videos, indent=4, separators=(",", ": "))
         categories_data = json.dumps(self.categories, indent=4, separators=(",", ": "))
 
@@ -309,29 +308,21 @@ class Ted2Zim:
         if not self.build_dir.exists():
             self.build_dir.mkdir(parents=True)
 
-        # Create or override the 'TED.json' file in the build
-        # directory with the video data gathered from the scraper.
+        # Create or override the json files in the build
+        # directory with the video data gathered from the scraper
+        # and category data.
         with open(self.ted_videos_json, "w") as f:
             f.write(video_data)
         with open(self.ted_categories_json, "w") as f:
             f.write(categories_data)
 
     def render_video_pages(self):
+
         # Render static html pages from the scraped video data and
-        # save the pages in TED/build/{video id}/index.html.
-        print("Rendering Template")
-
-        if not self.ted_videos_json.exists():
-            sys.exit("TED.json file not found. Run the script with the '-m' flag")
-        # load data from file
+        # save the pages in build_dir/<video-id>/index.html
+        # Load data from json files
         self.load_meta_from_file()
-
-        # if transcode2webm:
-        #     format="webm"
-        # else:
-        #     format="mp4"
-
-        format = "mp4"
+        video_format = self.video_format
 
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
@@ -351,22 +342,20 @@ class Ted2Zim:
                 speaker_img=video[0]["speaker_picture"],
                 date=video[0]["date"],
                 profession=video[0]["speaker_profession"],
-                format=format,
+                video_format=video_format,
             )
             index_path = video_path.joinpath("index.html")
             with open(index_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
     def render_welcome_page(self):
-        if not self.ted_videos_json.exists():
-            sys.exit("TED.json file not found. Run the script with the '-m' flag")
 
+        # Render the homepage
+        # Load data from json files
         self.load_meta_from_file()
-
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
-
         if not self.build_dir.exists():
             self.build_dir.mkdir(parents=True)
         languages = []
@@ -388,7 +377,8 @@ class Ted2Zim:
             html_page.write(html)
 
     def copy_files_to_build_directory(self):
-        # Copy files from the /scraper directory to the /html/{zimfile} directory.
+
+        # Copy files from template_dir to build_dir
         css_dir = self.templates_dir.joinpath("CSS")
         js_dir = self.templates_dir.joinpath("JS")
         copy_css_dir = self.build_dir.joinpath("CSS")
@@ -402,6 +392,8 @@ class Ted2Zim:
         shutil.copy(favicon_file, copy_favicon_file)
 
     def generate_datafile(self):
+
+        # Generate data.js inside the JS folder
         self.load_meta_from_file()
         video_list = []
         for video in self.videos:
@@ -423,15 +415,13 @@ class Ted2Zim:
             page_file.write(json_data)
 
     def download_video_data(self):
-        # Download all the TED talk videos and the meta-data for it.
-        # Save the videos in the TED/build/{video id}/video.mp4.
-        # Save the thumbnail for the video in
-        # TED/build/{video id}/thumbnail.jpg.
-        # Save the image of the speaker in TED/build/{video id}/speaker.jpg.
 
+        # Download all the TED talk videos and the meta-data for it.
+        # Save the videos in build_dir/{video id}/video.mp4.
+        # Save the thumbnail for the video in build_dir/{video id}/thumbnail.jpg.
+        # Save the image of the speaker in build_dir/{video id}/speaker.jpg.
         # load the dumped metadata
         self.load_meta_from_file()
-
         for video in self.videos:
             # set up variables
             video_id = str(video[0]["id"])
@@ -450,35 +440,30 @@ class Ted2Zim:
 
             # download video
             if not video_file_path.exists():
-                print(f"Downloading {video_title}")
-                for i in range(5):
-                    while True:
-                        try:
-                            save_large_file(video_link, video_file_path)
-                        except Exception as e:
-                            raise e
-                            time.sleep(5)
-                            continue
-                        break
+                logger.debug(f"Downloading {video_title}")
+                try:
+                    save_large_file(video_link, video_file_path)
+                except Exception:
+                    logger.error(f"Could not download {video_file_path}")
             else:
-                print("video.mp4 already exists. Skipping video " + video_title)
+                logger.debug(f"video.mp4 already exists. Skipping video {video_title}")
 
             # download an image of the speaker
             if not speaker_path.exists() and video_speaker != "":
                 if video_speaker == "None":
-                    print("Speaker doesn't have an image")
+                    logger.debug("Speaker doesn't have an image")
                 else:
-                    print(f"Downloading Speaker image for {video_title}")
+                    logger.debug(f"Downloading Speaker image for {video_title}")
                     save_large_file(video_speaker, speaker_path)
             else:
-                print(f"Speaker.jpg already exists for {video_title}")
+                logger.debug(f"speaker.jpg already exists for {video_title}")
 
             # download the thumbnail of the video
             if not thumbnail_path.exists():
-                print(f"Downloading thumbnail for {video_title}")
+                logger.debug(f"Downloading thumbnail for {video_title}")
                 save_large_file(video_thumbnail, thumbnail_path)
             else:
-                print(f"Thumbnail already exists for {video_title}")
+                logger.debug(f"Thumbnail already exists for {video_title}")
 
             # recompress if necessary
             post_process_video(
@@ -488,7 +473,7 @@ class Ted2Zim:
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
-        # TED/build/{video id}/subs_{language code}.vtt
+        # build_dir/{video id}/subs/subs_{language code}.vtt
         self.load_meta_from_file()
         for video in self.videos:
             video_id = str(video[0]["id"])
@@ -499,11 +484,11 @@ class Ted2Zim:
             if not subs_dir.exists():
                 subs_dir.mkdir(parents=True)
             else:
-                print(f"Subs dir exists already")
+                logger.debug(f"Subs dir exists already")
                 continue
 
             # download subtitles
-            print("Downloading subtitles... " + video_title)
+            logger.debug(f"Downloading subtitles for {video_title}")
             for subtitle in video_subtitles:
                 sleep(0.5)
                 subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
@@ -515,6 +500,7 @@ class Ted2Zim:
                 )
                 with open(subtitle_file_name, "w", encoding="utf-8") as sub_file:
                     sub_file.write(subtitle_file)
+
         # save the info that some videos don't have subtitles
         self.dump_data()
 
@@ -542,9 +528,9 @@ class Ted2Zim:
                 self.fname if self.fname else f"{self.name}_{period}.zim"
             )
             logger.info("building ZIM file")
-            print(self.zim_info.to_zimwriterfs_args())
+            logger.debug(self.zim_info.to_zimwriterfs_args())
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
             logger.info("removing HTML folder")
             if not self.keep_build_dir:
                 shutil.rmtree(self.build_dir, ignore_errors=True)
-        print("DONE")
+        logger.info("Done Everything")

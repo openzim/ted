@@ -4,27 +4,31 @@ TED (Technology, Entertainment, Design) is a global set of conferences under the
 
 The purpose of this project is to create a sustainable solution to create ZIM files providing the TED and TEDx videos in a similar manner like online.
 
-## Building the project
+## Running the project
 
-It's advised, that you have `pip` installed. 
-Chose one of the following methods to do that:
+It requires python3 and one can run by following these steps after cloning the repository
 
-    sudo apt-get install python-setuptools
+1. Install the package
 
-    sudo easy_install pip
+```
+python3 setup.py install
+```
 
-It's advised, that you have `virtualenv` installed:
+2. Run the command 'ted2zim' as follows
 
-    sudo pip install virtualenv
+```
+ted2zim [-h] --categories CATEGORIES --max-videos MAX_VIDEOS --name
+               NAME [--format {mp4,webm}] [--low-quality]
+               [--output OUTPUT_DIR] [--no-zim] [--zim-file FNAME]
+               [--language LANGUAGE] [--locale LOCALE_NAME] --title TITLE
+               --description DESCRIPTION --creator CREATOR
+               [--publisher PUBLISHER] [--tags TAGS] [--keep]
+               [--skip-download] [--debug]
 
-Up next you have to create a virtual enviroment in the kiwix-other/TED/ directory for the TED Scraper:
+```
 
-    virtualenv --no-site-packages venv 
+Example usage
 
-Activiate the virtual enviroment:
-
-    source venv/bin/activate
-
-Install all the dependencies for the TED Scraper:
-
-    pip install -r requirements.txt
+```
+ted2zim --categories="augmented reality, technology" --max-videos=55 --debug --name="ted_technology" --format=mp4 --low-quality --title="technology" --description="TED videos in technology category" --creator="satyamtg" --publisher="satyamtg" --output="output"
+```
