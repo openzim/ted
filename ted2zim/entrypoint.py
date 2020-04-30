@@ -15,9 +15,9 @@ def main():
     )
 
     parser.add_argument(
-        "--categories", 
-        help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks", 
-        required=True
+        "--categories",
+        help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
+        required=True,
     )
 
     parser.add_argument(
@@ -80,19 +80,19 @@ def main():
     parser.add_argument(
         "--title",
         help="Custom title for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True
+        required=True,
     )
 
     parser.add_argument(
         "--description",
         help="Custom description for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True
+        required=True,
     )
 
     parser.add_argument(
         "--creator",
         help="Name of content creator. Defaults to Channel name or “Youtue Channels”",
-        required=True
+        required=True,
     )
 
     parser.add_argument(

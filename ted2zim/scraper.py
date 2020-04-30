@@ -74,12 +74,12 @@ class Ted2Zim:
 
         # output directory
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
-        
+
         if max_videos.isdigit():
             self.max_videos = int(max_videos)
         elif max_videos == "max":
             self.max_videos = "max"
-        
+
         self.categories = [c.strip().replace(" ", "+") for c in categories.split(",")]
 
         # zim info
@@ -145,7 +145,7 @@ class Ted2Zim:
                 html = download_from_site(url).text
                 self.soup = BeautifulSoup(html, features="html.parser")
                 num_videos_extracted = self.extract_videos(video_allowance)
-                if(num_videos_extracted == 0):
+                if num_videos_extracted == 0:
                     break
                 video_allowance -= num_videos_extracted
                 tot_videos_scraped += num_videos_extracted
@@ -161,9 +161,7 @@ class Ted2Zim:
         videos = self.soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
-        print(
-            "Videos found : " + str(len(videos))
-        )  # DEBUG
+        print("Videos found : " + str(len(videos)))  # DEBUG
         for video in videos:
             url = create_absolute_link(self.BASE_URL, video["href"])
             self.extract_video_info(url)
@@ -484,10 +482,7 @@ class Ted2Zim:
 
             # recompress if necessary
             post_process_video(
-                video_dir,
-                video_id,
-                self.video_format,
-                self.low_quality,
+                video_dir, video_id, self.video_format, self.low_quality,
             )
 
     def download_subtitles(self):
@@ -543,7 +538,9 @@ class Ted2Zim:
         # create ZIM file
         if not self.no_zim:
             period = datetime.datetime.now().strftime("%Y-%m")
-            self.fname = pathlib.Path(self.fname if self.fname else f"{self.name}_{period}.zim")
+            self.fname = pathlib.Path(
+                self.fname if self.fname else f"{self.name}_{period}.zim"
+            )
             logger.info("building ZIM file")
             print(self.zim_info.to_zimwriterfs_args())
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
