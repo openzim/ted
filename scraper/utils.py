@@ -7,9 +7,9 @@ import requests
 """
 Utils class for the scraper.
 """
-__title__ = 'utils'
-__author__ = 'Rashiq Ahmad'
-__license__ = 'GPLv3'
+__title__ = "utils"
+__author__ = "Rashiq Ahmad"
+__license__ = "GPLv3"
 
 
 def create_absolute_link(base, rel_url):
@@ -26,7 +26,7 @@ def build_video_page(page):
     Url builder for TED talk video pages.
     Appending the page number to the 'page' parameter.
     """
-    return 'https://new.ted.com/talks/browse?page={}'.format(page)
+    return "https://new.ted.com/talks/browse?page={}".format(page)
 
 
 def build_subtitle_pages(video_id, language_list):
@@ -37,20 +37,22 @@ def build_subtitle_pages(video_id, language_list):
     """
 
     for language in language_list:
-        page = 'https://www.ted.com/talks/subtitles/id/{}/lang/{}' \
-            .format(video_id, language['languageCode'])
-        language['link'] = page
+        page = "https://www.ted.com/talks/subtitles/id/{}/lang/{}".format(
+            video_id, language["languageCode"]
+        )
+        language["link"] = page
 
     return language_list
 
+
 def download_from_site(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0',
+        "User-Agent": "Mozilla/5.0",
     }
     for i in range(5):
-        sleep(1) #delay requests
-        r = requests.get(url, headers = headers)
+        sleep(1)  # delay requests
+        r = requests.get(url, headers=headers)
         if r.status_code != 429:
             return r
-        sleep(30*(i+1)) #if fail we wait
+        sleep(30 * (i + 1))  # if fail we wait
     raise ConnectionRefusedError("Too many retry fail")
