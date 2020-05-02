@@ -1,5 +1,5 @@
 Pillow
-beautifulsoup4==4.3.2
+beautifulsoup4==4.9.0
 python-dateutil==2.6.1
 zimscraperlib==1.0.4
 requests>=2.23,<3.0

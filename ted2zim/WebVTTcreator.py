@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# vim: ai ts=4 sts=4 et sw=4 nu
 
-"""
-Class for creating a WebVTT subtitles file from the
-JSON subtitles format from www.TED.com
-"""
-__title__ = "WebVTTcreator"
-__author__ = "Rashiq Ahmad"
-__license__ = "GPLv3"
+# Class for creating a WebVTT subtitles file from the
+# JSON subtitles format from www.TED.com
 
 import json
 import requests
@@ -18,11 +15,10 @@ class WebVTTcreator:
     WebVTTdocument = "WEBVTT\n\n"
 
     def __init__(self, url, offset=0):
-        """
-        Loads the json representation of the subtitles form the given
-        Url and decodes it.
-        Creates a WebVtt document off it and saves it in a .vtt file.
-        """
+
+        # Loads the json representation of the subtitles form the given
+        # Url and decodes it.
+        # Creates a WebVtt document off it and saves it in a .vtt file.
         dl_ok = False
         while not dl_ok:
             r = requests.get(url)
@@ -39,16 +35,15 @@ class WebVTTcreator:
             return False
 
     def create_WebVtt(self, json, offset):
-        """
-        Create the WebVTT file from the given decoded json.
-        Structure of a WebVTT file:
 
-        WebVTT
+        # Create the WebVTT file from the given decoded json.
+        # Structure of a WebVTT file:
 
-        00:00:00.000 --> 00:00:00.000
-        [start time --> end time]
-        'content'
-        """
+        # WebVTT
+
+        # 00:00:00.000 --> 00:00:00.000
+        # [start time --> end time]
+        # 'content'
         if "captions" in json:
             for subtitle in json["captions"]:
                 startTime = int(subtitle["startTime"]) + offset
@@ -64,9 +59,8 @@ class WebVTTcreator:
                 self.WebVTTdocument += content + "\n\n"
 
     def time_string(self, ms):
-        """
-        Create the '00:00:00.000' string representation of the time.
-        """
+
+        # Create the '00:00:00.000' string representation of the time.
         hours, remainder = divmod(ms, 3600000)
         minutes, remainder = divmod(remainder, 60000)
         seconds, miliseconds = divmod(remainder, 1000)
@@ -77,8 +71,8 @@ class WebVTTcreator:
 
     def is_json(self, json_data):
         try:
-            json_object = json.loads(json_data)
-        except ValueError, e:
+            json.loads(json_data)
+        except ValueError:
             return False
         return True
 

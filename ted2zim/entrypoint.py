@@ -15,10 +15,28 @@ def main():
     )
 
     parser.add_argument(
+        "--categories",
+        help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--max-videos",
+        help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
+        required=True,
+    )
+
+    parser.add_argument(
         "--transcode2webm",
         help="Whether to transcode videos to webm format",
         action="store_true",
-        required=True,
+    )
+
+    parser.add_argument(
+        "--output",
+        help="Output folder for ZIM file or build folder",
+        default="/output",
+        dest="output_dir",
     )
 
     parser.add_argument(
