@@ -4,27 +4,45 @@ TED (Technology, Entertainment, Design) is a global set of conferences under the
 
 The purpose of this project is to create a sustainable solution to create ZIM files providing the TED and TEDx videos in a similar manner like online.
 
+[![CodeFactor](https://www.codefactor.io/repository/github/openzim/ted/badge)](https://www.codefactor.io/repository/github/openzim/ted)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/ted2zim.svg)](https://pypi.org/project/ted2zim/)
+
 ## Building the project
 
 It's advised, that you have `pip` installed. 
 Chose one of the following methods to do that:
 
-    sudo apt-get install python-setuptools
-
-    sudo easy_install pip
+```bash
+sudo apt-get install python-setuptools
+sudo easy_install pip
+```
 
 It's advised, that you have `virtualenv` installed:
 
-    sudo pip install virtualenv
+```bash
+sudo pip install virtualenv
+```
 
 Up next you have to create a virtual enviroment in the kiwix-other/TED/ directory for the TED Scraper:
 
-    virtualenv --no-site-packages venv 
+```bash
+virtualenv --no-site-packages venv 
+```
 
 Activiate the virtual enviroment:
 
-    source venv/bin/activate
+```bash
+source venv/bin/activate
+```
 
 Install all the dependencies for the TED Scraper:
 
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
+
+## License
+
+[GPLv3](https://www.gnu.org/licenses/gpl-3.0) or later, see
+[LICENSE](LICENSE) for more details.
