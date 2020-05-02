@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Class for scraping www.TED.com.
@@ -436,7 +436,7 @@ class Ted2Zim:
             for thumbnail in thumbnails:
                 resize_image(thumbnail)
                 print("Resizing " + thumbnail.encode("utf-8"))
-        except Exception, e:
+        except Exception as e:
             raise e
 
     def encode_videos(self):
@@ -531,7 +531,7 @@ class Ted2Zim:
                             r = utils.download_from_site(video_link)
                             with open(video_file_path, "wb") as code:
                                 code.write(r.content)
-                        except Exception, e:
+                        except Exception as e:
                             raise e
                             sleep(5)
                             continue
