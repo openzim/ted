@@ -29,7 +29,7 @@ from WebVTTcreator import WebVTTcreator
 from collections import defaultdict
 
 
-class Scraper:
+class Ted2Zim:
 
     # The base Url. The link gives you a grid of all TED talks.
     BASE_URL = "https://new.ted.com/talks/browse"
@@ -49,7 +49,7 @@ class Scraper:
         "global issues",
     ]
 
-    def __init__(self):
+    def __init__(self, transcode2webm):
         """
         Extract number of video pages. Generate the specific
         video page from it and srape it.
@@ -62,6 +62,7 @@ class Scraper:
         self.templates_dir = os.path.join(
             os.path.abspath(os.path.dirname(__file__)), "templates"
         )
+        self.transcode2webm = transcode2webm
         if not bin_is_present("zimwriterfs"):
             sys.exit("zimwriterfs is not available, please install it.")
 
@@ -246,7 +247,7 @@ class Scraper:
         with open(self.scraper_dir + "/TED.json", "w") as ted_file:
             ted_file.write(data)
 
-    def render_video_pages(self, transcode2webm):
+    def render_video_pages(self):
         """
         Render static html pages from the scraped video data and
         save the pages in TED/build/{video id}/index.html.
@@ -258,7 +259,7 @@ class Scraper:
 
         self.load_metadata()
 
-        if transcode2webm:
+        if self.transcode2webm:
             format = "webm"
         else:
             format = "mp4"
@@ -435,10 +436,10 @@ class Scraper:
             for thumbnail in thumbnails:
                 resize_image(thumbnail)
                 print("Resizing " + thumbnail.encode("utf-8"))
-        except Exception, e:
+        except Exception as e:
             raise e
 
-    def encode_videos(self, transcode2webm):
+    def encode_videos(self):
         """
         Encode the videos from mp4 to webm. We will use ffmpeg over the
         command line for this. There is a static binary version
@@ -451,7 +452,7 @@ class Scraper:
                 if i in video[0]["keywords"]:
                     video_id = str(video[0]["id"])
                     video_path = path.join(self.scraper_dir, video_id, "video.mp4")
-                    if transcode2webm:
+                    if self.transcode2webm:
                         video_copy_path = path.join(
                             self.html_dir, i, video_id, "video.webm"
                         )
@@ -466,20 +467,20 @@ class Scraper:
 
                     if path.exists(video_path):
                         self.convert_video_and_move_to_rendering(
-                            video_path, video_copy_path, transcode2webm
+                            video_path, video_copy_path
                         )
                         print(
                             "Converting Video... " + video[0]["title"].encode("utf-8")
                         )
 
-    def convert_video_and_move_to_rendering(self, from_path, to_path, transcode2webm):
+    def convert_video_and_move_to_rendering(self, from_path, to_path):
         ffmpeg = ""
         if _platform == "linux" or _platform == "linux2":
             ffmpeg = "ffmpeg"
         elif _platform == "darwin":
             ffmpeg = path.join(os.getcwd(), "..", "ffmpeg")
 
-        if transcode2webm:
+        if self.transcode2webm:
             command = "".join(
                 (
                     """{} -i "{}" -codec:v libvpx -quality best -cpu-used 0 -b:v 300k""",
@@ -530,7 +531,7 @@ class Scraper:
                             r = utils.download_from_site(video_link)
                             with open(video_file_path, "wb") as code:
                                 code.write(r.content)
-                        except Exception, e:
+                        except Exception as e:
                             raise e
                             sleep(5)
                             continue
@@ -632,6 +633,19 @@ class Scraper:
             description = "Ideas worth spreading"
             name = "kiwix." + i.replace(" ", "_")
             create_zim(html_dir, zim_path, title, description, name)
+
+    def run(self):
+        self.extract_all_video_links()
+        self.dump_data()
+        self.download_subtitles()
+        self.download_video_data()
+        self.render_welcome_page()
+        self.render_video_pages()
+        self.copy_files_to_rendering_directory()
+        self.generate_category_data()
+        self.encode_videos()
+        self.resize_thumbnails()
+        self.create_zims()
 
 
 def resize_image(image_path):
