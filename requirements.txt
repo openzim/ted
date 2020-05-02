@@ -4,5 +4,6 @@ Pillow
 beautifulsoup4==4.3.2
 envoy==0.0.2
 python-dateutil==2.6.1
-requests==2.20.0
+zimscraperlib==1.0.4
+requests>=2.23,<3.0
 six==1.11.0
