@@ -14,7 +14,7 @@ import sys
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
-from os import path # to be removed soon
+from os import path  # to be removed soon
 
 from .utils import download_from_site, build_subtitle_pages
 from .constants import ROOT_DIR, SCRAPER, MAX_SOURCE_VIDEOS_PER_PAGE, logger
@@ -33,12 +33,7 @@ class Ted2Zim:
     videos = []
 
     def __init__(
-        self,
-        max_videos_per_topic,
-        topics,
-        output_dir,
-        transcode2webm,
-        debug,
+        self, max_videos_per_topic, topics, output_dir, transcode2webm, debug,
     ):
 
         # output directory

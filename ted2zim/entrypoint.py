@@ -25,7 +25,7 @@ def main():
         help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
         required=True,
         default=9999,
-        type=int
+        type=int,
     )
 
     # would be removed soon
