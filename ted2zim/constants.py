@@ -13,6 +13,10 @@ NAME = ROOT_DIR.name
 with open(ROOT_DIR.joinpath("VERSION"), "r") as fh:
     VERSION = fh.read().strip()
 
+ENCODER_VERSION = "v1"
+
 SCRAPER = f"{NAME} {VERSION}"
+
+MAX_SOURCE_VIDEOS_PER_PAGE = 36
 
 logger = getLogger(NAME, level=logging.DEBUG)

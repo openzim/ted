@@ -1,129 +1,132 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Class for scraping www.TED.com.
-"""
-__title__ = "webscraper"
-__author__ = "Rashiq Ahmad"
-__license__ = "GPLv3"
+# vim: ai ts=4 sts=4 et sw=4 nu
 
-import os
-from os import path
-import sys
-import shutil
-import distutils.dir_util
-from datetime import datetime
-from sys import platform as _platform
-import envoy
-import subprocess
-import datetime
 import dateutil.parser
 import requests
-from time import sleep
-from bs4 import BeautifulSoup
-from urlparse import urljoin
-import utils
 import json
-from jinja2 import Environment, FileSystemLoader
-from WebVTTcreator import WebVTTcreator
-from collections import defaultdict
+import pathlib
+import jinja2
+import shutil
+import datetime
+import sys
+
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+from time import sleep
+from os import path  # to be removed soon
+
+from .utils import download_from_site, build_subtitle_pages
+from .constants import ROOT_DIR, SCRAPER, MAX_SOURCE_VIDEOS_PER_PAGE, logger
+from .WebVTTcreator import WebVTTcreator
 
 
 class Ted2Zim:
 
     # The base Url. The link gives you a grid of all TED talks.
-    BASE_URL = "https://new.ted.com/talks/browse"
+    BASE_URL = "https://ted.com/talks"
     # BeautifulSoup instance
     soup = None
     # Page count
     pages = None
     # List of links to all TED talks
     videos = []
-    # Categories of the TED talks
-    categories = [
-        "technology",
-        "entertainment",
-        "design",
-        "business",
-        "science",
-        "global issues",
-    ]
 
-    def __init__(self, transcode2webm):
-        """
-        Extract number of video pages. Generate the specific
-        video page from it and srape it.
-        """
-        self.build_dir = path.join(os.getcwd(), "..", "build")
-        self.scraper_dir = path.join(self.build_dir, "TED", "scraper")
-        self.html_dir = path.join(self.build_dir, "TED", "html")
-        self.zim_dir = path.join(self.build_dir, "TED", "zim")
-        self.meta_data_dir = path.join(self.scraper_dir, "TED.json")
-        self.templates_dir = os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "templates"
-        )
+    def __init__(
+        self, max_videos_per_topic, topics, output_dir, transcode2webm, debug,
+    ):
+
+        # output directory
+        self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
+
+        # scraper options
+        self.topics = [c.strip().replace(" ", "+") for c in topics.split(",")]
+        self.max_videos_per_topic = max_videos_per_topic
         self.transcode2webm = transcode2webm
-        if not bin_is_present("zimwriterfs"):
-            sys.exit("zimwriterfs is not available, please install it.")
 
-    def extract_page_number(self):
-        """
-        Extract the number of video pages by looking at the
-        pagination div at the bottom. Select all <a>-tags in it and
-        return the last element in the list. That's our total count
-        """
-        self.soup = BeautifulSoup(utils.download_from_site(self.BASE_URL).text)
-        pages = self.soup.select("div.pagination a.pagination__item")[-1]
-        return int(pages.text)
+        self.debug = debug
+
+    @property
+    def root_dir(self):
+        return ROOT_DIR
+
+    @property
+    def templates_dir(self):
+        return self.root_dir.joinpath("templates")
+
+    @property
+    def build_dir(self):
+        return self.output_dir.joinpath("build")
+
+    @property
+    def ted_videos_json(self):
+        return self.output_dir.joinpath("ted_videos.json")
+
+    @property
+    def ted_topics_json(self):
+        return self.output_dir.joinpath("ted_topics.json")
 
     def extract_all_video_links(self):
-        """
-        This method will build the specifiv video site by appending
-        the page number to the 'page' parameter to the url.
-        We will iterate through every page and extract every
-        video link. The video link is extracted in `extract_videos()`.
-        """
-        for page in range(1, self.extract_page_number()):
-            url = utils.build_video_page(page)
-            html = utils.download_from_site(url).text
-            self.soup = BeautifulSoup(html)
-            self.extract_videos()
-            print("Finished scraping page " + str(page))
 
-    def extract_videos(self):
-        """
-        All videos are embedded in a <div> with the class name 'row'.
-        We are searching for the div inside this div, that has an <a>-tag
-        with the class name 'media__image', because this is the relative
-        link to the representative TED talk. We have to turn this relative
-        link to an absolute link. This is done through the `utils` class.
-        """
-        print(
-            "Video found : " + str(len(self.soup.select("div.row div.media__image a")))
-        )  # DEBUG
-        for video in self.soup.select("div.row div.media__image a"):
-            url = utils.create_absolute_link(self.BASE_URL, video["href"])
+        # extracts all video links for different topics
+        # it iterates over the topics and then over pages to get required number of video links
+        for topic in self.topics:
+            logger.debug(f"Fetching video links for topic: {topic}")
+            topic_url = f"{self.BASE_URL}?topics%5B%5D={topic}"
+            self.soup = BeautifulSoup(
+                download_from_site(topic_url).text, features="html.parser"
+            )
+            page = 1
+            tot_videos_scraped = 0
+            video_allowance = self.max_videos_per_topic
+            while video_allowance:
+                url = f"{topic_url}&page={page}"
+                html = download_from_site(url).text
+                self.soup = BeautifulSoup(html, features="html.parser")
+                num_videos_extracted = self.extract_videos(video_allowance)
+                if num_videos_extracted == 0:
+                    break
+                video_allowance -= num_videos_extracted
+                tot_videos_scraped += num_videos_extracted
+                page += 1
+            logger.info(f"Total video links found in {topic}: {tot_videos_scraped}")
+
+    def extract_videos(self, video_allowance):
+
+        # all videos are embedded in a <div> with the class name 'row'.
+        # we are searching for the div inside this div, that has an <a>-tag
+        # with the class name 'media__image', because this is the relative
+        # link to the representative TED talk. We have to turn this relative
+        # link to an absolute link. This is done through the `utils` class
+        videos = self.soup.select("div.row div.media__image a")
+        if len(videos) > video_allowance:
+            videos = videos[0:video_allowance]
+        logger.debug(f"{str(len(videos))} videos found on current page")
+        for video in videos:
+            url = urljoin(self.BASE_URL, video["href"])
             self.extract_video_info(url)
+            logger.debug(f"Done {video['href']}")
+        return len(videos)
 
     def extract_video_info(self, url):
-        """
-        Extract the meta-data of the video:
-        Speaker, the profession of the speaker, a short biography of
-        the speaker, the link to a picture of the speaker, title,
-        publishing date, view count, description of the TED talk,
-        direct download link to the video, download link to the subtitle
-        files and a link to a thumbnail of the video.
-        """
-        self.soup = BeautifulSoup(utils.download_from_site(url).text)
 
+        # Extract the meta-data of the video:
+        # Speaker, the profession of the speaker, a short biography of
+        # the speaker, the link to a picture of the speaker, title,
+        # publishing date, view count, description of the TED talk,
+        # direct download link to the video, download link to the subtitle
+        # files and a link to a thumbnail of the video.
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
-        json_data = self.soup.select("div.talks-main script")
-        if len(json_data) == 0:
+        self.soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
+        div = self.soup.find("div", attrs={"class": "talks-main"})
+        script_tags_within_div = div.find_all("script")
+        if len(script_tags_within_div) == 0:
+            logger.error("The required script tag containing video meta is not present")
             return
-        json_data = json_data[-1].text
-
+        json_data_tag = script_tags_within_div[-1]
+        json_data = json_data_tag.string
         json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
         json_data = json.loads(json_data)["__INITIAL_DATA__"]
 
@@ -177,9 +180,11 @@ class Ted2Zim:
         # Extract the download link of the TED talk video
         downloads = talk_info["downloads"]["nativeDownloads"]
         if not downloads:
+            logger.error("No direct download links found for the video")
             return
         video_link = downloads["medium"]
         if not video_link:
+            logger.error("No link to download video in medium quality")
             return
 
         # Extract the video Id of the TED talk video.
@@ -199,53 +204,58 @@ class Ted2Zim:
             {"languageName": lang["languageName"], "languageCode": lang["languageCode"]}
             for lang in talk_info["player_talks"][0]["languages"]
         ]
-        subtitles = utils.build_subtitle_pages(video_id, subtitles)
+        subtitles = build_subtitle_pages(video_id, subtitles)
 
         # Extract the keywords for the TED talk
         keywords = self.soup.find("meta", attrs={"name": "keywords"})["content"]
         keywords = [key.strip() for key in keywords.split(",")]
 
-        # Extract the ratings list for the TED talk
-        # ratings = talk_info["ratings"]
-
-        # Append the meta-data to a list
-        self.videos.append(
-            [
-                {
-                    "id": video_id,
-                    "title": title.encode("utf-8", "ignore"),
-                    "description": description.encode("utf-8", "ignore"),
-                    "speaker": speaker.encode("utf-8", "ignore"),
-                    "speaker_profession": speaker_profession.encode("utf-8", "ignore"),
-                    "speaker_bio": speaker_bio.encode("utf-8", "ignore"),
-                    "speaker_picture": speaker_picture.encode("utf-8", "ignore"),
-                    "date": date.encode("utf-8", "ignore"),
-                    "thumbnail": thumbnail.encode("utf-8", "ignore"),
-                    "video_link": video_link.encode("utf-8", "ignore"),
-                    "length": length,
-                    "subtitles": subtitles,
-                    "keywords": keywords,
-                    "ratings": ratings,
-                }
-            ]
-        )
+        # Check if video ID already exists. If not, append data to self.videos
+        if not any(video[0].get("id", None) == video_id for video in self.videos):
+            self.videos.append(
+                [
+                    {
+                        "id": video_id,
+                        "title": title,
+                        "description": description,
+                        "speaker": speaker,
+                        "speaker_profession": speaker_profession,
+                        "speaker_bio": speaker_bio,
+                        "speaker_picture": speaker_picture,
+                        "date": date,
+                        "thumbnail": thumbnail,
+                        "video_link": video_link,
+                        "length": length,
+                        "subtitles": subtitles,
+                        "keywords": keywords,
+                    }
+                ]
+            )
+            logger.debug(f"Successfully inserted video {video_id} into video list")
+        else:
+            logger.debug(f"Video {video_id} already present in video list")
 
     def dump_data(self):
-        """
-        Dump all the data about every TED talk in a json file
-        inside the 'build' folder.
-        """
-        # Prettified json dump
-        data = json.dumps(self.videos, indent=4, separators=(",", ": "))
+
+        # Dump all the data about every TED talk in a json file
+        # inside the 'build' folder.
+        logger.debug(
+            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topics into {self.ted_topics_json}"
+        )
+        video_data = json.dumps(self.videos, indent=4)
+        topics_data = json.dumps(self.topics, indent=4)
 
         # Check, if the folder exists. Create it, if it doesn't.
-        if not path.exists(self.scraper_dir):
-            os.makedirs(self.scraper_dir)
+        if not self.build_dir.exists():
+            self.build_dir.mkdir(parents=True)
 
-        # Create or override the 'TED.json' file in the build
-        # directory with the video data gathered from the scraper.
-        with open(self.scraper_dir + "/TED.json", "w") as ted_file:
-            ted_file.write(data)
+        # Create or override the json files in the build
+        # directory with the video data gathered from the scraper
+        # and topic data.
+        with open(self.ted_videos_json, "w") as f:
+            f.write(video_data)
+        with open(self.ted_topics_json, "w") as f:
+            f.write(topics_data)
 
     def render_video_pages(self):
         """
@@ -271,7 +281,7 @@ class Ted2Zim:
         template = env.get_template("video.html")
 
         for video in self.videos:
-            for i in self.categories:
+            for i in self.topics:
                 if i in video[0]["keywords"]:
                     video_id = str(video[0]["id"])
                     video_path = path.join(self.html_dir, i, video_id)
@@ -311,7 +321,7 @@ class Ted2Zim:
         )
         template = env.get_template("welcome.html")
 
-        for i in self.categories:
+        for i in self.topics:
             video_path = path.join(self.html_dir, i)
             if not path.exists(video_path):
                 os.makedirs(video_path)
@@ -352,7 +362,7 @@ class Ted2Zim:
         Copy files from the /scraper directory to the /html/{zimfile} directory.
         """
 
-        for i in self.categories:
+        for i in self.topics:
             copy_dir = path.join(self.html_dir, i)
             css_dir = path.join(self.templates_dir, "CSS")
             js_dir = path.join(self.templates_dir, "JS")
@@ -370,7 +380,7 @@ class Ted2Zim:
             shutil.copy(favicon_file, copy_favicon_file)
 
         for video in self.videos:
-            for i in self.categories:
+            for i in self.topics:
                 if i in video[0]["keywords"]:
                     video_id = str(video[0]["id"])
                     video_path = path.join(self.scraper_dir, video_id)
@@ -390,16 +400,16 @@ class Ted2Zim:
                     if path.exists(speaker):
                         shutil.copy(speaker, copy_video_path)
 
-    def generate_category_data(self):
+    def generate_topic_data(self):
         """
-        Generate the json page data for every category.
+        Generate the json page data for every topic.
         """
 
         self.load_metadata()
         video_list = defaultdict(list)
 
         for video in self.videos:
-            for i in self.categories:
+            for i in self.topics:
                 if i in video[0]["keywords"]:
                     json_data = {
                         "languages": [
@@ -420,7 +430,7 @@ class Ted2Zim:
                 os.makedirs(js_path)
 
             with open(data_path, "w") as page_file:
-                json_data = json.dumps(v, indent=4, separators=(",", ": "))
+                json_data = json.dumps(v, indent=4)
                 json_data = "json_data = " + json_data
                 page_file.write(json_data)
 
@@ -448,7 +458,7 @@ class Ted2Zim:
 
         self.load_metadata()
         for video in self.videos:
-            for i in self.categories:
+            for i in self.topics:
                 if i in video[0]["keywords"]:
                     video_id = str(video[0]["id"])
                     video_path = path.join(self.scraper_dir, video_id, "video.mp4")
@@ -620,12 +630,12 @@ class Ted2Zim:
         if not path.exists(self.zim_dir):
             os.makedirs(self.zim_dir)
 
-        for i in self.categories:
+        for i in self.topics:
             html_dir = path.join(self.html_dir, i)
             zim_path = path.join(
                 self.zim_dir,
-                "ted_en_{category}_{date}.zim".format(
-                    category=i.replace(" ", "_"),
+                "ted_en_{topic}_{date}.zim".format(
+                    topic=i.replace(" ", "_"),
                     date=datetime.datetime.now().strftime("%Y-%m"),
                 ),
             )
@@ -637,15 +647,15 @@ class Ted2Zim:
     def run(self):
         self.extract_all_video_links()
         self.dump_data()
-        self.download_subtitles()
-        self.download_video_data()
-        self.render_welcome_page()
-        self.render_video_pages()
-        self.copy_files_to_rendering_directory()
-        self.generate_category_data()
-        self.encode_videos()
-        self.resize_thumbnails()
-        self.create_zims()
+        # self.download_subtitles()
+        # self.download_video_data()
+        # self.render_welcome_page()
+        # self.render_video_pages()
+        # self.copy_files_to_rendering_directory()
+        # self.generate_topic_data()
+        # self.encode_videos()
+        # self.resize_thumbnails()
+        # self.create_zims()
 
 
 def resize_image(image_path):
