@@ -687,7 +687,7 @@ def create_zim(static_folder, zim_path, title, description, name):
         "zim": zim_path,
         "scraper": "Ted scraper : https://github.com/openzim/ted",
         "source": "https://new.ted.com",
-        "tags": "_topic:ted;ted",
+        "tags": "_category:ted;ted",
         "name": name,
     }
 
