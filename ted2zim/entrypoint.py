@@ -15,17 +15,20 @@ def main():
     )
 
     parser.add_argument(
-        "--categories",
+        "--topics",
         help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
         required=True,
     )
 
     parser.add_argument(
-        "--max-videos",
+        "--max-videos-per-topic",
         help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
         required=True,
+        default=9999,
+        type=int
     )
 
+    # would be removed soon
     parser.add_argument(
         "--transcode2webm",
         help="Whether to transcode videos to webm format",

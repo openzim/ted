@@ -2,16 +2,8 @@
 # -*- coding: utf-8 -*-
 # vim: ai ts=4 sts=4 et sw=4 nu
 
-from urllib.parse import urljoin
 from time import sleep
 import requests
-
-
-def create_absolute_link(base, rel_url):
-    # Creates a absolute Url out of a relative link.
-    # Will return the given second parameter, if it's already
-    # an absolute link.
-    return urljoin(base, rel_url)
 
 
 def build_subtitle_pages(video_id, language_list):
