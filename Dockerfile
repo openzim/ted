@@ -13,9 +13,10 @@ RUN apt-get update -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ted2zim /src/ted2zim
-COPY requirements.txt setup.py README.md MANIFEST.in /src/
+COPY requirements.txt /src/
 RUN pip3 install -r /src/requirements.txt
+COPY ted2zim /src/ted2zim
+COPY setup.py README.md MANIFEST.in /src/
 RUN cd /src/ && python3 ./setup.py install
 
 CMD ["ted2zim", "--help"]
