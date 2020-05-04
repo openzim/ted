@@ -8,6 +8,7 @@ The purpose of this project is to create a sustainable solution to create ZIM fi
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/ted2zim.svg)](https://pypi.org/project/ted2zim/)
 
+
 ## Running the project
 
 It requires python3 and one can run by following these steps after cloning the repository
@@ -57,7 +58,6 @@ optional arguments:
                         category:ted, ted, and _videos:yes added automatically
   --keep                Don't erase build folder on start (for debug/devel)
   --debug               Enable verbose output
-
 ```
 
 Example usage
