@@ -1,13 +1,22 @@
-FROM openzim/zimwriterfs:latest
+FROM python:3.8
+
+# add zimwriterfs
+RUN wget http://download.openzim.org/release/zimwriterfs/zimwriterfs_linux-x86_64-1.3.9.tar.gz
+RUN tar -C /usr/bin --strip-components 1 -xf zimwriterfs_linux-x86_64-1.3.9.tar.gz
+RUN rm -f zimwriterfs_linux-x86_64-1.3.9.tar.gz
+RUN chmod +x /usr/bin/zimwriterfs
+RUN zimwriterfs --version
 
 # Install necessary packages
-RUN apt-get update -y
-RUN apt-get install -y python-pip
-RUN apt-get install -y ffmpeg
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends locales-all wget unzip ffmpeg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install sotoki
-RUN locale-gen "en_US.UTF-8"
-RUN pip install ted2zim
+COPY requirements.txt /src/
+RUN pip3 install -r /src/requirements.txt
+COPY ted2zim /src/ted2zim
+COPY setup.py README.md MANIFEST.in /src/
+RUN cd /src/ && python3 ./setup.py install
 
-# Boot commands
-CMD ted2zim -h ; /bin/bash
+CMD ["ted2zim", "--help"]

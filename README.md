@@ -8,38 +8,62 @@ The purpose of this project is to create a sustainable solution to create ZIM fi
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/ted2zim.svg)](https://pypi.org/project/ted2zim/)
 
-## Building the project
 
-It's advised, that you have `pip` installed. 
-Chose one of the following methods to do that:
+## Running the project
 
-```bash
-sudo apt-get install python-setuptools
-sudo easy_install pip
+It requires python3 and one can run by following these steps after cloning the repository
+
+1. Install the package
+
+```
+python3 setup.py install
 ```
 
-It's advised, that you have `virtualenv` installed:
+2. Run the command 'ted2zim' as follows
 
-```bash
-sudo pip install virtualenv
+```
+usage: ted2zim [-h] --topics TOPICS --max-videos-per-topic
+               MAX_VIDEOS_PER_TOPIC [--output OUTPUT_DIR] --name NAME
+               [--format {mp4,webm}] [--low-quality] [--no-zim]
+               [--zim-file FNAME] [--language LANGUAGE] --title TITLE
+               --description DESCRIPTION --creator CREATOR
+               [--publisher PUBLISHER] [--tags TAGS] [--keep] [--debug]
+
+Scraper to create ZIM files from TED videos
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --topics TOPICS       Comma-seperated list of topics to scrape. Should be
+                        exactly same as given on ted.com/talks
+  --max-videos-per-topic MAX_VIDEOS_PER_TOPIC
+                        Max number of videos to scrape in each topic. Pass
+                        'max' if you want to scrape all
+  --output OUTPUT_DIR   Output folder for ZIM file or build folder
+  --name NAME           ZIM name. Used as identifier and filename (date will
+                        be appended)
+  --format {mp4,webm}   Format to download/transcode video to. webm is smaller
+  --low-quality         Re-encode video using stronger compression
+  --no-zim              Don't produce a ZIM file, create HTML folder only.
+  --zim-file FNAME      ZIM file name (based on --name if not provided)
+  --language LANGUAGE   ISO-639-3 (3 chars) language code of content
+  --title TITLE         Custom title for your project and ZIM. Default to
+                        Channel name (of first video if playlists)
+  --description DESCRIPTION
+                        Custom description for your project and ZIM. Default
+                        to Channel name (of first video if playlists)
+  --creator CREATOR     Name of content creator
+  --publisher PUBLISHER
+                        Custom publisher name (ZIM metadata)
+  --tags TAGS           List of comma-separated Tags for the ZIM file.
+                        category:ted, ted, and _videos:yes added automatically
+  --keep                Don't erase build folder on start (for debug/devel)
+  --debug               Enable verbose output
 ```
 
-Up next you have to create a virtual enviroment in the kiwix-other/TED/ directory for the TED Scraper:
+Example usage
 
-```bash
-virtualenv --no-site-packages venv 
 ```
-
-Activiate the virtual enviroment:
-
-```bash
-source venv/bin/activate
-```
-
-Install all the dependencies for the TED Scraper:
-
-```bash
-pip install -r requirements.txt
+ted2zim --topics="augmented reality" --max-videos-per-topic=10 --debug --name="augumented_reality" --format=mp4 --title="Augmented Reality" --description="TED videos in AR category" --creator="TED" --publisher="openzim" --output="output" --keep --low-quality
 ```
 
 ## License
