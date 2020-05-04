@@ -23,7 +23,7 @@ def main():
     parser.add_argument(
         "--max-videos-per-topic",
         help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
-        required=True,
+        required=False,
         default=9999,
         type=int,
     )
@@ -86,7 +86,7 @@ def main():
     )
 
     parser.add_argument(
-        "--creator", help="Name of content creator", required=True, default="TED"
+        "--creator", help="Name of content creator", required=False, default="TED"
     )
 
     parser.add_argument(
