@@ -15,7 +15,7 @@ RUN apt-get update -y \
 
 COPY ted2zim /src/ted2zim
 COPY requirements.txt setup.py README.md MANIFEST.in /src/
-RUN pip3 install $(grep "zimscraperlib" /src/requirements.txt)
+RUN pip3 install -r /src/requirements.txt
 RUN cd /src/ && python3 ./setup.py install
 
 CMD ["ted2zim", "--help"]
