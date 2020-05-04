@@ -22,7 +22,7 @@ def main():
 
     parser.add_argument(
         "--max-videos-per-topic",
-        help="Max number of videos to scrape in each topic. Pass 'max' if you want to scrape all",
+        help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
         required=False,
         default=9999,
         type=int,
