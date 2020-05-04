@@ -36,8 +36,8 @@ optional arguments:
   --topics TOPICS       Comma-seperated list of topics to scrape. Should be
                         exactly same as given on ted.com/talks
   --max-videos-per-topic MAX_VIDEOS_PER_TOPIC
-                        Max number of videos to scrape in each topic. Pass
-                        'max' if you want to scrape all
+                        Max number of videos to scrape in each topic. Default
+                        behaviour is to scrape all
   --output OUTPUT_DIR   Output folder for ZIM file or build folder
   --name NAME           ZIM name. Used as identifier and filename (date will
                         be appended)
