@@ -63,7 +63,7 @@ class Ted2Zim:
         # zim params
         self.fname = fname
         self.language = language
-        self.tags = [t.strip() for t in tags.split(",")]
+        self.tags = [] if tags is None else [t.strip() for t in tags.split(",")]
         self.title = title
         self.description = description
         self.creator = creator
@@ -81,7 +81,7 @@ class Ted2Zim:
         self.zim_info = ZimInfo(
             homepage="index.html",
             language=self.language,
-            tags=self.tags,
+            tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
             title=self.title,
             description=self.description,
             creator=self.creator,
@@ -261,25 +261,23 @@ class Ted2Zim:
         keywords = [key.strip() for key in keywords.split(",")]
 
         # Check if video ID already exists. If not, append data to self.videos
-        if not any(video[0].get("id", None) == video_id for video in self.videos):
+        if not any(video.get("id", None) == video_id for video in self.videos):
             self.videos.append(
-                [
-                    {
-                        "id": video_id,
-                        "title": title,
-                        "description": description,
-                        "speaker": speaker,
-                        "speaker_profession": speaker_profession,
-                        "speaker_bio": speaker_bio,
-                        "speaker_picture": speaker_picture,
-                        "date": date,
-                        "thumbnail": thumbnail,
-                        "video_link": video_link,
-                        "length": length,
-                        "subtitles": subtitles,
-                        "keywords": keywords,
-                    }
-                ]
+                {
+                    "id": video_id,
+                    "title": title,
+                    "description": description,
+                    "speaker": speaker,
+                    "speaker_profession": speaker_profession,
+                    "speaker_bio": speaker_bio,
+                    "speaker_picture": speaker_picture,
+                    "date": date,
+                    "thumbnail": thumbnail,
+                    "video_link": video_link,
+                    "length": length,
+                    "subtitles": subtitles,
+                    "keywords": keywords,
+                }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
         else:
@@ -317,20 +315,20 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
-            video_id = str(video[0]["id"])
+            video_id = str(video["id"])
             video_path = self.build_dir.joinpath(video_id)
             if not video_path.exists():
                 video_path.mkdir(parents=True)
 
             html = env.get_template("video.html").render(
-                title=video[0]["title"],
-                speaker=video[0]["speaker"],
-                description=video[0]["description"],
-                languages=video[0]["subtitles"],
-                speaker_bio=video[0]["speaker_bio"].replace("Full bio", ""),
-                speaker_img=video[0]["speaker_picture"],
-                date=video[0]["date"],
-                profession=video[0]["speaker_profession"],
+                title=video["title"],
+                speaker=video["speaker"],
+                description=video["description"],
+                languages=video["subtitles"],
+                speaker_bio=video["speaker_bio"].replace("Full bio", ""),
+                speaker_img=video["speaker_picture"],
+                date=video["date"],
+                profession=video["speaker_profession"],
                 video_format=self.video_format,
             )
             index_path = video_path.joinpath("index.html")
@@ -349,7 +347,7 @@ class Ted2Zim:
             self.build_dir.mkdir(parents=True)
         languages = []
         for video in self.videos:
-            for language in video[0]["subtitles"]:
+            for language in video["subtitles"]:
                 languages.append(
                     {
                         "languageCode": language["languageCode"],
@@ -387,11 +385,11 @@ class Ted2Zim:
         video_list = []
         for video in self.videos:
             json_data = {
-                "languages": [lang["languageCode"] for lang in video[0]["subtitles"]],
-                "id": video[0]["id"],
-                "description": video[0]["description"],
-                "title": video[0]["title"],
-                "speaker": video[0]["speaker"],
+                "languages": [lang["languageCode"] for lang in video["subtitles"]],
+                "id": video["id"],
+                "description": video["description"],
+                "title": video["title"],
+                "speaker": video["speaker"],
             }
             video_list.append(json_data)
         js_path = self.build_dir.joinpath("JS")
@@ -413,11 +411,11 @@ class Ted2Zim:
         self.load_meta_from_file()
         for video in self.videos:
             # set up variables
-            video_id = str(video[0]["id"])
-            video_title = video[0]["title"]
-            video_link = video[0]["video_link"]
-            video_speaker = video[0]["speaker_picture"]
-            video_thumbnail = video[0]["thumbnail"]
+            video_id = str(video["id"])
+            video_title = video["title"]
+            video_link = video["video_link"]
+            video_speaker = video["speaker_picture"]
+            video_thumbnail = video["thumbnail"]
             video_dir = self.build_dir.joinpath(video_id)
             video_file_path = video_dir.joinpath("video.mp4")
             speaker_path = video_dir.joinpath("speaker.jpg")
@@ -438,8 +436,8 @@ class Ted2Zim:
                 logger.debug(f"video.mp4 already exists. Skipping video {video_title}")
 
             # download an image of the speaker
-            if not speaker_path.exists() and video_speaker != "":
-                if video_speaker == "None":
+            if not speaker_path.exists():
+                if video_speaker == "None" or video_speaker == "":
                     logger.debug("Speaker doesn't have an image")
                 else:
                     logger.debug(f"Downloading Speaker image for {video_title}")
@@ -465,9 +463,9 @@ class Ted2Zim:
         # build_dir/{video id}/subs/subs_{language code}.vtt
         self.load_meta_from_file()
         for video in self.videos:
-            video_id = str(video[0]["id"])
-            video_title = video[0]["title"]
-            video_subtitles = video[0]["subtitles"]
+            video_id = str(video["id"])
+            video_title = video["title"]
+            video_subtitles = video["subtitles"]
             video_dir = self.build_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
@@ -482,14 +480,18 @@ class Ted2Zim:
                 sleep(0.5)
                 subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
                 if not subtitle_file:
-                    video[0]["subtitles"].remove(subtitle)
+                    video["subtitles"].remove(subtitle)
+                    logger.error(
+                        f"Subtitle file for {subtitle['languageCode']} could not be created"
+                    )
+                    continue
                 subtitle_file_name = subs_dir.joinpath(
                     f"subs_{subtitle['languageCode']}.vtt"
                 )
                 with open(subtitle_file_name, "w", encoding="utf-8") as sub_file:
                     sub_file.write(subtitle_file)
 
-        # save the info that some videos don't have subtitlescategories
+        # save the info that some videos don't have subtitle file created successfully
         self.dump_data()
 
     def load_meta_from_file(self):

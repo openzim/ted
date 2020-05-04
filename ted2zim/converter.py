@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 # vim: ai ts=4 sts=4 et sw=4 nu
 
-import pathlib
 import subprocess
 from zimscraperlib.logging import nicer_args_join
 from zimscraperlib.imaging import resize_image
 
 from .constants import logger
 
-def post_process_video(video_dir, video_id, video_format, low_quality, skip_recompress=False):
+
+def post_process_video(
+    video_dir, video_id, video_format, low_quality, skip_recompress=False
+):
     # apply custom post-processing to downloaded video
     # - resize thumbnail
     # - recompress video if incorrect video_format or low_quality requested
@@ -20,7 +22,9 @@ def post_process_video(video_dir, video_id, video_format, low_quality, skip_reco
         logger.debug(list(video_dir.iterdir()))
         raise FileNotFoundError(f"Missing video file in {video_dir}")
     if len(files) > 1:
-        logger.warning(f"Multiple video file candidates for {video_id} in {video_dir}. Picking {files[0]} out of {files}")
+        logger.warning(
+            f"Multiple video file candidates for {video_id} in {video_dir}. Picking {files[0]} out of {files}"
+        )
     src_path = files[0]
 
     # resize thumbnail. we use max width:248x187px in listing
@@ -35,19 +39,20 @@ def post_process_video(video_dir, video_id, video_format, low_quality, skip_reco
     dst_path = src_path.parent.joinpath(f"video.{video_format}")
     recompress_video(src_path, dst_path, video_format)
 
+
 def recompress_video(src_path, dst_path, video_format):
-        # re-encode in-place (via temp file) for format at lower quality
+    # re-encode in-place (via temp file) for format at lower quality
 
-        # references:
-        #     - https://trac.ffmpeg.org/wiki/Limiting%20the%20output%20bitrate
-        #     - https://ffmpeg.org/ffmpeg-filters.html#scale
+    # references:
+    #     - https://trac.ffmpeg.org/wiki/Limiting%20the%20output%20bitrate
+    #     - https://ffmpeg.org/ffmpeg-filters.html#scale
 
-        #     - webm options: https://trac.ffmpeg.org/wiki/Encode/VP9
-        #     - h264 options: https://trac.ffmpeg.org/wiki/Encode/H.264
-        #                     https://sites.google.com/site/linuxencoding/x264-ffmpeg-mapping
+    #     - webm options: https://trac.ffmpeg.org/wiki/Encode/VP9
+    #     - h264 options: https://trac.ffmpeg.org/wiki/Encode/H.264
+    #                     https://sites.google.com/site/linuxencoding/x264-ffmpeg-mapping
 
-        #     - vorbis options: https://trac.ffmpeg.org/wiki/TheoraVorbisEncodingGuide
-        #     - acc options: https://trac.ffmpeg.org/wiki/Encode/AAC
+    #     - vorbis options: https://trac.ffmpeg.org/wiki/TheoraVorbisEncodingGuide
+    #     - acc options: https://trac.ffmpeg.org/wiki/Encode/AAC
 
     tmp_path = src_path.parent.joinpath(f"video.tmp.{video_format}")
 
@@ -108,8 +113,7 @@ def recompress_video(src_path, dst_path, video_format):
     logger.info(f"recompress {src_path} -> {dst_path} {video_format=}")
     logger.debug(nicer_args_join(args))
 
-    ffmpeg = subprocess.run(args)
-    ffmpeg.check_returncode()
+    subprocess.run(args, check=True)
 
     # delete original
     src_path.unlink()

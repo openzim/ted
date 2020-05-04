@@ -86,7 +86,7 @@ def main():
     )
 
     parser.add_argument(
-        "--creator", help="Name of content creator.”", required=True,
+        "--creator", help="Name of content creator", required=True, default="TED"
     )
 
     parser.add_argument(
@@ -96,7 +96,6 @@ def main():
     parser.add_argument(
         "--tags",
         help="List of comma-separated Tags for the ZIM file. category:ted, ted, and _videos:yes added automatically",
-        default="_category:ted, ted, _videos:yes",
     )
 
     parser.add_argument(

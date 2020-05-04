@@ -1,5 +1,5 @@
 python-dateutil==2.8.1
-zimscraperlib==1.0.5
+zimscraperlib>=1.0.5,<1.1
 requests>=2.23,<3.0
 Pillow==7.1.2
 beautifulsoup4==4.9.0
