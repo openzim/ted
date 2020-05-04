@@ -13,13 +13,9 @@ RUN apt-get update -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-
 COPY ted2zim /src/ted2zim
 COPY requirements.txt setup.py README.md MANIFEST.in /src/
 RUN pip3 install $(grep "zimscraperlib" /src/requirements.txt)
 RUN cd /src/ && python3 ./setup.py install
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["entrypoint.sh"]
 
 CMD ["ted2zim", "--help"]
