@@ -17,6 +17,4 @@ ENCODER_VERSION = "v1"
 
 SCRAPER = f"{NAME} {VERSION}"
 
-MAX_SOURCE_VIDEOS_PER_PAGE = 36
-
 logger = getLogger(NAME, level=logging.DEBUG)
