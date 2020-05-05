@@ -78,8 +78,6 @@ class Ted2Zim:
             homepage="index.html",
             language=self.language,
             tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
-            title=self.title,
-            description=self.description,
             creator=self.creator,
             publisher=self.publisher,
             name=self.name,
@@ -143,6 +141,20 @@ class Ted2Zim:
                 )
         if not self.topics:
             raise ValueError("Wrong topic(s) were supplied. No videos found")
+        self.update_title_and_description()
+
+    def update_title_and_description(self):
+        if len(self.topics) > 1:
+            if self.title is None:
+                self.title = "TED Collection"
+            if self.description is None:
+                self.description = "A selection of TED videos from several topics"
+        else:
+            if self.title is None:
+                topic_str = self.topics[0].replace("+", " ")
+                self.title = f"{topic_str.capitalize()} from TED"
+            if self.description is None:
+                self.description = f"A selection of {topic_str} videos from TED"
 
     def extract_videos(self, video_allowance):
 
@@ -521,6 +533,7 @@ class Ted2Zim:
                 self.fname if self.fname else f"{self.name}_{period}.zim"
             )
             logger.info("building ZIM file")
+            self.zim_info.update(title=self.title, description=self.description)
             logger.debug(self.zim_info.to_zimwriterfs_args())
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
             if not self.keep_build_dir:

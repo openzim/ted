@@ -75,13 +75,11 @@ def main():
     parser.add_argument(
         "--title",
         help="Custom title for your project and ZIM. Default value - TED Collection",
-        default="TED Collection",
     )
 
     parser.add_argument(
         "--description",
         help="Custom description for your project and ZIM. Default value - A selection of several topics' videos from TED",
-        default="A selection of several topics' videos from TED",
     )
 
     parser.add_argument("--creator", help="Name of content creator", default="TED")
