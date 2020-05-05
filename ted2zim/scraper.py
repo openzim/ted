@@ -145,15 +145,15 @@ class Ted2Zim:
 
     def update_title_and_description(self):
         if len(self.topics) > 1:
-            if self.title is None:
+            if not self.title:
                 self.title = "TED Collection"
-            if self.description is None:
+            if not self.description:
                 self.description = "A selection of TED videos from several topics"
         else:
-            if self.title is None:
+            if not self.title:
                 topic_str = self.topics[0].replace("+", " ")
                 self.title = f"{topic_str.capitalize()} from TED"
-            if self.description is None:
+            if not self.description:
                 self.description = f"A selection of {topic_str} videos from TED"
 
     def extract_videos(self, video_allowance):
