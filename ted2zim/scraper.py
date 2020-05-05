@@ -3,21 +3,17 @@
 # vim: ai ts=4 sts=4 et sw=4 nu
 
 import dateutil.parser
-import requests
 import json
 import pathlib
 import jinja2
 import shutil
 import datetime
-import sys
-import time
-import math
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
-from zimscraperlib.download import save_file, save_large_file
+from zimscraperlib.download import save_large_file
 
 from .utils import download_from_site, build_subtitle_pages
 from .constants import ROOT_DIR, SCRAPER, logger

@@ -11,7 +11,7 @@ from .scraper import Ted2Zim
 
 def main():
     parser = argparse.ArgumentParser(
-        prog=NAME, description="Scraper to create ZIM files from TED videos",
+        prog=NAME, description="Scraper to create ZIM files from TED talks",
     )
 
     parser.add_argument(
@@ -33,6 +33,7 @@ def main():
         help="Output folder for ZIM file or build folder",
         default="/output",
         dest="output_dir",
+        required=False
     )
 
     parser.add_argument(
@@ -58,7 +59,7 @@ def main():
 
     parser.add_argument(
         "--no-zim",
-        help="Don't produce a ZIM file, create HTML folder only.",
+        help="Don't produce a ZIM file, create build folder only.",
         action="store_true",
         default=False,
     )
@@ -76,13 +77,15 @@ def main():
     parser.add_argument(
         "--title",
         help="Custom title for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True,
+        required=False,
+        default=""
     )
 
     parser.add_argument(
         "--description",
         help="Custom description for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True,
+        required=False,
+        default=""
     )
 
     parser.add_argument(
@@ -108,6 +111,13 @@ def main():
 
     parser.add_argument(
         "--debug", help="Enable verbose output", action="store_true", default=False
+    )
+
+    parser.add_argument(
+        "--version",
+        help="Display scraper version and exit",
+        action="version",
+        version=SCRAPER,
     )
 
     args = parser.parse_args()
