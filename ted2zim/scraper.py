@@ -136,6 +136,13 @@ class Ted2Zim:
                 tot_videos_scraped += num_videos_extracted
                 page += 1
             logger.info(f"Total video links found in {topic}: {tot_videos_scraped}")
+            if tot_videos_scraped == 0:
+                self.topics.remove(topic)
+                logger.debug(
+                    f"Removed topic {topic} from topic list as it had no videos"
+                )
+        if not self.topics:
+            raise ValueError("Wrong topic(s) were supplied. No videos found")
 
     def extract_videos(self, video_allowance):
 
@@ -284,7 +291,7 @@ class Ted2Zim:
         # Dump all the data about every TED talk in a json file
         # inside the 'build' folder.
         logger.debug(
-            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topics into {self.ted_topics_json}"
+            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topic(s) into {self.ted_topics_json}"
         )
         video_data = json.dumps(self.videos, indent=4)
         topics_data = json.dumps(self.topics, indent=4)

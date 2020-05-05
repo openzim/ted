@@ -23,7 +23,6 @@ def main():
     parser.add_argument(
         "--max-videos-per-topic",
         help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
-        required=False,
         default=9999,
         type=int,
     )
@@ -33,7 +32,6 @@ def main():
         help="Output folder for ZIM file or build folder",
         default="/output",
         dest="output_dir",
-        required=False
     )
 
     parser.add_argument(
@@ -76,21 +74,17 @@ def main():
 
     parser.add_argument(
         "--title",
-        help="Custom title for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=False,
-        default=""
+        help="Custom title for your project and ZIM. Default value - TED Collection",
+        default="TED Collection",
     )
 
     parser.add_argument(
         "--description",
-        help="Custom description for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=False,
-        default=""
+        help="Custom description for your project and ZIM. Default value - A selection of several topics' videos from TED",
+        default="A selection of several topics' videos from TED",
     )
 
-    parser.add_argument(
-        "--creator", help="Name of content creator", required=False, default="TED"
-    )
+    parser.add_argument("--creator", help="Name of content creator", default="TED")
 
     parser.add_argument(
         "--publisher", help="Custom publisher name (ZIM metadata)", default="Kiwix"
@@ -124,6 +118,12 @@ def main():
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     try:
+        if args.max_videos_per_topic < 1:
+            raise ValueError(
+                "Maximum number of videos to scrape per topic must be greater than or equal to 1"
+            )
+        if not args.topics:
+            raise ValueError("Please supply topics to parse")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:
