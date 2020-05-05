@@ -22,14 +22,16 @@ python3 setup.py install
 2. Run the command 'ted2zim' as follows
 
 ```
-usage: ted2zim [-h] --topics TOPICS --max-videos-per-topic
-               MAX_VIDEOS_PER_TOPIC [--output OUTPUT_DIR] --name NAME
-               [--format {mp4,webm}] [--low-quality] [--no-zim]
-               [--zim-file FNAME] [--language LANGUAGE] --title TITLE
-               --description DESCRIPTION --creator CREATOR
+usage: ted2zim [-h] --topics TOPICS
+               [--max-videos-per-topic MAX_VIDEOS_PER_TOPIC]
+               [--output OUTPUT_DIR] --name NAME [--format {mp4,webm}]
+               [--low-quality] [--no-zim] [--zim-file FNAME]
+               [--language LANGUAGE] [--title TITLE]
+               [--description DESCRIPTION] [--creator CREATOR]
                [--publisher PUBLISHER] [--tags TAGS] [--keep] [--debug]
+               [--version]
 
-Scraper to create ZIM files from TED videos
+Scraper to create ZIM files from TED talks
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -43,14 +45,14 @@ optional arguments:
                         be appended)
   --format {mp4,webm}   Format to download/transcode video to. webm is smaller
   --low-quality         Re-encode video using stronger compression
-  --no-zim              Don't produce a ZIM file, create HTML folder only.
+  --no-zim              Don't produce a ZIM file, create build folder only.
   --zim-file FNAME      ZIM file name (based on --name if not provided)
   --language LANGUAGE   ISO-639-3 (3 chars) language code of content
-  --title TITLE         Custom title for your project and ZIM. Default to
-                        Channel name (of first video if playlists)
+  --title TITLE         Custom title for your project and ZIM. Default value -
+                        TED Collection
   --description DESCRIPTION
                         Custom description for your project and ZIM. Default
-                        to Channel name (of first video if playlists)
+                        value - A selection of several topics' videos from TED
   --creator CREATOR     Name of content creator
   --publisher PUBLISHER
                         Custom publisher name (ZIM metadata)
@@ -58,6 +60,7 @@ optional arguments:
                         category:ted, ted, and _videos:yes added automatically
   --keep                Don't erase build folder on start (for debug/devel)
   --debug               Enable verbose output
+  --version             Display scraper version and exit
 ```
 
 Example usage

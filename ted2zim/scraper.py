@@ -3,21 +3,17 @@
 # vim: ai ts=4 sts=4 et sw=4 nu
 
 import dateutil.parser
-import requests
 import json
 import pathlib
 import jinja2
 import shutil
 import datetime
-import sys
-import time
-import math
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
-from zimscraperlib.download import save_file, save_large_file
+from zimscraperlib.download import save_large_file
 
 from .utils import download_from_site, build_subtitle_pages
 from .constants import ROOT_DIR, SCRAPER, logger
@@ -82,8 +78,6 @@ class Ted2Zim:
             homepage="index.html",
             language=self.language,
             tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
-            title=self.title,
-            description=self.description,
             creator=self.creator,
             publisher=self.publisher,
             name=self.name,
@@ -140,6 +134,27 @@ class Ted2Zim:
                 tot_videos_scraped += num_videos_extracted
                 page += 1
             logger.info(f"Total video links found in {topic}: {tot_videos_scraped}")
+            if tot_videos_scraped == 0:
+                self.topics.remove(topic)
+                logger.debug(
+                    f"Removed topic {topic} from topic list as it had no videos"
+                )
+        if not self.topics:
+            raise ValueError("Wrong topic(s) were supplied. No videos found")
+        self.update_title_and_description()
+
+    def update_title_and_description(self):
+        if len(self.topics) > 1:
+            if not self.title:
+                self.title = "TED Collection"
+            if not self.description:
+                self.description = "A selection of TED videos from several topics"
+        else:
+            if not self.title:
+                topic_str = self.topics[0].replace("+", " ")
+                self.title = f"{topic_str.capitalize()} from TED"
+            if not self.description:
+                self.description = f"A selection of {topic_str} videos from TED"
 
     def extract_videos(self, video_allowance):
 
@@ -288,7 +303,7 @@ class Ted2Zim:
         # Dump all the data about every TED talk in a json file
         # inside the 'build' folder.
         logger.debug(
-            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topics into {self.ted_topics_json}"
+            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topic(s) into {self.ted_topics_json}"
         )
         video_data = json.dumps(self.videos, indent=4)
         topics_data = json.dumps(self.topics, indent=4)
@@ -518,6 +533,7 @@ class Ted2Zim:
                 self.fname if self.fname else f"{self.name}_{period}.zim"
             )
             logger.info("building ZIM file")
+            self.zim_info.update(title=self.title, description=self.description)
             logger.debug(self.zim_info.to_zimwriterfs_args())
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
             if not self.keep_build_dir:

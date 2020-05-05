@@ -11,7 +11,7 @@ from .scraper import Ted2Zim
 
 def main():
     parser = argparse.ArgumentParser(
-        prog=NAME, description="Scraper to create ZIM files from TED videos",
+        prog=NAME, description="Scraper to create ZIM files from TED talks",
     )
 
     parser.add_argument(
@@ -23,7 +23,6 @@ def main():
     parser.add_argument(
         "--max-videos-per-topic",
         help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
-        required=False,
         default=9999,
         type=int,
     )
@@ -58,7 +57,7 @@ def main():
 
     parser.add_argument(
         "--no-zim",
-        help="Don't produce a ZIM file, create HTML folder only.",
+        help="Don't produce a ZIM file, create build folder only.",
         action="store_true",
         default=False,
     )
@@ -75,19 +74,15 @@ def main():
 
     parser.add_argument(
         "--title",
-        help="Custom title for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True,
+        help="Custom title for your project and ZIM. Default value - TED Collection",
     )
 
     parser.add_argument(
         "--description",
-        help="Custom description for your project and ZIM. Default to Channel name (of first video if playlists)",
-        required=True,
+        help="Custom description for your project and ZIM. Default value - A selection of several topics' videos from TED",
     )
 
-    parser.add_argument(
-        "--creator", help="Name of content creator", required=False, default="TED"
-    )
+    parser.add_argument("--creator", help="Name of content creator", default="TED")
 
     parser.add_argument(
         "--publisher", help="Custom publisher name (ZIM metadata)", default="Kiwix"
@@ -110,10 +105,23 @@ def main():
         "--debug", help="Enable verbose output", action="store_true", default=False
     )
 
+    parser.add_argument(
+        "--version",
+        help="Display scraper version and exit",
+        action="version",
+        version=SCRAPER,
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     try:
+        if args.max_videos_per_topic < 1:
+            raise ValueError(
+                "Maximum number of videos to scrape per topic must be greater than or equal to 1"
+            )
+        if not args.topics:
+            raise ValueError("Please supply topics to parse")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:
