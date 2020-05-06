@@ -39,3 +39,25 @@ rm -f chosen_v1.8.7.zip
 
 echo "getting jquery.min.js"
 curl -L -o $ASSETS_PATH/jquery.min.js https://code.jquery.com/jquery-3.5.1.min.js
+
+echo "getting ogv.js"
+curl -L -O https://github.com/brion/ogv.js/releases/download/1.6.1/ogvjs-1.6.1.zip
+rm -rf $ASSETS_PATH/ogvjs
+unzip -o ogvjs-1.6.1.zip
+mv ogvjs-1.6.1 $ASSETS_PATH/ogvjs
+rm -f ogvjs-1.6.1.zip
+
+echo "getting videojs-ogvjs.js"
+curl -L -O https://github.com/hartman/videojs-ogvjs/archive/v1.3.1.zip
+rm -f $ASSETS_PATH/videojs-ogvjs.js
+unzip -o v1.3.1.zip
+mv videojs-ogvjs-1.3.1/dist/videojs-ogvjs.js $ASSETS_PATH/videojs-ogvjs.js
+rm -rf videojs-ogvjs-1.3.1
+rm -f v1.3.1.zip
+
+if command -v fix_ogvjs_dist > /dev/null; then
+    echo "fixing JS files"
+    fix_ogvjs_dist $ASSETS_PATH "assets"
+else
+    echo "NOT fixing JS files (zimscraperlib not installed)"
+fi

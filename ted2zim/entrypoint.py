@@ -112,6 +112,13 @@ def main():
         version=SCRAPER,
     )
 
+    parser.add_argument(
+        "--autoplay",
+        help="Enable autoplay on video articles. Behavior differs on platforms/browsers.",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
