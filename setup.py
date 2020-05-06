@@ -15,8 +15,7 @@ def read(*names, **kwargs):
 
 
 print("Downloading and fixing JS dependencies...")
-ps = subprocess.run([str(root_dir.joinpath("get_js_deps.sh").resolve())])
-ps.check_returncode()
+subprocess.run([str(root_dir.joinpath("get_js_deps.sh").resolve())], check=True)
 
 
 setup(

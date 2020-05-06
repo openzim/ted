@@ -11,7 +11,7 @@ The purpose of this project is to create a sustainable solution to create ZIM fi
 
 ## Running the project
 
-It requires python3 and one can run by following these steps after cloning the repository
+It requires python3, unzip, ffmpeg and curl and one can run by following these steps after cloning the repository
 
 1. Install the package
 

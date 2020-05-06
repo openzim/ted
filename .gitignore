@@ -34,3 +34,8 @@ venv
 
 # Build folder
 build
+
+# JS deps
+ted2zim/templates/assets/chosen/
+ted2zim/templates/assets/jquery.min.js
+ted2zim/templates/assets/videojs/
