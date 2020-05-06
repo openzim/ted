@@ -50,6 +50,7 @@ class Ted2Zim:
         publisher,
         tags,
         keep_build_dir,
+        autoplay,
     ):
 
         # video-encoding info
@@ -72,6 +73,7 @@ class Ted2Zim:
         # scraper options
         self.topics = [c.strip().replace(" ", "+") for c in topics.split(",")]
         self.max_videos_per_topic = max_videos_per_topic
+        self.autoplay = autoplay
 
         # zim info
         self.zim_info = ZimInfo(
@@ -101,6 +103,10 @@ class Ted2Zim:
     @property
     def build_dir(self):
         return self.output_dir.joinpath("build")
+
+    @property
+    def videos_dir(self):
+        return self.build_dir.joinpath("videos")
 
     @property
     def ted_videos_json(self):
@@ -331,9 +337,8 @@ class Ted2Zim:
         )
         for video in self.videos:
             video_id = str(video["id"])
-            video_path = self.build_dir.joinpath(video_id)
-            if not video_path.exists():
-                video_path.mkdir(parents=True)
+            if not self.build_dir.exists():
+                self.build_dir.mkdir(parents=True)
 
             html = env.get_template("article.html").render(
                 title=video["title"],
@@ -345,9 +350,11 @@ class Ted2Zim:
                 date=video["date"],
                 profession=video["speaker_profession"],
                 video_format=self.video_format,
+                autoplay=self.autoplay,
+                video_id=video_id,
             )
-            index_path = video_path.joinpath("index.html")
-            with open(index_path, "w", encoding="utf-8") as html_page:
+            html_path = self.build_dir.joinpath(f"{video_id}.html")
+            with open(html_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
     def render_home_page(self):
@@ -427,7 +434,7 @@ class Ted2Zim:
             video_link = video["video_link"]
             video_speaker = video["speaker_picture"]
             video_thumbnail = video["thumbnail"]
-            video_dir = self.build_dir.joinpath(video_id)
+            video_dir = self.videos_dir.joinpath(video_id)
             video_file_path = video_dir.joinpath("video.mp4")
             speaker_path = video_dir.joinpath("speaker.jpg")
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
@@ -477,7 +484,7 @@ class Ted2Zim:
             video_id = str(video["id"])
             video_title = video["title"]
             video_subtitles = video["subtitles"]
-            video_dir = self.build_dir.joinpath(video_id)
+            video_dir = self.videos_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
                 subs_dir.mkdir(parents=True)

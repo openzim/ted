@@ -125,12 +125,11 @@ function refreshVideos(pageData) {
       var li = document.createElement('li');
       
       var a = document.createElement('a')
-      a.href =  video['id']+'/index.html';
+      a.href =  video['id']+'.html';
       a.className = 'nostyle'
 
       var img = document.createElement('img');
-      /* img.src = video['id']+'/thumbnail.jpg'; */
-      img.src = '../I/'+video['id']+'/thumbnail.jpg'; 
+      img.src = ZIM_IMG_NS+'videos/'+video['id']+'/thumbnail.jpg';
 
       var author = document.createElement('p');
       author.id = 'author';

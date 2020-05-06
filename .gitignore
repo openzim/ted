@@ -38,4 +38,6 @@ build
 # JS deps
 ted2zim/templates/assets/chosen/
 ted2zim/templates/assets/jquery.min.js
+ted2zim/templates/assets/ogvjs/
+ted2zim/templates/assets/videojs-ogvjs.js
 ted2zim/templates/assets/videojs/
