@@ -484,7 +484,7 @@ class Ted2Zim:
             video_id = str(video["id"])
             video_title = video["title"]
             video_subtitles = video["subtitles"]
-            video_dir = self.build_dir.joinpath(video_id)
+            video_dir = self.videos_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
                 subs_dir.mkdir(parents=True)
