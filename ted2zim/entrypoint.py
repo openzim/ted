@@ -119,6 +119,19 @@ def main():
         default=False,
     )
 
+    parser.add_argument(
+        "--optimization-cache",
+        help="URL with credentials to S3/S3 based bucket for using as optimization cache",
+        dest="s3_url_with_credentials",
+    )
+
+    parser.add_argument(
+        "--use-any-optimized-version",
+        help="Use the cached files if present, whatever the version",
+        default=False,
+        action="store_true",
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
