@@ -335,7 +335,7 @@ class Ted2Zim:
             if not video_path.exists():
                 video_path.mkdir(parents=True)
 
-            html = env.get_template("video.html").render(
+            html = env.get_template("article.html").render(
                 title=video["title"],
                 speaker=video["speaker"],
                 description=video["description"],
@@ -350,7 +350,7 @@ class Ted2Zim:
             with open(index_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
-    def render_welcome_page(self):
+    def render_home_page(self):
 
         # Render the homepage
         # Load data from json files
@@ -373,29 +373,25 @@ class Ted2Zim:
             dict(tpl) for tpl in set(tuple(item.items()) for item in languages)
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
-        html = env.get_template("welcome.html").render(languages=languages)
-        welcome_page_path = self.build_dir.joinpath("index.html")
-        with open(welcome_page_path, "w", encoding="utf-8") as html_page:
+        html = env.get_template("home.html").render(languages=languages)
+        home_page_path = self.build_dir.joinpath("index.html")
+        with open(home_page_path, "w", encoding="utf-8") as html_page:
             html_page.write(html)
 
     def copy_files_to_build_directory(self):
 
         # Copy files from template_dir to build_dir
-        css_dir = self.templates_dir.joinpath("CSS")
-        js_dir = self.templates_dir.joinpath("JS")
-        copy_css_dir = self.build_dir.joinpath("CSS")
-        copy_js_dir = self.build_dir.joinpath("JS")
-        if css_dir.exists():
-            shutil.copytree(css_dir, copy_css_dir, dirs_exist_ok=True)
-        if js_dir.exists():
-            shutil.copytree(js_dir, copy_js_dir, dirs_exist_ok=True)
+        assets_dir = self.templates_dir.joinpath("assets")
+        copy_assets_dir = self.build_dir.joinpath("assets")
+        if assets_dir.exists():
+            shutil.copytree(assets_dir, copy_assets_dir, dirs_exist_ok=True)
         favicon_file = self.templates_dir.joinpath("favicon.png")
         copy_favicon_file = self.build_dir.joinpath("favicon.png")
         shutil.copy(favicon_file, copy_favicon_file)
 
     def generate_datafile(self):
 
-        # Generate data.js inside the JS folder
+        # Generate data.js inside the assets folder
         self.load_meta_from_file()
         video_list = []
         for video in self.videos:
@@ -407,14 +403,14 @@ class Ted2Zim:
                 "speaker": video["speaker"],
             }
             video_list.append(json_data)
-        js_path = self.build_dir.joinpath("JS")
-        data_path = js_path.joinpath("data.js")
-        if not js_path.exists():
-            js_path.mkdir(parents=True)
-        with open(data_path, "w") as page_file:
+        assets_path = self.build_dir.joinpath("assets")
+        data_path = assets_path.joinpath("data.js")
+        if not assets_path.exists():
+            assets_path.mkdir(parents=True)
+        with open(data_path, "w") as data_file:
             json_data = json.dumps(video_list, indent=4)
             json_data = "json_data = " + json_data
-            page_file.write(json_data)
+            data_file.write(json_data)
 
     def download_video_data(self):
 
@@ -521,7 +517,7 @@ class Ted2Zim:
         self.dump_data()
         self.download_video_data()
         self.download_subtitles()
-        self.render_welcome_page()
+        self.render_home_page()
         self.render_video_pages()
         self.copy_files_to_build_directory()
         self.generate_datafile()

@@ -14,6 +14,10 @@ def read(*names, **kwargs):
         return fh.read()
 
 
+print("Downloading and fixing JS dependencies...")
+subprocess.run([str(root_dir.joinpath("get_js_deps.sh").resolve())], check=True)
+
+
 setup(
     name="ted2zim",
     version=read("ted2zim", "VERSION").strip(),
