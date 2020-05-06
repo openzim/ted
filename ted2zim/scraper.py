@@ -351,7 +351,7 @@ class Ted2Zim:
                 profession=video["speaker_profession"],
                 video_format=self.video_format,
                 autoplay=self.autoplay,
-                video_id=video_id
+                video_id=video_id,
             )
             html_path = self.build_dir.joinpath(f"{video_id}.html")
             with open(html_path, "w", encoding="utf-8") as html_page:
