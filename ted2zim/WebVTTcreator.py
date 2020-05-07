@@ -48,7 +48,7 @@ class WebVTTcreator:
             for subtitle in json["captions"]:
                 startTime = int(subtitle["startTime"]) + offset
                 duration = int(subtitle["duration"])
-                content = subtitle["content"]
+                content = subtitle["content"].strip()
 
                 self.WebVTTdocument += (
                     self.time_string(startTime)
