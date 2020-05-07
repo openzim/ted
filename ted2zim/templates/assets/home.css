@@ -115,7 +115,7 @@ ul.grid-nav li a.active {
 /* ----- Image grids ----- */
 ul.rig {
     list-style: none;
-    font-size: 0px;
+    font-size: 0;
     margin-left: -2.5%;
 }
 ul.rig li {
@@ -144,7 +144,7 @@ ul.rig li p {
 }
 
 ul.rig.grid li {
-    width: 22.5%; 
+    width: 22.5%;
     cursor: pointer;
 }
 
@@ -187,8 +187,8 @@ ul.rig.grid li {
 }
 
 div#menuwrapper {
+    margin: 0 auto;
     margin-top: 10px;
-    margin: 0px auto;
     text-align: left;
 }
 
@@ -198,8 +198,8 @@ div#content {
 }
 
 nav ul {
-    padding: 0px;
-    margin: 0px;
+    padding: 0;
+    margin: 0;
     margin-right: 10px;
     box-shadow: 2px 2px 2px #dfdfdf;
 }
@@ -227,7 +227,7 @@ nav ul li a {
     text-decoration: none;
     display: block;
     color: #333;
-    padding: 14px 34px 14px 34px;
+    padding: 14px 34px;
 
     transition: background 0.3s ease-out; /* explorer 10 */
     -webkit-transition: background 0.3s ease-out; /* chrome & safari */
@@ -251,7 +251,7 @@ nav ul li ul{
     display: inline;
     visibility: hidden;
     position: absolute;
-    padding:0px;
+    padding:0;
 }
 
 nav ul li ul li{
@@ -268,13 +268,13 @@ nav ul li ul li a:hover{
 }
 
 div.backtotop {
-    margin: auto 0px;
+    margin: auto 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     border-radius: 5px;
     width: 250px;
     text-align: center;
     height: 35px;
-    display: flex; 
+    display: flex;
     display: -webkit-flex;
     float: left;
     color: #000000;
@@ -282,13 +282,13 @@ div.backtotop {
 }
 
 .pagination {
-    margin: auto 0px;
+    margin: auto 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     border-radius: 5px;
     width: 250px;
     text-align: center;
     height: 35px;
-    display: flex; 
+    display: flex;
     display: -webkit-flex;
     float: right;
     color: #000000;
@@ -303,7 +303,7 @@ div.backtotop {
     width:20px;
     padding-left:20px;
     padding-right:20px;
-    margin: auto auto auto auto;
+    margin: auto;
 }
 
 .right-arrow {
@@ -311,7 +311,7 @@ div.backtotop {
     width:20px;
     padding-left:20px;
     padding-right:20px;
-    margin: auto auto auto auto;
+    margin: auto;
  }
 
 a.nostyle:link {
