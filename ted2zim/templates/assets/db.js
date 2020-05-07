@@ -2,7 +2,8 @@
  * videoDB is responsible for loading
  * and managing the video data from the data.js file.
  */
-var videoDB = (function() {
+var videoDB;
+videoDB = (function() {
   var ITEMS_PER_PAGE = 40;
   var db = {};
   var data;
