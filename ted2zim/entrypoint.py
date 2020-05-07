@@ -17,7 +17,6 @@ def main():
     parser.add_argument(
         "--topics",
         help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
-        required=True,
     )
 
     parser.add_argument(
@@ -132,6 +131,10 @@ def main():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
@@ -140,8 +143,6 @@ def main():
             raise ValueError(
                 "Maximum number of videos to scrape per topic must be greater than or equal to 1"
             )
-        if not args.topics:
-            raise ValueError("Please supply topics to parse")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:

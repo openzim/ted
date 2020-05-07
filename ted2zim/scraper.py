@@ -25,12 +25,10 @@ from .WebVTTcreator import WebVTTcreator
 
 class Ted2Zim:
 
-    # The base Url. The link gives you a grid of all TED talks.
-    BASE_URL = "https://ted.com/talks"
+    # The base URL for TED
+    BASE_URL = "https://ted.com/"
     # BeautifulSoup instance
     soup = None
-    # Page count
-    pages = None
     # List of links to all TED talks
     videos = []
 
@@ -55,6 +53,7 @@ class Ted2Zim:
         autoplay,
         use_any_optimized_version,
         s3_url_with_credentials,
+        playlist,
     ):
 
         # video-encoding info
@@ -75,9 +74,10 @@ class Ted2Zim:
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
 
         # scraper options
-        self.topics = [c.strip().replace(" ", "+") for c in topics.split(",")]
+        self.topics = [] if not topics else [c.strip().replace(" ", "+") for c in topics.split(",")]
         self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
+        self.playlist = playlist
 
         # zim info
         self.zim_info = ZimInfo(
@@ -126,13 +126,40 @@ class Ted2Zim:
     def ted_topics_json(self):
         return self.output_dir.joinpath("ted_topics.json")
 
-    def extract_all_video_links(self):
+    @property
+    def talks_base_url(self):
+        return self.BASE_URL + "talks"
 
-        # extracts all video links for different topics
-        # it iterates over the topics and then over pages to get required number of video links
+    @property
+    def playlists_base_url(self):
+        return self.BASE_URL + "playlists"
+
+    def extract_videos_from_playlist(self):
+
+        # extracts metadata for all videos in the given playlist
+        # it calls extract_video_info on all links to get this data
+        playlist_url = f"{self.playlists_base_url}/{self.playlist}"
+        soup = BeautifulSoup(
+            download_from_site(playlist_url).text, features="html.parser"
+        )
+        video_elements = soup.find_all("a", attrs={"class": "hover/appear"})
+        for element in video_elements:
+            relative_path = element.get("href")
+            url = urljoin(self.talks_base_url, relative_path)
+            self.extract_video_info(url)
+            logger.debug(f"Done {relative_path}")
+        logger.debug(f"Total videos found on playlist: {len(video_elements)}")
+        if not video_elements:
+            raise ValueError("No videos found. Check the supplied playlist ID")
+        self.update_title_and_description()
+
+    def extract_videos_from_topics(self):
+
+        # extracts metadata for required number of videos on different topics
+        # it iterates over the topics and then over pages to get required number of videos
         for topic in self.topics:
             logger.debug(f"Fetching video links for topic: {topic}")
-            topic_url = f"{self.BASE_URL}?topics%5B%5D={topic}"
+            topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
             self.soup = BeautifulSoup(
                 download_from_site(topic_url).text, features="html.parser"
             )
@@ -143,7 +170,9 @@ class Ted2Zim:
                 url = f"{topic_url}&page={page}"
                 html = download_from_site(url).text
                 self.soup = BeautifulSoup(html, features="html.parser")
-                num_videos_extracted = self.extract_videos(video_allowance)
+                num_videos_extracted = self.extract_videos_on_current_page(
+                    video_allowance
+                )
                 if num_videos_extracted == 0:
                     break
                 video_allowance -= num_videos_extracted
@@ -160,31 +189,37 @@ class Ted2Zim:
         self.update_title_and_description()
 
     def update_title_and_description(self):
-        if len(self.topics) > 1:
+        if self.playlist:
             if not self.title:
-                self.title = "TED Collection"
+                self.title = "TED Playlist"
             if not self.description:
-                self.description = "A selection of TED videos from several topics"
+                self.description = "A curated list of related TED videos"
         else:
-            if not self.title:
-                topic_str = self.topics[0].replace("+", " ")
-                self.title = f"{topic_str.capitalize()} from TED"
-            if not self.description:
-                self.description = f"A selection of {topic_str} videos from TED"
+            if len(self.topics) > 1:
+                if not self.title:
+                    self.title = "TED Collection"
+                if not self.description:
+                    self.description = "A selection of TED videos from several topics"
+            else:
+                if not self.title:
+                    topic_str = self.topics[0].replace("+", " ")
+                    self.title = f"{topic_str.capitalize()} from TED"
+                if not self.description:
+                    self.description = f"A selection of {topic_str} videos from TED"
 
-    def extract_videos(self, video_allowance):
+    def extract_videos_on_current_page(self, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
         # we are searching for the div inside this div, that has an <a>-tag
         # with the class name 'media__image', because this is the relative
-        # link to the representative TED talk. We have to turn this relative
-        # link to an absolute link. This is done through the `utils` class
+        # link to the representative TED talk. It turns this relative link to
+        # an absolute link and calls extract_video_info for them
         videos = self.soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
         logger.debug(f"{str(len(videos))} video(s) found on current page")
         for video in videos:
-            url = urljoin(self.BASE_URL, video["href"])
+            url = urljoin(self.talks_base_url, video["href"])
             self.extract_video_info(url)
             logger.debug(f"Done {video['href']}")
         return len(videos)
@@ -595,7 +630,10 @@ class Ted2Zim:
             logger.info(
                 f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
             )
-        self.extract_all_video_links()
+        if self.topics:
+            self.extract_videos_from_topics()
+        elif self.playlist:
+            self.extract_videos_from_playlist()
         self.dump_data()
 
         # clean the build directory if it already exists
