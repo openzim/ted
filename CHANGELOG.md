@@ -1,4 +1,4 @@
-##2.0.0 [WIP]
+# 2.0.0 [WIP]
 - Rewritten the scraper in python3
 - New command to run `ted2zim`
 - Introduced changelog
