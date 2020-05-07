@@ -182,7 +182,7 @@ class Ted2Zim:
         videos = self.soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
-        logger.debug(f"{str(len(videos))} videos found on current page")
+        logger.debug(f"{str(len(videos))} video(s) found on current page")
         for video in videos:
             url = urljoin(self.BASE_URL, video["href"])
             self.extract_video_info(url)
@@ -451,9 +451,8 @@ class Ted2Zim:
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
 
             # ensure that video directory exists and is clean
-            if video_dir.exists():
-                shutil.rmtree(video_dir)
-            video_dir.mkdir(parents=True)
+            if not video_dir.exists():
+                video_dir.mkdir(parents=True)
 
             # download video
             downloaded_from_cache = False
@@ -542,7 +541,7 @@ class Ted2Zim:
             self.topics = json.load(data_file)
 
     def s3_credentials_ok(self):
-        logger.info("testing S3 Optimization Cache credentials")
+        logger.info("Testing S3 Optimization Cache credentials")
         self.s3_storage = KiwixStorage(self.s3_url_with_credentials)
         if not self.s3_storage.check_credentials(
             list_buckets=True, bucket=True, write=True, read=True, failsafe=True
@@ -598,6 +597,12 @@ class Ted2Zim:
             )
         self.extract_all_video_links()
         self.dump_data()
+
+        # clean the build directory if it already exists
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
+        self.build_dir.mkdir(parents=True)
+
         self.download_video_data()
         self.download_subtitles()
         self.render_home_page()
