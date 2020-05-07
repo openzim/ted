@@ -450,43 +450,35 @@ class Ted2Zim:
             speaker_path = video_dir.joinpath("speaker.jpg")
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
 
-            # ensure that video directory exists
-            if not video_dir.exists():
-                video_dir.mkdir(parents=True)
+            # ensure that video directory exists and is clean
+            if video_dir.exists():
+                shutil.rmtree(video_dir)
+            video_dir.mkdir(parents=True)
 
             # download video
             downloaded_from_cache = False
-            if not req_video_file_path.exists():
-                logger.debug(f"Downloading {video_title}")
-                if self.s3_storage:
-                    s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
-                    downloaded_from_cache = self.download_from_cache(
-                        s3_key, req_video_file_path
-                    )
-                if not downloaded_from_cache:
-                    try:
-                        save_large_file(video_link, org_video_file_path)
-                    except Exception:
-                        logger.error(f"Could not download {org_video_file_path}")
-            else:
-                logger.debug(f"video already exists. Skipping video {video_title}")
+            logger.debug(f"Downloading {video_title}")
+            if self.s3_storage:
+                s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
+                downloaded_from_cache = self.download_from_cache(
+                    s3_key, req_video_file_path
+                )
+            if not downloaded_from_cache:
+                try:
+                    save_large_file(video_link, org_video_file_path)
+                except Exception:
+                    logger.error(f"Could not download {org_video_file_path}")
 
             # download an image of the speaker
-            if not speaker_path.exists():
-                if video_speaker == "None" or video_speaker == "":
-                    logger.debug("Speaker doesn't have an image")
-                else:
-                    logger.debug(f"Downloading Speaker image for {video_title}")
-                    save_large_file(video_speaker, speaker_path)
+            if video_speaker == "None" or video_speaker == "":
+                logger.debug("Speaker doesn't have an image")
             else:
-                logger.debug(f"speaker.jpg already exists for {video_title}")
+                logger.debug(f"Downloading Speaker image for {video_title}")
+                save_large_file(video_speaker, speaker_path)
 
             # download the thumbnail of the video
-            if not thumbnail_path.exists():
-                logger.debug(f"Downloading thumbnail for {video_title}")
-                save_large_file(video_thumbnail, thumbnail_path)
-            else:
-                logger.debug(f"Thumbnail already exists for {video_title}")
+            logger.debug(f"Downloading thumbnail for {video_title}")
+            save_large_file(video_thumbnail, thumbnail_path)
 
             # recompress if necessary
             try:
@@ -600,13 +592,12 @@ class Ted2Zim:
     def run(self):
         if self.s3_url_with_credentials and not self.s3_credentials_ok():
             raise ValueError("Unable to connect to Optimization Cache. Check its URL.")
-
-        self.extract_all_video_links()
-        self.dump_data()
         if self.s3_storage:
             logger.info(
-                f"  using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
+                f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
             )
+        self.extract_all_video_links()
+        self.dump_data()
         self.download_video_data()
         self.download_subtitles()
         self.render_home_page()
