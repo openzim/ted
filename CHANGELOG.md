@@ -7,3 +7,4 @@
 - Web dependencies removed from repository
 - New Dockerfile
 - New project structure
+- Added S3 based optimization cache support
