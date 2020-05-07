@@ -55,6 +55,7 @@ class Ted2Zim:
         autoplay,
         use_any_optimized_version,
         s3_url_with_credentials,
+        source_language,
     ):
 
         # video-encoding info
@@ -78,6 +79,7 @@ class Ted2Zim:
         self.topics = [c.strip().replace(" ", "+") for c in topics.split(",")]
         self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
+        self.source_language = source_language
 
         # zim info
         self.zim_info = ZimInfo(
@@ -133,6 +135,8 @@ class Ted2Zim:
         for topic in self.topics:
             logger.debug(f"Fetching video links for topic: {topic}")
             topic_url = f"{self.BASE_URL}?topics%5B%5D={topic}"
+            if self.source_language:
+                topic_url = topic_url + f"&language={self.source_language}"
             self.soup = BeautifulSoup(
                 download_from_site(topic_url).text, features="html.parser"
             )
@@ -156,6 +160,10 @@ class Ted2Zim:
                     f"Removed topic {topic} from topic list as it had no videos"
                 )
         if not self.topics:
+            if self.source_language:
+                raise ValueError(
+                    "No videos found for any topic in the language requested. Check topic(s) and/or language code supplied to --only-videos-in"
+                )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
         self.update_title_and_description()
 
