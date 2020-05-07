@@ -14,9 +14,11 @@ from urllib.parse import urljoin
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_large_file
+from kiwixstorage import KiwixStorage
+from pif import get_public_ip
 
 from .utils import download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, SCRAPER, logger
+from .constants import ROOT_DIR, SCRAPER, ENCODER_VERSION, logger
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
@@ -51,6 +53,8 @@ class Ted2Zim:
         tags,
         keep_build_dir,
         autoplay,
+        use_any_optimized_version,
+        s3_url_with_credentials,
     ):
 
         # video-encoding info
@@ -86,6 +90,12 @@ class Ted2Zim:
             scraper=SCRAPER,
             favicon="favicon.png",
         )
+
+        # optimization cache
+        self.s3_url_with_credentials = s3_url_with_credentials
+        self.use_any_optimized_version = use_any_optimized_version
+        self.s3_storage = None
+        self.video_quality = "low" if self.low_quality else "high"
 
         # debug/developer options
         self.no_zim = no_zim
@@ -172,7 +182,7 @@ class Ted2Zim:
         videos = self.soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
-        logger.debug(f"{str(len(videos))} videos found on current page")
+        logger.debug(f"{str(len(videos))} video(s) found on current page")
         for video in videos:
             url = urljoin(self.BASE_URL, video["href"])
             self.extract_video_info(url)
@@ -435,45 +445,56 @@ class Ted2Zim:
             video_speaker = video["speaker_picture"]
             video_thumbnail = video["thumbnail"]
             video_dir = self.videos_dir.joinpath(video_id)
-            video_file_path = video_dir.joinpath("video.mp4")
+            org_video_file_path = video_dir.joinpath("video.mp4")
+            req_video_file_path = video_dir.joinpath(f"video.{self.video_format}")
             speaker_path = video_dir.joinpath("speaker.jpg")
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
 
-            # ensure that video directory exists
+            # ensure that video directory exists and is clean
             if not video_dir.exists():
                 video_dir.mkdir(parents=True)
 
             # download video
-            if not video_file_path.exists():
-                logger.debug(f"Downloading {video_title}")
+            downloaded_from_cache = False
+            logger.debug(f"Downloading {video_title}")
+            if self.s3_storage:
+                s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
+                downloaded_from_cache = self.download_from_cache(
+                    s3_key, req_video_file_path
+                )
+            if not downloaded_from_cache:
                 try:
-                    save_large_file(video_link, video_file_path)
+                    save_large_file(video_link, org_video_file_path)
                 except Exception:
-                    logger.error(f"Could not download {video_file_path}")
-            else:
-                logger.debug(f"video.mp4 already exists. Skipping video {video_title}")
+                    logger.error(f"Could not download {org_video_file_path}")
 
             # download an image of the speaker
-            if not speaker_path.exists():
-                if video_speaker == "None" or video_speaker == "":
-                    logger.debug("Speaker doesn't have an image")
-                else:
-                    logger.debug(f"Downloading Speaker image for {video_title}")
-                    save_large_file(video_speaker, speaker_path)
+            if video_speaker == "None" or video_speaker == "":
+                logger.debug("Speaker doesn't have an image")
             else:
-                logger.debug(f"speaker.jpg already exists for {video_title}")
+                logger.debug(f"Downloading Speaker image for {video_title}")
+                save_large_file(video_speaker, speaker_path)
 
             # download the thumbnail of the video
-            if not thumbnail_path.exists():
-                logger.debug(f"Downloading thumbnail for {video_title}")
-                save_large_file(video_thumbnail, thumbnail_path)
-            else:
-                logger.debug(f"Thumbnail already exists for {video_title}")
+            logger.debug(f"Downloading thumbnail for {video_title}")
+            save_large_file(video_thumbnail, thumbnail_path)
 
             # recompress if necessary
-            post_process_video(
-                video_dir, video_id, self.video_format, self.low_quality,
-            )
+            try:
+                post_process_video(
+                    video_dir,
+                    video_id,
+                    self.video_format,
+                    self.low_quality,
+                    skip_recompress=downloaded_from_cache,
+                )
+            except Exception as e:
+                logger.error(f"Failed to post process video {video_id}")
+                logger.debug(e)
+            else:
+                # upload to cache only if recompress was successful
+                if self.s3_storage and not downloaded_from_cache:
+                    self.upload_to_cache(s3_key, req_video_file_path)
 
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
@@ -519,9 +540,69 @@ class Ted2Zim:
         with open(self.ted_topics_json) as data_file:
             self.topics = json.load(data_file)
 
+    def s3_credentials_ok(self):
+        logger.info("Testing S3 Optimization Cache credentials")
+        self.s3_storage = KiwixStorage(self.s3_url_with_credentials)
+        if not self.s3_storage.check_credentials(
+            list_buckets=True, bucket=True, write=True, read=True, failsafe=True
+        ):
+            logger.error("S3 cache connection error testing permissions.")
+            logger.error(f"  Server: {self.s3_storage.url.netloc}")
+            logger.error(f"  Bucket: {self.s3_storage.bucket_name}")
+            logger.error(f"  Key ID: {self.s3_storage.params.get('keyid')}")
+            logger.error(f"  Public IP: {get_public_ip()}")
+            return False
+        return True
+
+    def download_from_cache(self, key, video_path):
+
+        # Checks if file is in cache and returns true if
+        # successfully downloaded from cache
+        if self.use_any_optimized_version:
+            if not self.s3_storage.has_object(key, self.s3_storage.bucket_name):
+                return False
+        else:
+            if not self.s3_storage.has_object_matching_meta(
+                key, tag="encoder_version", value=ENCODER_VERSION
+            ):
+                return False
+        video_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self.s3_storage.download_file(key, video_path)
+        except Exception as exc:
+            logger.error(f"{key} failed to download from cache: {exc}")
+            return False
+        logger.info(f"downloaded {video_path} from cache at {key}")
+        return True
+
+    def upload_to_cache(self, key, video_path):
+
+        # returns true if successfully uploaded to cache
+        try:
+            self.s3_storage.upload_file(
+                video_path, key, meta={"encoder_version": ENCODER_VERSION}
+            )
+        except Exception as exc:
+            logger.error(f"{key} failed to upload to cache: {exc}")
+            return False
+        logger.info(f"uploaded {video_path} to cache at {key}")
+        return True
+
     def run(self):
+        if self.s3_url_with_credentials and not self.s3_credentials_ok():
+            raise ValueError("Unable to connect to Optimization Cache. Check its URL.")
+        if self.s3_storage:
+            logger.info(
+                f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
+            )
         self.extract_all_video_links()
         self.dump_data()
+
+        # clean the build directory if it already exists
+        if self.build_dir.exists():
+            shutil.rmtree(self.build_dir)
+        self.build_dir.mkdir(parents=True)
+
         self.download_video_data()
         self.download_subtitles()
         self.render_home_page()

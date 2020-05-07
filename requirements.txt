@@ -3,3 +3,5 @@ zimscraperlib>=1.0.5,<1.1
 requests>=2.23,<3.0
 beautifulsoup4==4.9.0
 Jinja2==2.10.1
+kiwixstorage>=0.2,<1.0
+pif==0.8.2
