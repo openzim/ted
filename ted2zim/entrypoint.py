@@ -132,6 +132,12 @@ def main():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--only-videos-in",
+        help="An ISO-639-1 language code with two letter country code where relevant to get videos in that specific language. Subtitle availablity is considered if audio is not found in that language",
+        dest="source_language",
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
