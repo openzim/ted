@@ -17,7 +17,6 @@ def main():
     parser.add_argument(
         "--topics",
         help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
-        required=True,
     )
 
     parser.add_argument(
@@ -133,6 +132,10 @@ def main():
     )
 
     parser.add_argument(
+        "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
+    )
+
+    parser.add_argument(
         "--only-videos-in",
         help="An ISO-639-1 language code with two letter country code where relevant to get videos in that specific language. Subtitle availablity is considered if audio is not found in that language",
         dest="source_language",
@@ -142,12 +145,20 @@ def main():
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     try:
-        if args.max_videos_per_topic < 1:
-            raise ValueError(
-                "Maximum number of videos to scrape per topic must be greater than or equal to 1"
-            )
-        if not args.topics:
-            raise ValueError("Please supply topics to parse")
+        if args.topics and args.playlist:
+            parser.error("--topics is incompatible with --playlist")
+        elif args.topics:
+            if args.max_videos_per_topic < 1:
+                parser.error(
+                    "Maximum number of videos to scrape per topic must be greater than or equal to 1"
+                )
+        elif args.playlist:
+            if args.source_language:
+                parser.error(
+                    "--only-videos-in is not compatible with playlists. Use this option only in combination with --topics"
+                )
+        else:
+            parser.error("Either --topics or --playlist is required")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:
