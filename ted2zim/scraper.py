@@ -18,18 +18,12 @@ from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
 from .utils import download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, SCRAPER, ENCODER_VERSION, logger
+from .constants import ROOT_DIR, SCRAPER, ENCODER_VERSION, BASE_URL, logger
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
 
 class Ted2Zim:
-
-    # The base URL for TED
-    BASE_URL = "https://ted.com/"
-    # List of links to all TED talks
-    videos = []
-
     def __init__(
         self,
         max_videos_per_topic,
@@ -106,6 +100,11 @@ class Ted2Zim:
         self.keep_build_dir = keep_build_dir
         self.debug = debug
 
+        # class members
+        self.videos = []
+        self.playlist_title = None
+        self.playlist_description = None
+
     @property
     def root_dir(self):
         return ROOT_DIR
@@ -132,11 +131,11 @@ class Ted2Zim:
 
     @property
     def talks_base_url(self):
-        return self.BASE_URL + "talks"
+        return BASE_URL + "talks"
 
     @property
     def playlists_base_url(self):
-        return self.BASE_URL + "playlists"
+        return BASE_URL + "playlists"
 
     def extract_videos_from_playlist(self):
 
@@ -147,6 +146,8 @@ class Ted2Zim:
             download_from_site(playlist_url).text, features="html.parser"
         )
         video_elements = soup.find_all("a", attrs={"class": "hover/appear"})
+        self.playlist_title = soup.find("h1", attrs={"class": "f:4"}).string
+        self.playlist_description = soup.find("p", attrs={"class": "m-b:2"}).string
         for element in video_elements:
             relative_path = element.get("href")
             url = urljoin(self.talks_base_url, relative_path)
@@ -155,7 +156,6 @@ class Ted2Zim:
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
             raise ValueError("Wrong playlist ID supplied. No videos found")
-        self.update_title_and_description()
 
     def extract_videos_from_topics(self):
 
@@ -175,7 +175,7 @@ class Ted2Zim:
             while video_allowance:
                 url = f"{topic_url}&page={page}"
                 html = download_from_site(url).text
-                num_videos_extracted = self.extract_videos_on_current_page(
+                num_videos_extracted = self.extract_videos_on_page(
                     html, video_allowance,
                 )
                 if num_videos_extracted == 0:
@@ -195,14 +195,13 @@ class Ted2Zim:
                     "No videos found for any topic in the language requested. Check topic(s) and/or language code supplied to --only-videos-in"
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
-        self.update_title_and_description()
 
     def update_title_and_description(self):
         if self.playlist:
             if not self.title:
-                self.title = "TED Playlist"
+                self.title = self.playlist_title
             if not self.description:
-                self.description = "A curated list of related TED videos"
+                self.description = self.playlist_description
         else:
             if len(self.topics) > 1:
                 if not self.title:
@@ -216,7 +215,7 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def extract_videos_on_current_page(self, page_html, video_allowance):
+    def extract_videos_on_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
         # we are searching for the div inside this div, that has an <a>-tag
@@ -512,11 +511,10 @@ class Ted2Zim:
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
         # build_dir/{video id}/subs/subs_{language code}.vtt
-        # self.load_meta_from_file()
-        for i in range(len(self.videos)):
-            video_id = str(self.videos[i]["id"])
-            video_title = self.videos[i]["title"]
-            video_subtitles = self.videos[i]["subtitles"]
+        for i, video in enumerate(self.videos):
+            video_id = str(video["id"])
+            video_title = video["title"]
+            video_subtitles = video["subtitles"]
             video_dir = self.videos_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
@@ -602,6 +600,8 @@ class Ted2Zim:
             self.extract_videos_from_playlist()
         else:
             self.extract_videos_from_topics()
+
+        self.update_title_and_description()
 
         # clean the build directory if it already exists
         if self.build_dir.exists():

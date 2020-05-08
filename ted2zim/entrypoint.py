@@ -158,9 +158,7 @@ def main():
                     "--only-videos-in is not compatible with playlists. Use this option only in combination with --topics"
                 )
         else:
-            parser.error(
-                "Either of the two arguments --topics and --playlist is required"
-            )
+            parser.error("Either --topics or --playlist is required")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:
