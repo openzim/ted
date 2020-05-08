@@ -27,8 +27,6 @@ class Ted2Zim:
 
     # The base URL for TED
     BASE_URL = "https://ted.com/"
-    # BeautifulSoup instance
-    soup = None
     # List of links to all TED talks
     videos = []
 
@@ -74,7 +72,11 @@ class Ted2Zim:
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
 
         # scraper options
-        self.topics = [] if not topics else [c.strip().replace(" ", "+") for c in topics.split(",")]
+        self.topics = (
+            []
+            if not topics
+            else [c.strip().replace(" ", "+") for c in topics.split(",")]
+        )
         self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
         self.playlist = playlist
@@ -150,7 +152,7 @@ class Ted2Zim:
             logger.debug(f"Done {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
-            raise ValueError("No videos found. Check the supplied playlist ID")
+            raise ValueError("Wrong playlist ID supplied. No videos found")
         self.update_title_and_description()
 
     def extract_videos_from_topics(self):
@@ -160,7 +162,7 @@ class Ted2Zim:
         for topic in self.topics:
             logger.debug(f"Fetching video links for topic: {topic}")
             topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
-            self.soup = BeautifulSoup(
+            soup = BeautifulSoup(
                 download_from_site(topic_url).text, features="html.parser"
             )
             page = 1
@@ -169,9 +171,8 @@ class Ted2Zim:
             while video_allowance:
                 url = f"{topic_url}&page={page}"
                 html = download_from_site(url).text
-                self.soup = BeautifulSoup(html, features="html.parser")
                 num_videos_extracted = self.extract_videos_on_current_page(
-                    video_allowance
+                    html, video_allowance,
                 )
                 if num_videos_extracted == 0:
                     break
@@ -207,14 +208,15 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def extract_videos_on_current_page(self, video_allowance):
+    def extract_videos_on_current_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
         # we are searching for the div inside this div, that has an <a>-tag
         # with the class name 'media__image', because this is the relative
         # link to the representative TED talk. It turns this relative link to
         # an absolute link and calls extract_video_info for them
-        videos = self.soup.select("div.row div.media__image a")
+        soup = BeautifulSoup(page_html, features="html.parser")
+        videos = soup.select("div.row div.media__image a")
         if len(videos) > video_allowance:
             videos = videos[0:video_allowance]
         logger.debug(f"{str(len(videos))} video(s) found on current page")
@@ -235,8 +237,8 @@ class Ted2Zim:
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
-        self.soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
-        div = self.soup.find("div", attrs={"class": "talks-main"})
+        soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
+        div = soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
             logger.error("The required script tag containing video meta is not present")
@@ -323,7 +325,7 @@ class Ted2Zim:
         subtitles = build_subtitle_pages(video_id, subtitles)
 
         # Extract the keywords for the TED talk
-        keywords = self.soup.find("meta", attrs={"name": "keywords"})["content"]
+        keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
         keywords = [key.strip() for key in keywords.split(",")]
 
         # Check if video ID already exists. If not, append data to self.videos
@@ -349,41 +351,15 @@ class Ted2Zim:
         else:
             logger.debug(f"Video {video_id} already present in video list")
 
-    def dump_data(self):
-
-        # Dump all the data about every TED talk in a json file
-        # inside the 'build' folder.
-        logger.debug(
-            f"Dumping {len(self.videos)} videos into {self.ted_videos_json} and {len(self.topics)} topic(s) into {self.ted_topics_json}"
-        )
-        video_data = json.dumps(self.videos, indent=4)
-        topics_data = json.dumps(self.topics, indent=4)
-
-        # Check, if the folder exists. Create it, if it doesn't.
-        if not self.build_dir.exists():
-            self.build_dir.mkdir(parents=True)
-
-        # Create or override the json files in the build
-        # directory with the video data gathered from the scraper
-        # and topic data.
-        with open(self.ted_videos_json, "w") as f:
-            f.write(video_data)
-        with open(self.ted_topics_json, "w") as f:
-            f.write(topics_data)
-
     def render_video_pages(self):
 
         # Render static html pages from the scraped video data and
         # save the pages in build_dir/<video-id>/index.html
-        # Load data from json files
-        self.load_meta_from_file()
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
             video_id = str(video["id"])
-            if not self.build_dir.exists():
-                self.build_dir.mkdir(parents=True)
 
             html = env.get_template("article.html").render(
                 title=video["title"],
@@ -405,13 +381,9 @@ class Ted2Zim:
     def render_home_page(self):
 
         # Render the homepage
-        # Load data from json files
-        self.load_meta_from_file()
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
-        if not self.build_dir.exists():
-            self.build_dir.mkdir(parents=True)
         languages = []
         for video in self.videos:
             for language in video["subtitles"]:
@@ -444,7 +416,6 @@ class Ted2Zim:
     def generate_datafile(self):
 
         # Generate data.js inside the assets folder
-        self.load_meta_from_file()
         video_list = []
         for video in self.videos:
             json_data = {
@@ -470,8 +441,6 @@ class Ted2Zim:
         # Save the videos in build_dir/{video id}/video.mp4.
         # Save the thumbnail for the video in build_dir/{video id}/thumbnail.jpg.
         # Save the image of the speaker in build_dir/{video id}/speaker.jpg.
-        # load the dumped metadata
-        self.load_meta_from_file()
         for video in self.videos:
             # set up variables
             video_id = str(video["id"])
@@ -485,7 +454,7 @@ class Ted2Zim:
             speaker_path = video_dir.joinpath("speaker.jpg")
             thumbnail_path = video_dir.joinpath("thumbnail.jpg")
 
-            # ensure that video directory exists and is clean
+            # ensure that video directory exists
             if not video_dir.exists():
                 video_dir.mkdir(parents=True)
 
@@ -535,11 +504,11 @@ class Ted2Zim:
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
         # build_dir/{video id}/subs/subs_{language code}.vtt
-        self.load_meta_from_file()
-        for video in self.videos:
-            video_id = str(video["id"])
-            video_title = video["title"]
-            video_subtitles = video["subtitles"]
+        # self.load_meta_from_file()
+        for i in range(len(self.videos)):
+            video_id = str(self.videos[i]["id"])
+            video_title = self.videos[i]["title"]
+            video_subtitles = self.videos[i]["subtitles"]
             video_dir = self.videos_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
@@ -554,7 +523,7 @@ class Ted2Zim:
                 sleep(0.5)
                 subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
                 if not subtitle_file:
-                    video["subtitles"].remove(subtitle)
+                    self.videos[i]["subtitles"].remove(subtitle)
                     logger.error(
                         f"Subtitle file for {subtitle['languageCode']} could not be created"
                     )
@@ -564,16 +533,6 @@ class Ted2Zim:
                 )
                 with open(subtitle_file_name, "w", encoding="utf-8") as sub_file:
                     sub_file.write(subtitle_file)
-
-        # save the info that some videos don't have subtitle file created successfully
-        self.dump_data()
-
-    def load_meta_from_file(self):
-        # Load the dumped json meta-data file.
-        with open(self.ted_videos_json) as data_file:
-            self.videos = json.load(data_file)
-        with open(self.ted_topics_json) as data_file:
-            self.topics = json.load(data_file)
 
     def s3_credentials_ok(self):
         logger.info("Testing S3 Optimization Cache credentials")
@@ -630,11 +589,11 @@ class Ted2Zim:
             logger.info(
                 f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
             )
-        if self.topics:
-            self.extract_videos_from_topics()
-        elif self.playlist:
+
+        if self.playlist:
             self.extract_videos_from_playlist()
-        self.dump_data()
+        else:
+            self.extract_videos_from_topics()
 
         # clean the build directory if it already exists
         if self.build_dir.exists():
