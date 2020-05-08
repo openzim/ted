@@ -135,6 +135,12 @@ def main():
         "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
     )
 
+    parser.add_argument(
+        "--only-videos-in",
+        help="An ISO-639-1 language code with two letter country code where relevant to get videos in that specific language. Subtitle availablity is considered if audio is not found in that language",
+        dest="source_language",
+    )
+
     args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
@@ -146,7 +152,12 @@ def main():
                 parser.error(
                     "Maximum number of videos to scrape per topic must be greater than or equal to 1"
                 )
-        elif not args.topics and not args.playlist:
+        elif args.playlist:
+            if args.source_language:
+                parser.error(
+                    "--only-videos-in is not compatible with playlists. Use this option only in combination with --topics"
+                )
+        else:
             parser.error(
                 "Either of the two arguments --topics and --playlist is required"
             )

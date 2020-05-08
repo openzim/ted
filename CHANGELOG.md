@@ -9,3 +9,4 @@
 - New project structure
 - Added S3 based optimization cache support
 - Add support for TED playlists
+- Add support to filter videos available in a specific language
