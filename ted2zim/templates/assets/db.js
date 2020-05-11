@@ -24,20 +24,33 @@ videoDB = (function() {
    *                   when the data is loaded.
    */
   db.loadData = function(language, callback){
+    // Clear the previously loaded data.
+    data = [];
     if (typeof language === 'undefined'){
-      data = json_data;
+      for (i in json_data){
+        var tempObj = json_data[i];
+        tempObj.title = json_data[i].title[0].text;
+        tempObj.description = json_data[i].description[0].text;
+        data.push(tempObj);
+      }
     }
     else {
-
-      // Clear the previously loaded data.
-      data = [];
 
       // Iterate through the whole data set and 
       // add the video objects that have the language 
       // that we want to the data array.
       for (i in json_data){
         if (json_data[i].languages.indexOf(language) > -1) {
-          data.push(json_data[i]);
+          var idx = 0;
+          for (j in json_data[i].title) {
+            if (json_data[i].title[j].lang == language) {
+              idx = j;
+            }
+          }
+          var tempObj = json_data[i]
+          tempObj.title = json_data[i].title[idx].text;
+          tempObj.description = json_data[i].description[idx].text;
+          data.push(tempObj);
         }
       }
     }

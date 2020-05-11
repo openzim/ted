@@ -5,7 +5,7 @@
 import logging
 import argparse
 
-from .constants import NAME, SCRAPER, logger
+from .constants import NAME, SCRAPER, LANG, ALL, NONE, logger
 from .scraper import Ted2Zim
 
 
@@ -139,6 +139,21 @@ def main():
         "--only-videos-in",
         help="An ISO-639-1 language code with two letter country code where relevant to get videos in that specific language. Subtitle availablity is considered if audio is not found in that language",
         dest="source_language",
+    )
+
+    parser.add_argument(
+        "--subtitles-enough",
+        help="Consider subtitle availability while filtering videos by language",
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--subtitles",
+        help="Whether to provide subtitles in language requested, no subtitles, or all available subtitles",
+        default=LANG,
+        dest="subtitles_setting",
+        choices=[LANG, ALL, NONE],
     )
 
     args = parser.parse_args()

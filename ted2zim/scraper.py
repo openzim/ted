@@ -18,7 +18,16 @@ from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
 from .utils import download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, SCRAPER, ENCODER_VERSION, BASE_URL, logger
+from .constants import (
+    ROOT_DIR,
+    SCRAPER,
+    ENCODER_VERSION,
+    BASE_URL,
+    NONE,
+    MATCHING,
+    ALL,
+    logger,
+)
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
@@ -47,6 +56,8 @@ class Ted2Zim:
         s3_url_with_credentials,
         playlist,
         source_language,
+        subtitles_enough,
+        subtitles_setting,
     ):
 
         # video-encoding info
@@ -76,6 +87,14 @@ class Ted2Zim:
         self.autoplay = autoplay
         self.playlist = playlist
         self.source_language = source_language
+        self.subtitles_enough = subtitles_enough
+        self.subtitles_setting = (
+            subtitles_setting
+            if subtitles_setting == ALL
+            or subtitles_setting == MATCHING
+            or subtitles_setting == NONE
+            else [lang.strip() for lang in subtitles_setting.split(",")]
+        )
 
         # zim info
         self.zim_info = ZimInfo(
@@ -254,9 +273,17 @@ class Ted2Zim:
         json_data = json_data_tag.string
         json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
         json_data = json.loads(json_data)["__INITIAL_DATA__"]
+        lang_code = json_data["language"]
+        talk_info = json_data["talks"][0]
+        native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
+        if (
+            not self.subtitles_enough
+            and self.source_language
+            and native_talk_language not in self.source_language
+        ):
+            return
 
         # Extract the speaker of the TED talk
-        talk_info = json_data["talks"][0]
         if len(talk_info["speakers"]) != 0:
             speaker_info = talk_info["speakers"][0]
             speaker = " ".join(
@@ -325,10 +352,33 @@ class Ted2Zim:
         #         'languageName': u'English'
         #     }
         # ]
-        subtitles = [
-            {"languageName": lang["languageName"], "languageCode": lang["languageCode"]}
-            for lang in talk_info["player_talks"][0]["languages"]
-        ]
+        subtitles = []
+        if self.subtitles_setting == ALL:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in talk_info["player_talks"][0]["languages"]
+            ]
+        elif self.subtitles_setting == MATCHING:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in talk_info["player_talks"][0]["languages"]
+                and lang["languageCode"] in self.source_language
+            ]
+        else:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in talk_info["player_talks"][0]["languages"]
+                and lang["languageCode"] in self.subtitles_setting
+            ]
         subtitles = build_subtitle_pages(video_id, subtitles)
 
         # Extract the keywords for the TED talk
@@ -340,8 +390,8 @@ class Ted2Zim:
             self.videos.append(
                 {
                     "id": video_id,
-                    "title": title,
-                    "description": description,
+                    "title": [{"lang": lang_code, "text": title}],
+                    "description": [{"lang": lang_code, "text": description}],
                     "speaker": speaker,
                     "speaker_profession": speaker_profession,
                     "speaker_bio": speaker_bio,
@@ -357,6 +407,17 @@ class Ted2Zim:
             logger.debug(f"Successfully inserted video {video_id} into video list")
         else:
             logger.debug(f"Video {video_id} already present in video list")
+            for i, video in enumerate(self.videos):
+                if video.get("id", None) == video_id:
+                    if {"lang": lang_code, "text": title} not in video["title"]:
+                        self.videos[i]["title"].append(
+                            {"lang": lang_code, "text": title}
+                        )
+                        self.videos[i]["description"].append(
+                            {"lang": lang_code, "text": description}
+                        )
+                    if self.subtitles_setting == MATCHING:
+                        self.videos[i]["subtitles"] += subtitles
 
     def render_video_pages(self):
 
