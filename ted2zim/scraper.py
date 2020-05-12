@@ -249,6 +249,46 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
+    def generate_subtitle_list(self, video_id, all_langs):
+        # Generate a list of all subtitle languages with the link to
+        # its subtitles page. It will be in this format:
+        # [
+        #     {
+        #         'languageCode': u'en',
+        #         'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
+        #         'languageName': u'English'
+        #     }
+        # ]
+        subtitles = []
+        if self.subtitles_setting == ALL or not self.source_language:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in all_langs
+            ]
+        elif self.subtitles_setting == MATCHING or (self.subtitles_enough and self.subtitles_setting == NONE):
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in all_langs
+                if lang["languageCode"] in self.source_language
+            ]
+        elif self.subtitles_setting and self.subtitles_setting != NONE:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in all_langs
+                if lang["languageCode"] in self.subtitles_setting
+            ]
+        subtitles = build_subtitle_pages(video_id, subtitles)
+        return subtitles
+
     def extract_videos_on_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
@@ -363,43 +403,8 @@ class Ted2Zim:
         # We need this to generate the subtitle page.
         video_id = talk_info["id"]
 
-        # Generate a list of all subtitle languages with the link to
-        # its subtitles page. It will be in this format:
-        # [
-        #     {
-        #         'languageCode': u'en',
-        #         'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
-        #         'languageName': u'English'
-        #     }
-        # ]
-        subtitles = []
-        if self.subtitles_setting == ALL or not self.source_language:
-            subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in talk_info["player_talks"][0]["languages"]
-            ]
-        elif self.subtitles_setting == MATCHING or (self.subtitles_enough and self.subtitles_setting == NONE):
-            subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in talk_info["player_talks"][0]["languages"]
-                if lang["languageCode"] in self.source_language
-            ]
-        elif self.subtitles_setting and self.subtitles_setting != NONE:
-            subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in talk_info["player_talks"][0]["languages"]
-                if lang["languageCode"] in self.subtitles_setting
-            ]
-        subtitles = build_subtitle_pages(video_id, subtitles)
+        all_langs = talk_info["player_talks"][0]["languages"]
+        subtitles = self.generate_subtitle_list(video_id, all_langs)
 
         # Extract the keywords for the TED talk
         keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
@@ -427,21 +432,20 @@ class Ted2Zim:
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
             return True
-        else:
-            logger.debug(f"Video {video_id} already present in video list")
-            for i, video in enumerate(self.videos):
-                if video.get("id", None) == video_id:
-                    if {"lang": lang_code, "text": title} not in video["title"]:
-                        self.videos[i]["title"].append(
-                            {"lang": lang_code, "text": title}
-                        )
-                        self.videos[i]["description"].append(
-                            {"lang": lang_code, "text": description}
-                        )
-                        self.videos[i]["languages"].append({"languageCode": lang_code, "languageName": lang_name})
-                    if self.subtitles_setting == MATCHING:
-                        self.videos[i]["subtitles"] += subtitles
-            return False
+        logger.debug(f"Video {video_id} already present in video list")
+        for i, video in enumerate(self.videos):
+            if video.get("id", None) == video_id:
+                if {"lang": lang_code, "text": title} not in video["title"]:
+                    self.videos[i]["title"].append(
+                        {"lang": lang_code, "text": title}
+                    )
+                    self.videos[i]["description"].append(
+                        {"lang": lang_code, "text": description}
+                    )
+                    self.videos[i]["languages"].append({"languageCode": lang_code, "languageName": lang_name})
+                if self.subtitles_setting == MATCHING:
+                    self.videos[i]["subtitles"] += subtitles
+        return False
 
     def render_video_pages(self):
 
