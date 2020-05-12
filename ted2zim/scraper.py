@@ -293,12 +293,13 @@ class Ted2Zim:
         json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
         json_data = json.loads(json_data)["__INITIAL_DATA__"]
         lang_code = json_data["language"]
+        lang_name = json_data["requested_language_english_name"]
         talk_info = json_data["talks"][0]
         native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
         if (
             not self.subtitles_enough
             and self.source_language
-            and native_talk_language not in self.source_language
+            and native_talk_language != lang_code
         ):
             return False
 
@@ -409,6 +410,7 @@ class Ted2Zim:
             self.videos.append(
                 {
                     "id": video_id,
+                    "languages": [{"languageCode": lang_code, "languageName": lang_name}],
                     "title": [{"lang": lang_code, "text": title}],
                     "description": [{"lang": lang_code, "text": description}],
                     "speaker": speaker,
@@ -436,6 +438,7 @@ class Ted2Zim:
                         self.videos[i]["description"].append(
                             {"lang": lang_code, "text": description}
                         )
+                        self.videos[i]["languages"].append({"languageCode": lang_code, "languageName": lang_name})
                     if self.subtitles_setting == MATCHING:
                         self.videos[i]["subtitles"] += subtitles
             return False
@@ -451,9 +454,7 @@ class Ted2Zim:
             video_id = str(video["id"])
 
             html = env.get_template("article.html").render(
-                title=video["title"],
                 speaker=video["speaker"],
-                description=video["description"],
                 languages=video["subtitles"],
                 speaker_bio=video["speaker_bio"].replace("Full bio", ""),
                 speaker_img=video["speaker_picture"],
@@ -482,6 +483,7 @@ class Ted2Zim:
                         "languageName": language["languageName"],
                     }
                 )
+            languages += video["languages"]
         languages = [
             dict(tpl) for tpl in set(tuple(item.items()) for item in languages)
         ]
@@ -507,10 +509,9 @@ class Ted2Zim:
         # Generate data.js inside the assets folder
         video_list = []
         for video in self.videos:
+            lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [lang["languageCode"] for lang in video["languages"]]
             json_data = {
-                "languages": [lang["lang"] for lang in video["title"]]
-                if self.source_language
-                else [lang["languageCode"] for lang in video["subtitles"]],
+                "languages": [lang_code for lang_code in set(lang_codes)],
                 "id": video["id"],
                 "description": video["description"],
                 "title": video["title"],

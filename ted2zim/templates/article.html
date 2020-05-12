@@ -5,7 +5,7 @@
         <meta content="utf-8" http-equiv="encoding">
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ title }}</title>
+        <title id="title-head"></title>
         <link href="assets/videojs/video-js.min.css" rel="stylesheet" type="text/css">
         <link href="assets/article.css" rel="stylesheet" type="text/css">
         <link id="favicon" rel="shortcut icon" href="favicon.png" type="image/png">
@@ -13,13 +13,16 @@
         <script src="assets/videojs/video.min.js"></script>
         <script src="assets/ogvjs/ogv-support.js"></script>
         <script src="assets/ogvjs/ogv.js"></script>
-        <script src="assets/videojs-ogvjs.js"></script>        
+        <script src="assets/videojs-ogvjs.js"></script>
+        <script src="assets/data.js"></script>
+        <script src="assets/jquery.min.js"></script>
+        <script src="assets/article.js"></script>        
     </head>
     <body>
         <div id="content">
             <img id="backtolist" src="assets/img/TED_small.png" title="Back to the list" onclick="history.go(-1)" />
             <p id="speaker">{{ speaker }}</p>
-            <p id="title">{{ title }}</p>
+            <p id="title-text"></p>
             <video class="video-js vjs-default-skin"
                 controls preload="auto"
                 poster="videos/{{ video_id }}/thumbnail.jpg"
@@ -31,7 +34,7 @@
                     {% endfor %}
                 </video>
                 <div id="description">
-                    <p id="description">{{ description }}</p>
+                    <p id="description-text"></p>
                 </div>
                 <div id="date">{{ date }}</div>
                 <hr>

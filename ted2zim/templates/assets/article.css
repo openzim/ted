@@ -45,7 +45,7 @@ hr {
     max-width:100%;
 }
 
-#description {
+#description-text {
     font-family: 'RobotoLight';
     color: #333;
     width: 480px;
@@ -62,7 +62,7 @@ hr {
     max-width:100%;
 }
 
-#title {
+#title-text {
     font-family: "RobotoBold";
     margin-top: 10px;
     font-size: 30px;

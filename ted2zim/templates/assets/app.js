@@ -7,7 +7,7 @@ window.onload = function() {
   // This will display all data without any language filter.
   videoDB.loadData(undefined, function() {
     var data = videoDB.getPage(videoDB.getPageNumber());
-    refreshVideos(data);
+    refreshVideos(undefined, data);
   });
 
   refreshPagination();
@@ -36,7 +36,7 @@ function setupLanguageFilter() {
     videoDB.resetPage();
     videoDB.loadData(language, function() {
       var data = videoDB.getPage(videoDB.getPageNumber());
-      refreshVideos(data);
+      refreshVideos(language, data);
       refreshPagination();
     });
   });
@@ -50,7 +50,7 @@ function setupPagination() {
 
     function handlePagination(){
 	var data = videoDB.getPage(videoDB.getPageNumber());
-	refreshVideos(data);
+	refreshVideos(undefined, data);
 	refreshPagination();
 	window.scrollTo(0, 0);
     }
@@ -115,16 +115,21 @@ function refreshPagination() {
  * the passed in {pageData} parameter.
  * @param {pageData} Video data for the current page.
  */
-function refreshVideos(pageData) {  
+function refreshVideos(language, pageData) {  
     var videoList = document.getElementById('video-items');
     videoList.innerHTML = '';
-    
     for (i in pageData) {
       var video = pageData[i];
+      idx = 0;
+      for (j in video.title) {
+        if (video.title[j].lang == language) {
+          idx = j;
+        }
+      }
       var li = document.createElement('li');
       
       var a = document.createElement('a')
-      a.href =  video['id']+'.html';
+      a.href =  video['id']+'.html?lang=' + language;
       a.className = 'nostyle'
 
       var img = document.createElement('img');
@@ -136,7 +141,7 @@ function refreshVideos(pageData) {
       
       var title = document.createElement('p');
       title.id = 'title';
-      title.innerHTML = video['title'];
+      title.innerHTML = video['title'][idx].text;
 
       a.appendChild(img);
       a.appendChild(author);
