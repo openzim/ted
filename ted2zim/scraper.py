@@ -175,7 +175,7 @@ class Ted2Zim:
             relative_path = element.get("href")
             url = urljoin(self.talks_base_url, relative_path)
             self.extract_video_info(url)
-            logger.debug(f"Done {relative_path}")
+            logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
             raise ValueError("Wrong playlist ID supplied. No videos found")
@@ -249,7 +249,7 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def generate_subtitle_list(self, video_id, all_langs):
+    def generate_subtitle_list(self, video_id, all_langs, curr_lang):
         # Generate a list of all subtitle languages with the link to
         # its subtitles page. It will be in this format:
         # [
@@ -260,7 +260,7 @@ class Ted2Zim:
         #     }
         # ]
         subtitles = []
-        if self.subtitles_setting == ALL or not self.source_language:
+        if self.subtitles_setting == ALL or (not self.source_language and self.topics):
             subtitles = [
                 {
                     "languageName": lang["languageName"],
@@ -268,14 +268,16 @@ class Ted2Zim:
                 }
                 for lang in all_langs
             ]
-        elif self.subtitles_setting == MATCHING or (self.subtitles_enough and self.subtitles_setting == NONE):
+        elif self.subtitles_setting == MATCHING or (
+            self.subtitles_enough and self.subtitles_setting == NONE
+        ):
             subtitles = [
                 {
                     "languageName": lang["languageName"],
                     "languageCode": lang["languageCode"],
                 }
                 for lang in all_langs
-                if lang["languageCode"] in self.source_language
+                if lang["languageCode"] == curr_lang
             ]
         elif self.subtitles_setting and self.subtitles_setting != NONE:
             subtitles = [
@@ -404,7 +406,7 @@ class Ted2Zim:
         video_id = talk_info["id"]
 
         all_langs = talk_info["player_talks"][0]["languages"]
-        subtitles = self.generate_subtitle_list(video_id, all_langs)
+        subtitles = self.generate_subtitle_list(video_id, all_langs, lang_code)
 
         # Extract the keywords for the TED talk
         keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
@@ -415,7 +417,9 @@ class Ted2Zim:
             self.videos.append(
                 {
                     "id": video_id,
-                    "languages": [{"languageCode": lang_code, "languageName": lang_name}],
+                    "languages": [
+                        {"languageCode": lang_code, "languageName": lang_name}
+                    ],
                     "title": [{"lang": lang_code, "text": title}],
                     "description": [{"lang": lang_code, "text": description}],
                     "speaker": speaker,
@@ -436,13 +440,13 @@ class Ted2Zim:
         for i, video in enumerate(self.videos):
             if video.get("id", None) == video_id:
                 if {"lang": lang_code, "text": title} not in video["title"]:
-                    self.videos[i]["title"].append(
-                        {"lang": lang_code, "text": title}
-                    )
+                    self.videos[i]["title"].append({"lang": lang_code, "text": title})
                     self.videos[i]["description"].append(
                         {"lang": lang_code, "text": description}
                     )
-                    self.videos[i]["languages"].append({"languageCode": lang_code, "languageName": lang_name})
+                    self.videos[i]["languages"].append(
+                        {"languageCode": lang_code, "languageName": lang_name}
+                    )
                 if self.subtitles_setting == MATCHING:
                     self.videos[i]["subtitles"] += subtitles
         return False
@@ -513,7 +517,9 @@ class Ted2Zim:
         # Generate data.js inside the assets folder
         video_list = []
         for video in self.videos:
-            lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [lang["languageCode"] for lang in video["languages"]]
+            lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [
+                lang["languageCode"] for lang in video["languages"]
+            ]
             json_data = {
                 "languages": [lang_code for lang_code in set(lang_codes)],
                 "id": video["id"],
@@ -540,7 +546,7 @@ class Ted2Zim:
         for video in self.videos:
             # set up variables
             video_id = str(video["id"])
-            video_title = video["title"]
+            video_title = video["title"][0]
             video_link = video["video_link"]
             video_speaker = video["speaker_picture"]
             video_thumbnail = video["thumbnail"]
@@ -602,7 +608,7 @@ class Ted2Zim:
         # build_dir/{video id}/subs/subs_{language code}.vtt
         for i, video in enumerate(self.videos):
             video_id = str(video["id"])
-            video_title = video["title"]
+            video_title = video["title"][0]
             video_subtitles = video["subtitles"]
             if not video_subtitles:
                 return

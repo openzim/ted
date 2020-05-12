@@ -137,7 +137,7 @@ def main():
 
     parser.add_argument(
         "--only-videos-in",
-        help="An ISO-639-1 language code with two letter country code where relevant to get videos in that specific language. Subtitle availablity is considered if audio is not found in that language",
+        help="Comma-seperated list of TED language codes",
         dest="source_language",
     )
 
@@ -166,13 +166,21 @@ def main():
                 parser.error(
                     "Maximum number of videos to scrape per topic must be greater than or equal to 1"
                 )
+            if args.subtitles_enough and not args.source_language:
+                parser.error(
+                    "--subtitles-enough is only meant to be used if --only-videos-in is present"
+                )
         elif args.playlist:
             if args.source_language:
                 parser.error(
                     "--only-videos-in is not compatible with playlists. Use this option only in combination with --topics"
                 )
+            if args.subtitles_enough:
+                parser.error("--subtitles-enough is not compatible with playlists")
         else:
             parser.error("Either --topics or --playlist is required")
+        if not args.subtitles_setting:
+            parser.error("--subtitles cannot take in empty string")
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:
