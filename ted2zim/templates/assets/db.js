@@ -26,14 +26,24 @@ videoDB = (function() {
   db.loadData = function(language, callback){
     // Clear the previously loaded data.
     data = [];
+    tempObj = {
+      "title" : "undefined",
+      "description" : "undefined",
+      "id" : "undefined",
+      "languages" : "undefined",
+      "speaker" : "undefined"
+    }
     if (typeof language === 'undefined'){
       for (i in json_data){
-        var tempObj = json_data[i];
-        tempObj.title = json_data[i].title[0].text;
         tempObj.description = json_data[i].description[0].text;
+        tempObj.title = json_data[i].title[0].text;
+        tempObj.id = json_data[i].id;
+        tempObj.languages = json_data[i].languages;
+        tempObj.speaker = json_data[i].speaker;
         data.push(tempObj);
       }
     }
+    
     else {
 
       // Iterate through the whole data set and 
@@ -47,9 +57,11 @@ videoDB = (function() {
               idx = j;
             }
           }
-          var tempObj = json_data[i]
-          tempObj.title = json_data[i].title[idx].text;
           tempObj.description = json_data[i].description[idx].text;
+          tempObj.title = json_data[i].title[idx].text;
+          tempObj.id = json_data[i].id;
+          tempObj.languages = json_data[i].languages;
+          tempObj.speaker = json_data[i].speaker;
           data.push(tempObj);
         }
       }

@@ -5,7 +5,7 @@
 import logging
 import argparse
 
-from .constants import NAME, SCRAPER, LANG, ALL, NONE, logger
+from .constants import NAME, SCRAPER, MATCHING, ALL, NONE, logger
 from .scraper import Ted2Zim
 
 
@@ -151,9 +151,8 @@ def main():
     parser.add_argument(
         "--subtitles",
         help="Whether to provide subtitles in language requested, no subtitles, or all available subtitles",
-        default=LANG,
+        default=MATCHING,
         dest="subtitles_setting",
-        choices=[LANG, ALL, NONE],
     )
 
     args = parser.parse_args()
