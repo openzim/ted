@@ -143,14 +143,14 @@ def main():
 
     parser.add_argument(
         "--subtitles-enough",
-        help="Consider subtitle availability while filtering videos by language",
+        help="Whether to include videos that have a subtitle in requested --language if audio in another language",
         default=False,
         action="store_true",
     )
 
     parser.add_argument(
         "--subtitles",
-        help="Whether to provide subtitles in language requested, no subtitles, or all available subtitles",
+        help="Language setting for subtitles. ALL: include all available subtitles, MATCHING (default): only subtitles matching --language, NONE: include no subtitle. Apart from this, also accepts comma-seperated list of language codes",
         default=MATCHING,
         dest="subtitles_setting",
     )

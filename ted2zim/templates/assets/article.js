@@ -7,13 +7,14 @@ $.urlParam = function(name){
 }
 
 window.onload = function() {
+    requested_language = $.urlParam('lang')
     html_name = window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1);
     video_id = html_name.substring(0, html_name.lastIndexOf("."));
     for (i in json_data) {
         if(json_data[i].id == video_id){
             var idx = 0;
             for (j in json_data[i].title) {
-                if (json_data[i].title[j].lang == $.urlParam('lang')) {
+                if (json_data[i].title[j].lang == requested_language) {
                 idx = j;
                 }
             }
