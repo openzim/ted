@@ -8,9 +8,9 @@ import pathlib
 import jinja2
 import shutil
 import datetime
+import urllib.parse
 
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_large_file
@@ -173,7 +173,7 @@ class Ted2Zim:
         self.playlist_description = soup.find("p", attrs={"class": "m-b:2"}).string
         for element in video_elements:
             relative_path = element.get("href")
-            url = urljoin(self.talks_base_url, relative_path)
+            url = urllib.parse.urljoin(self.talks_base_url, relative_path)
             self.extract_video_info(url)
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
@@ -291,6 +291,20 @@ class Ted2Zim:
             ]
         return build_subtitle_pages(video_id, subtitles)
 
+    def generate_urls_for_other_languages(self, url):
+        """Given a TED video URL, this generates possible URLs for other languages requested"""
+
+        other_lang_urls = []
+        url_parts = list(urllib.parse.urlparse(url))
+        query = dict(urllib.parse.parse_qsl(url_parts[4]))
+        curr_lang = query["language"]
+        for language in self.source_language:
+            if language != curr_lang:
+                query.update({"language": language})
+                url_parts[4] = urllib.parse.urlencode(query)
+                other_lang_urls.append(urllib.parse.urlunparse(url_parts))
+        return other_lang_urls
+
     def extract_videos_on_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
@@ -299,16 +313,27 @@ class Ted2Zim:
         # link to the representative TED talk. It turns this relative link to
         # an absolute link and calls extract_video_info for them
         soup = BeautifulSoup(page_html, features="html.parser")
-        videos = soup.select("div.row div.media__image a")
+        video_links = soup.select("div.row div.media__image a")
         nb_extracted = 0
-        logger.debug(f"{str(len(videos))} video(s) found on current page")
-        for video in videos:
-            url = urljoin(self.talks_base_url, video["href"])
-            if self.extract_video_info(url):
-                nb_extracted += 1
-                if nb_extracted == video_allowance:
-                    break
-            logger.debug(f"Seen {video['href']}")
+        logger.debug(f"{str(len(video_links))} video(s) found on current page")
+        for video_link in video_links:
+            url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
+            if not any(
+                video.get("tedpath", None) == video_link["href"]
+                for video in self.videos
+            ):
+                if self.extract_video_info(url):
+                    nb_extracted += 1
+                    if self.source_language:
+                        other_lang_urls = self.generate_urls_for_other_languages(url)
+                        logger.debug(
+                            f"Searching info for the video in other {len(other_lang_urls)} languages"
+                        )
+                        for lang_url in other_lang_urls:
+                            self.extract_video_info(lang_url)
+                    if nb_extracted == video_allowance:
+                        break
+                logger.debug(f"Seen {video_link['href']}")
         return nb_extracted
 
     def extract_video_info(self, url):
@@ -431,6 +456,7 @@ class Ted2Zim:
                     "length": length,
                     "subtitles": subtitles,
                     "keywords": keywords,
+                    "tedpath": urllib.parse.urlparse(url)[2],
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
