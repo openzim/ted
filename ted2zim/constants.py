@@ -20,3 +20,7 @@ SCRAPER = f"{NAME} {VERSION}"
 BASE_URL = "https://ted.com/"
 
 logger = getLogger(NAME, level=logging.DEBUG)
+
+MATCHING = "matching"
+ALL = "all"
+NONE = "none"

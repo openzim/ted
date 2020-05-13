@@ -18,7 +18,16 @@ from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
 from .utils import download_from_site, build_subtitle_pages
-from .constants import ROOT_DIR, SCRAPER, ENCODER_VERSION, BASE_URL, logger
+from .constants import (
+    ROOT_DIR,
+    SCRAPER,
+    ENCODER_VERSION,
+    BASE_URL,
+    NONE,
+    MATCHING,
+    ALL,
+    logger,
+)
 from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
@@ -47,6 +56,8 @@ class Ted2Zim:
         s3_url_with_credentials,
         playlist,
         source_language,
+        subtitles_enough,
+        subtitles_setting,
     ):
 
         # video-encoding info
@@ -75,7 +86,19 @@ class Ted2Zim:
         self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
         self.playlist = playlist
-        self.source_language = source_language
+        self.source_language = (
+            []
+            if not source_language
+            else [lang.strip() for lang in source_language.split(",")]
+        )
+        self.subtitles_enough = subtitles_enough
+        self.subtitles_setting = (
+            subtitles_setting
+            if subtitles_setting == ALL
+            or subtitles_setting == MATCHING
+            or subtitles_setting == NONE
+            else [lang.strip() for lang in subtitles_setting.split(",")]
+        )
 
         # zim info
         self.zim_info = ZimInfo(
@@ -152,7 +175,7 @@ class Ted2Zim:
             relative_path = element.get("href")
             url = urljoin(self.talks_base_url, relative_path)
             self.extract_video_info(url)
-            logger.debug(f"Done {relative_path}")
+            logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
             raise ValueError("Wrong playlist ID supplied. No videos found")
@@ -164,27 +187,36 @@ class Ted2Zim:
         for topic in self.topics:
             logger.debug(f"Fetching video links for topic: {topic}")
             topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
-            if self.source_language:
-                topic_url = topic_url + f"&language={self.source_language}"
-            soup = BeautifulSoup(
-                download_from_site(topic_url).text, features="html.parser"
-            )
-            page = 1
-            tot_videos_scraped = 0
+            total_videos_scraped = 0
             video_allowance = self.max_videos_per_topic
-            while video_allowance:
-                url = f"{topic_url}&page={page}"
-                html = download_from_site(url).text
-                num_videos_extracted = self.extract_videos_on_page(
-                    html, video_allowance,
-                )
-                if num_videos_extracted == 0:
-                    break
-                video_allowance -= num_videos_extracted
-                tot_videos_scraped += num_videos_extracted
-                page += 1
-            logger.info(f"Total video links found in {topic}: {tot_videos_scraped}")
-            if tot_videos_scraped == 0:
+            if self.source_language:
+                for lang in self.source_language:
+                    topic_url = topic_url + f"&language={lang}"
+                    page = 1
+                    while video_allowance:
+                        html = download_from_site(f"{topic_url}&page={page}").text
+                        num_videos_extracted = self.extract_videos_on_page(
+                            html, video_allowance,
+                        )
+                        if num_videos_extracted == 0:
+                            break
+                        video_allowance -= num_videos_extracted
+                        total_videos_scraped += num_videos_extracted
+                        page += 1
+            else:
+                page = 1
+                while video_allowance:
+                    html = download_from_site(f"{topic_url}&page={page}").text
+                    num_videos_extracted = self.extract_videos_on_page(
+                        html, video_allowance,
+                    )
+                    if num_videos_extracted == 0:
+                        break
+                    video_allowance -= num_videos_extracted
+                    total_videos_scraped += num_videos_extracted
+                    page += 1
+            logger.info(f"Total video links found in {topic}: {total_videos_scraped}")
+            if total_videos_scraped == 0:
                 self.topics.remove(topic)
                 logger.debug(
                     f"Removed topic {topic} from topic list as it had no videos"
@@ -192,7 +224,7 @@ class Ted2Zim:
         if not self.topics:
             if self.source_language:
                 raise ValueError(
-                    "No videos found for any topic in the language requested. Check topic(s) and/or language code supplied to --only-videos-in"
+                    "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --only-videos-in"
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
 
@@ -215,6 +247,50 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
+    def generate_subtitle_list(self, video_id, langs, curr_lang):
+        """Generate a list of all subtitle languages with the link to its subtitles page. 
+
+        It will be in this format:
+        [
+            {
+                'languageCode': 'en',
+                'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
+                'languageName': 'English'
+            }
+        ]
+        """
+
+        subtitles = []
+        if self.subtitles_setting == ALL or (not self.source_language and self.topics):
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in langs
+            ]
+        elif self.subtitles_setting == MATCHING or (
+            self.subtitles_enough and self.subtitles_setting == NONE
+        ):
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in langs
+                if lang["languageCode"] == curr_lang
+            ]
+        elif self.subtitles_setting and self.subtitles_setting != NONE:
+            subtitles = [
+                {
+                    "languageName": lang["languageName"],
+                    "languageCode": lang["languageCode"],
+                }
+                for lang in langs
+                if lang["languageCode"] in self.subtitles_setting
+            ]
+        return build_subtitle_pages(video_id, subtitles)
+
     def extract_videos_on_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
@@ -224,14 +300,16 @@ class Ted2Zim:
         # an absolute link and calls extract_video_info for them
         soup = BeautifulSoup(page_html, features="html.parser")
         videos = soup.select("div.row div.media__image a")
-        if len(videos) > video_allowance:
-            videos = videos[0:video_allowance]
+        nb_extracted = 0
         logger.debug(f"{str(len(videos))} video(s) found on current page")
         for video in videos:
             url = urljoin(self.talks_base_url, video["href"])
-            self.extract_video_info(url)
-            logger.debug(f"Done {video['href']}")
-        return len(videos)
+            if self.extract_video_info(url):
+                nb_extracted += 1
+                if nb_extracted == video_allowance:
+                    break
+            logger.debug(f"Seen {video['href']}")
+        return nb_extracted
 
     def extract_video_info(self, url):
 
@@ -244,19 +322,29 @@ class Ted2Zim:
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
+        # returns True if successfully scraped new video
         soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
             logger.error("The required script tag containing video meta is not present")
-            return
+            return False
         json_data_tag = script_tags_within_div[-1]
         json_data = json_data_tag.string
         json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
         json_data = json.loads(json_data)["__INITIAL_DATA__"]
+        lang_code = json_data["language"]
+        lang_name = json_data["requested_language_english_name"]
+        talk_info = json_data["talks"][0]
+        native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
+        if (
+            not self.subtitles_enough
+            and self.source_language
+            and native_talk_language != lang_code
+        ):
+            return False
 
         # Extract the speaker of the TED talk
-        talk_info = json_data["talks"][0]
         if len(talk_info["speakers"]) != 0:
             speaker_info = talk_info["speakers"][0]
             speaker = " ".join(
@@ -306,30 +394,18 @@ class Ted2Zim:
         downloads = talk_info["downloads"]["nativeDownloads"]
         if not downloads:
             logger.error("No direct download links found for the video")
-            return
+            return False
         video_link = downloads["medium"]
         if not video_link:
             logger.error("No link to download video in medium quality")
-            return
+            return False
 
         # Extract the video Id of the TED talk video.
         # We need this to generate the subtitle page.
         video_id = talk_info["id"]
 
-        # Generate a list of all subtitle languages with the link to
-        # its subtitles page. It will be in this format:
-        # [
-        #     {
-        #         'languageCode': u'en',
-        #         'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
-        #         'languageName': u'English'
-        #     }
-        # ]
-        subtitles = [
-            {"languageName": lang["languageName"], "languageCode": lang["languageCode"]}
-            for lang in talk_info["player_talks"][0]["languages"]
-        ]
-        subtitles = build_subtitle_pages(video_id, subtitles)
+        langs = talk_info["player_talks"][0]["languages"]
+        subtitles = self.generate_subtitle_list(video_id, langs, lang_code)
 
         # Extract the keywords for the TED talk
         keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
@@ -340,8 +416,11 @@ class Ted2Zim:
             self.videos.append(
                 {
                     "id": video_id,
-                    "title": title,
-                    "description": description,
+                    "languages": [
+                        {"languageCode": lang_code, "languageName": lang_name}
+                    ],
+                    "title": [{"lang": lang_code, "text": title}],
+                    "description": [{"lang": lang_code, "text": description}],
                     "speaker": speaker,
                     "speaker_profession": speaker_profession,
                     "speaker_bio": speaker_bio,
@@ -355,8 +434,45 @@ class Ted2Zim:
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
-        else:
-            logger.debug(f"Video {video_id} already present in video list")
+            return True
+
+        # if video ID is already present in videos, add the title/description/subtitles (if --subtitles=matching)
+        # scraped in current language if not already present
+        logger.debug(f"Video {video_id} already present in video list")
+        for i, video in enumerate(self.videos):
+            if video.get("id", None) == video_id:
+                if {"lang": lang_code, "text": title} not in video["title"]:
+                    self.videos[i]["title"].append({"lang": lang_code, "text": title})
+                    self.videos[i]["description"].append(
+                        {"lang": lang_code, "text": description}
+                    )
+                    self.videos[i]["languages"].append(
+                        {"languageCode": lang_code, "languageName": lang_name}
+                    )
+                if self.subtitles_setting == MATCHING:
+                    self.videos[i]["subtitles"] += subtitles
+        return False
+
+    def add_default_language(self):
+        for video in self.videos:
+            en_found = False
+            for idx, lang in enumerate(video["languages"]):
+                if lang["languageCode"] == "en":
+                    en_found = True
+                    video["title"] = [
+                        {"lang": "default", "text": video["title"][idx]["text"]}
+                    ] + video["title"]
+                    video["description"] = [
+                        {"lang": "default", "text": video["description"][idx]["text"]}
+                    ] + video["description"]
+                    break
+            if not en_found:
+                video["title"] = [
+                    {"lang": "default", "text": video["title"][0]["text"]}
+                ] + video["title"]
+                video["description"] = [
+                    {"lang": "default", "text": video["description"][0]["text"]}
+                ] + video["description"]
 
     def render_video_pages(self):
 
@@ -369,9 +485,7 @@ class Ted2Zim:
             video_id = str(video["id"])
 
             html = env.get_template("article.html").render(
-                title=video["title"],
                 speaker=video["speaker"],
-                description=video["description"],
                 languages=video["subtitles"],
                 speaker_bio=video["speaker_bio"].replace("Full bio", ""),
                 speaker_img=video["speaker_picture"],
@@ -380,6 +494,8 @@ class Ted2Zim:
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=video_id,
+                titles=video["title"],
+                descriptions=video["description"],
             )
             html_path = self.build_dir.joinpath(f"{video_id}.html")
             with open(html_path, "w", encoding="utf-8") as html_page:
@@ -400,6 +516,7 @@ class Ted2Zim:
                         "languageName": language["languageName"],
                     }
                 )
+            languages += video["languages"]
         languages = [
             dict(tpl) for tpl in set(tuple(item.items()) for item in languages)
         ]
@@ -425,8 +542,11 @@ class Ted2Zim:
         # Generate data.js inside the assets folder
         video_list = []
         for video in self.videos:
+            lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [
+                lang["languageCode"] for lang in video["languages"]
+            ]
             json_data = {
-                "languages": [lang["languageCode"] for lang in video["subtitles"]],
+                "languages": [lang_code for lang_code in set(lang_codes)],
                 "id": video["id"],
                 "description": video["description"],
                 "title": video["title"],
@@ -451,7 +571,8 @@ class Ted2Zim:
         for video in self.videos:
             # set up variables
             video_id = str(video["id"])
-            video_title = video["title"]
+            # Take the english version of title or else whatever language it's available in
+            video_title = video["title"][0]["text"]
             video_link = video["video_link"]
             video_speaker = video["speaker_picture"]
             video_thumbnail = video["thumbnail"]
@@ -511,34 +632,38 @@ class Ted2Zim:
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
         # build_dir/{video id}/subs/subs_{language code}.vtt
-        for i, video in enumerate(self.videos):
+        for video in self.videos:
             video_id = str(video["id"])
-            video_title = video["title"]
+            # Take the english version of title or else whatever language it's available in
+            video_title = video["title"][0]["text"]
             video_subtitles = video["subtitles"]
+            if not video_subtitles:
+                return
             video_dir = self.videos_dir.joinpath(video_id)
             subs_dir = video_dir.joinpath("subs")
             if not subs_dir.exists():
                 subs_dir.mkdir(parents=True)
             else:
                 logger.debug(f"Subs dir exists already")
-                continue
 
             # download subtitles
             logger.debug(f"Downloading subtitles for {video_title}")
+            valid_subs = []
             for subtitle in video_subtitles:
                 sleep(0.5)
-                subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
+                subtitle_file = WebVTTcreator(subtitle["link"]).getVTT()
                 if not subtitle_file:
-                    self.videos[i]["subtitles"].remove(subtitle)
                     logger.error(
                         f"Subtitle file for {subtitle['languageCode']} could not be created"
                     )
                     continue
+                valid_subs.append(subtitle)
                 subtitle_file_name = subs_dir.joinpath(
                     f"subs_{subtitle['languageCode']}.vtt"
                 )
                 with open(subtitle_file_name, "w", encoding="utf-8") as sub_file:
                     sub_file.write(subtitle_file)
+            video_subtitles = valid_subs
 
     def s3_credentials_ok(self):
         logger.info("Testing S3 Optimization Cache credentials")
@@ -601,6 +726,7 @@ class Ted2Zim:
         else:
             self.extract_videos_from_topics()
 
+        self.add_default_language()
         self.update_title_and_description()
 
         # clean the build directory if it already exists
