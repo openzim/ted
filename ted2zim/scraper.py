@@ -466,7 +466,7 @@ class Ted2Zim:
                         {"lang": "default", "text": video["description"][idx]["text"]}
                     ] + video["description"]
                     break
-            if en_found == False:
+            if not en_found:
                 video["title"] = [
                     {"lang": "default", "text": video["title"][0]["text"]}
                 ] + video["title"]

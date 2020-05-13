@@ -69,11 +69,10 @@ class WebVTTcreator:
             if r.status_code == 429:
                 time.sleep(30)
             elif r.status_code == 404:
-                return
+                return None
             else:
                 dl_ok = True
                 subtitles_json = r.text
         if self.is_json(subtitles_json):
             return self.create_WebVtt(json.loads(subtitles_json))
-        else:
-            return
+        return None
