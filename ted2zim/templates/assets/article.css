@@ -45,7 +45,7 @@ hr {
     max-width:100%;
 }
 
-#description-text {
+.description {
     font-family: 'RobotoLight';
     color: #333;
     width: 480px;
@@ -53,6 +53,11 @@ hr {
     text-align: justify;
     text-justify: inter-word;
     max-width:100%;
+    display: none;
+}
+
+.description.lang-default {
+    display: block;
 }
 
 #speaker {
@@ -62,13 +67,18 @@ hr {
     max-width:100%;
 }
 
-#title-text {
+.title {
     font-family: "RobotoBold";
     margin-top: 10px;
     font-size: 30px;
     text-align: left;
     text-justify: none;
     max-width:100%;
+    display: none;
+}
+
+.title.lang-default {
+    display: block;
 }
 
 #views {

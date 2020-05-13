@@ -308,7 +308,7 @@ class Ted2Zim:
                 nb_extracted += 1
                 if nb_extracted == video_allowance:
                     break
-            logger.debug(f"Done {video['href']}")
+            logger.debug(f"Seen {video['href']}")
         return nb_extracted
 
     def extract_video_info(self, url):
@@ -435,7 +435,7 @@ class Ted2Zim:
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
             return True
-        
+
         # if video ID is already present in videos, add the title/description/subtitles (if --subtitles=matching)
         # scraped in current language if not already present
         logger.debug(f"Video {video_id} already present in video list")
@@ -452,6 +452,27 @@ class Ted2Zim:
                 if self.subtitles_setting == MATCHING:
                     self.videos[i]["subtitles"] += subtitles
         return False
+
+    def add_default_language(self):
+        for video in self.videos:
+            en_found = False
+            for idx, lang in enumerate(video["languages"]):
+                if lang["languageCode"] == "en":
+                    en_found = True
+                    video["title"] = [
+                        {"lang": "default", "text": video["title"][idx]["text"]}
+                    ] + video["title"]
+                    video["description"] = [
+                        {"lang": "default", "text": video["description"][idx]["text"]}
+                    ] + video["description"]
+                    break
+            if en_found == False:
+                video["title"] = [
+                    {"lang": "default", "text": video["title"][0]["text"]}
+                ] + video["title"]
+                video["description"] = [
+                    {"lang": "default", "text": video["description"][0]["text"]}
+                ] + video["description"]
 
     def render_video_pages(self):
 
@@ -473,6 +494,8 @@ class Ted2Zim:
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=video_id,
+                titles=video["title"],
+                descriptions=video["description"],
             )
             html_path = self.build_dir.joinpath(f"{video_id}.html")
             with open(html_path, "w", encoding="utf-8") as html_page:
@@ -549,7 +572,7 @@ class Ted2Zim:
             # set up variables
             video_id = str(video["id"])
             # Take the english version of title or else whatever language it's available in
-            video_title = video["title"][0]
+            video_title = video["title"][0]["text"]
             video_link = video["video_link"]
             video_speaker = video["speaker_picture"]
             video_thumbnail = video["thumbnail"]
@@ -609,10 +632,10 @@ class Ted2Zim:
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
         # build_dir/{video id}/subs/subs_{language code}.vtt
-        for i, video in enumerate(self.videos):
+        for video in self.videos:
             video_id = str(video["id"])
             # Take the english version of title or else whatever language it's available in
-            video_title = video["title"][0]
+            video_title = video["title"][0]["text"]
             video_subtitles = video["subtitles"]
             if not video_subtitles:
                 return
@@ -625,20 +648,22 @@ class Ted2Zim:
 
             # download subtitles
             logger.debug(f"Downloading subtitles for {video_title}")
+            valid_subs = []
             for subtitle in video_subtitles:
                 sleep(0.5)
-                subtitle_file = WebVTTcreator(subtitle["link"], 11820).get_content()
+                subtitle_file = WebVTTcreator(subtitle["link"]).getVTT()
                 if not subtitle_file:
-                    self.videos[i]["subtitles"].remove(subtitle)
                     logger.error(
                         f"Subtitle file for {subtitle['languageCode']} could not be created"
                     )
                     continue
+                valid_subs.append(subtitle)
                 subtitle_file_name = subs_dir.joinpath(
                     f"subs_{subtitle['languageCode']}.vtt"
                 )
                 with open(subtitle_file_name, "w", encoding="utf-8") as sub_file:
                     sub_file.write(subtitle_file)
+            video_subtitles = valid_subs
 
     def s3_credentials_ok(self):
         logger.info("Testing S3 Optimization Cache credentials")
@@ -701,6 +726,7 @@ class Ted2Zim:
         else:
             self.extract_videos_from_topics()
 
+        self.add_default_language()
         self.update_title_and_description()
 
         # clean the build directory if it already exists

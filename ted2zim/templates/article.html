@@ -14,7 +14,6 @@
         <script src="assets/ogvjs/ogv-support.js"></script>
         <script src="assets/ogvjs/ogv.js"></script>
         <script src="assets/videojs-ogvjs.js"></script>
-        <script src="assets/data.js"></script>
         <script src="assets/jquery.min.js"></script>
         <script src="assets/article.js"></script>        
     </head>
@@ -22,19 +21,23 @@
         <div id="content">
             <img id="backtolist" src="assets/img/TED_small.png" title="Back to the list" onclick="history.go(-1)" />
             <p id="speaker">{{ speaker }}</p>
-            <p id="title-text"></p>
+            {% for title in titles %}
+            <p class="title lang-{{ title.lang }}">{{ title.text }}</p>
+            {% endfor %}
             <video class="video-js vjs-default-skin"
                 controls preload="auto"
                 poster="videos/{{ video_id }}/thumbnail.jpg"
                 width="480px" height="270px"
                 data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
                 <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />
-                {% for language in languages %}
+                    {% for language in languages %}
                     <track kind="subtitles" src="videos/{{ video_id }}/subs/subs_{{ language.languageCode }}.vtt" srclang="{{ language.languageCode }}" label="{{ language.languageName }}" />
                     {% endfor %}
                 </video>
-                <div id="description">
-                    <p id="description-text"></p>
+                <div id="descriptions">
+                    {% for description in descriptions %}
+                    <p class="description lang-{{ description.lang }}">{{ description.text }}</p>
+                    {% endfor %}
                 </div>
                 <div id="date">{{ date }}</div>
                 <hr>

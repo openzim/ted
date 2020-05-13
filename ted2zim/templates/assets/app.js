@@ -115,21 +115,23 @@ function refreshPagination() {
  * the passed in {pageData} parameter.
  * @param {pageData} Video data for the current page.
  */
-function refreshVideos(language, pageData) {  
+function refreshVideos(language, pageData) {
     var videoList = document.getElementById('video-items');
     videoList.innerHTML = '';
     for (i in pageData) {
       var video = pageData[i];
+      var lang = undefined;
       idx = 0;
       for (j in video.title) {
         if (video.title[j].lang == language) {
           idx = j;
+          lang = language;
         }
       }
       var li = document.createElement('li');
       
       var a = document.createElement('a')
-      a.href =  video['id']+'.html?lang=' + language;
+      a.href =  video['id']+'.html?lang=' + lang;
       a.className = 'nostyle'
 
       var img = document.createElement('img');
