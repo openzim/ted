@@ -1,9 +1,9 @@
 /**
-* videoDB is responsible for loading
-* and managing the video data from the data.js file.
-*/
+ * videoDB is responsible for loading
+ * and managing the video data from the data.js file.
+ */
 
-/* exported videoDB */
+ /* exported videoDB */
 var videoDB;
 videoDB = (function() {
   var ITEMS_PER_PAGE = 40;
@@ -90,7 +90,7 @@ videoDB = (function() {
    */
   db.getPageNumber = function() {
       if ( !page ) {
-    page = location.hash.replace( '#', '' );
+	  page = location.hash.replace( '#', '' );
       }
 
       return page || 1;
