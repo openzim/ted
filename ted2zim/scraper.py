@@ -8,9 +8,9 @@ import pathlib
 import jinja2
 import shutil
 import datetime
+import urllib.parse
 
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_large_file
@@ -173,7 +173,7 @@ class Ted2Zim:
         self.playlist_description = soup.find("p", attrs={"class": "m-b:2"}).string
         for element in video_elements:
             relative_path = element.get("href")
-            url = urljoin(self.talks_base_url, relative_path)
+            url = urllib.parse.urljoin(self.talks_base_url, relative_path)
             self.extract_video_info(url)
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
@@ -247,7 +247,7 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def generate_subtitle_list(self, video_id, langs, curr_lang):
+    def generate_subtitle_list(self, video_id, langs, current_lang):
         """Generate a list of all subtitle languages with the link to its subtitles page. 
 
         It will be in this format:
@@ -278,7 +278,7 @@ class Ted2Zim:
                     "languageCode": lang["languageCode"],
                 }
                 for lang in langs
-                if lang["languageCode"] == curr_lang
+                if lang["languageCode"] == current_lang
             ]
         elif self.subtitles_setting and self.subtitles_setting != NONE:
             subtitles = [
@@ -291,6 +291,26 @@ class Ted2Zim:
             ]
         return build_subtitle_pages(video_id, subtitles)
 
+    def generate_urls_for_other_languages(self, url):
+        """ Possible URLs for other requested languages based on a video url """
+
+        urls = []
+
+        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
+        url_parts = list(urllib.parse.urlparse(url))
+
+        # explode url to extract `language` query field value
+        query = dict(urllib.parse.parse_qsl(url_parts[4]))
+        current_lang = query["language"]
+
+        # update the language query field value with other languages and form URLs
+        for language in self.source_language:
+            if language != current_lang:
+                query.update({"language": language})
+                url_parts[4] = urllib.parse.urlencode(query)
+                urls.append(urllib.parse.urlunparse(url_parts))
+        return urls
+
     def extract_videos_on_page(self, page_html, video_allowance):
 
         # all videos are embedded in a <div> with the class name 'row'.
@@ -299,16 +319,28 @@ class Ted2Zim:
         # link to the representative TED talk. It turns this relative link to
         # an absolute link and calls extract_video_info for them
         soup = BeautifulSoup(page_html, features="html.parser")
-        videos = soup.select("div.row div.media__image a")
+        video_links = soup.select("div.row div.media__image a")
         nb_extracted = 0
-        logger.debug(f"{str(len(videos))} video(s) found on current page")
-        for video in videos:
-            url = urljoin(self.talks_base_url, video["href"])
-            if self.extract_video_info(url):
-                nb_extracted += 1
-                if nb_extracted == video_allowance:
-                    break
-            logger.debug(f"Seen {video['href']}")
+        logger.debug(f"{str(len(video_links))} video(s) found on current page")
+        for video_link in video_links:
+            url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
+            if not [
+                video
+                for video in self.videos
+                if video.get("tedpath", None) == video_link["href"]
+            ]:
+                if self.extract_video_info(url):
+                    nb_extracted += 1
+                    if self.source_language:
+                        other_lang_urls = self.generate_urls_for_other_languages(url)
+                        logger.debug(
+                            f"Searching info for the video in other {len(other_lang_urls)} language(s)"
+                        )
+                        for lang_url in other_lang_urls:
+                            self.extract_video_info(lang_url)
+                    if nb_extracted == video_allowance:
+                        break
+                logger.debug(f"Seen {video_link['href']}")
         return nb_extracted
 
     def extract_video_info(self, url):
@@ -412,7 +444,7 @@ class Ted2Zim:
         keywords = [key.strip() for key in keywords.split(",")]
 
         # Check if video ID already exists. If not, append data to self.videos
-        if not any(video.get("id", None) == video_id for video in self.videos):
+        if not [video for video in self.videos if video.get("id", None) == video_id]:
             self.videos.append(
                 {
                     "id": video_id,
@@ -431,6 +463,7 @@ class Ted2Zim:
                     "length": length,
                     "subtitles": subtitles,
                     "keywords": keywords,
+                    "tedpath": urllib.parse.urlparse(url)[2],
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
