@@ -247,7 +247,7 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def generate_subtitle_list(self, video_id, langs, curr_lang):
+    def generate_subtitle_list(self, video_id, langs, current_lang):
         """Generate a list of all subtitle languages with the link to its subtitles page. 
 
         It will be in this format:
@@ -278,7 +278,7 @@ class Ted2Zim:
                     "languageCode": lang["languageCode"],
                 }
                 for lang in langs
-                if lang["languageCode"] == curr_lang
+                if lang["languageCode"] == current_lang
             ]
         elif self.subtitles_setting and self.subtitles_setting != NONE:
             subtitles = [
@@ -292,18 +292,24 @@ class Ted2Zim:
         return build_subtitle_pages(video_id, subtitles)
 
     def generate_urls_for_other_languages(self, url):
-        """Given a TED video URL, this generates possible URLs for other languages requested"""
+        """ Possible URLs for other requested languages based on a video url """
 
-        other_lang_urls = []
+        urls = []
+
+        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
         url_parts = list(urllib.parse.urlparse(url))
+
+        # explode url to extract `language` query field value
         query = dict(urllib.parse.parse_qsl(url_parts[4]))
-        curr_lang = query["language"]
+        current_lang = query["language"]
+
+        # update the language query field value with other languages and form URLs
         for language in self.source_language:
-            if language != curr_lang:
+            if language != current_lang:
                 query.update({"language": language})
                 url_parts[4] = urllib.parse.urlencode(query)
-                other_lang_urls.append(urllib.parse.urlunparse(url_parts))
-        return other_lang_urls
+                urls.append(urllib.parse.urlunparse(url_parts))
+        return urls
 
     def extract_videos_on_page(self, page_html, video_allowance):
 
@@ -318,16 +324,17 @@ class Ted2Zim:
         logger.debug(f"{str(len(video_links))} video(s) found on current page")
         for video_link in video_links:
             url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
-            if not any(
-                video.get("tedpath", None) == video_link["href"]
+            if not [
+                video
                 for video in self.videos
-            ):
+                if video.get("tedpath", None) == video_link["href"]
+            ]:
                 if self.extract_video_info(url):
                     nb_extracted += 1
                     if self.source_language:
                         other_lang_urls = self.generate_urls_for_other_languages(url)
                         logger.debug(
-                            f"Searching info for the video in other {len(other_lang_urls)} languages"
+                            f"Searching info for the video in other {len(other_lang_urls)} language(s)"
                         )
                         for lang_url in other_lang_urls:
                             self.extract_video_info(lang_url)
@@ -437,7 +444,7 @@ class Ted2Zim:
         keywords = [key.strip() for key in keywords.split(",")]
 
         # Check if video ID already exists. If not, append data to self.videos
-        if not any(video.get("id", None) == video_id for video in self.videos):
+        if not [video for video in self.videos if video.get("id", None) == video_id]:
             self.videos.append(
                 {
                     "id": video_id,
