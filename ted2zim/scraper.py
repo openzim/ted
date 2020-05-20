@@ -24,7 +24,6 @@ from .utils import download_from_site, build_subtitle_pages
 from .constants import (
     ROOT_DIR,
     SCRAPER,
-    ENCODER_VERSION,
     BASE_URL,
     NONE,
     MATCHING,
@@ -597,7 +596,7 @@ class Ted2Zim:
             json_data = "json_data = " + json_data
             data_file.write(json_data)
 
-    def post_process_video(self, video_dir, video_id, skip_recompress):
+    def post_process_video(self, video_dir, video_id, enc, skip_recompress):
         # apply custom post-processing to downloaded video
         # - resize thumbnail
         # - recompress video if incorrect video_format or low_quality requested
@@ -630,11 +629,9 @@ class Ted2Zim:
             return
 
         dst_path = src_path.parent.joinpath(f"video.{self.video_format}")
-        if self.video_format == "mp4":
-            ffmpeg_args = VideoMp4Low().to_ffmpeg_args()
-        else:
-            ffmpeg_args = VideoWebmLow().to_ffmpeg_args()
-        reencode(src_path, dst_path, ffmpeg_args, delete_src=True, failsafe=False)
+        reencode(
+            src_path, dst_path, enc.to_ffmpeg_args(), delete_src=True, failsafe=False
+        )
 
     def download_video_data(self):
 
@@ -660,13 +657,19 @@ class Ted2Zim:
             if not video_dir.exists():
                 video_dir.mkdir(parents=True)
 
+            # set encoders
+            if self.video_format == "mp4":
+                enc = VideoMp4Low()
+            else:
+                enc = VideoWebmLow()
+
             # download video
             downloaded_from_cache = False
             logger.debug(f"Downloading {video_title}")
             if self.s3_storage:
                 s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
                 downloaded_from_cache = self.download_from_cache(
-                    s3_key, req_video_file_path
+                    s3_key, req_video_file_path, enc.VERSION
                 )
             if not downloaded_from_cache:
                 try:
@@ -687,16 +690,14 @@ class Ted2Zim:
 
             # recompress if necessary
             try:
-                self.post_process_video(
-                    video_dir, video_id, skip_recompress=downloaded_from_cache,
-                )
+                self.post_process_video(video_dir, video_id, enc, downloaded_from_cache)
             except Exception as e:
                 logger.error(f"Failed to post process video {video_id}")
                 logger.debug(e)
             else:
                 # upload to cache only if recompress was successful
                 if self.s3_storage and not downloaded_from_cache:
-                    self.upload_to_cache(s3_key, req_video_file_path)
+                    self.upload_to_cache(s3_key, req_video_file_path, enc.VERSION)
 
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
@@ -749,7 +750,7 @@ class Ted2Zim:
             return False
         return True
 
-    def download_from_cache(self, key, video_path):
+    def download_from_cache(self, key, video_path, enc_version):
 
         # Checks if file is in cache and returns true if
         # successfully downloaded from cache
@@ -758,7 +759,7 @@ class Ted2Zim:
                 return False
         else:
             if not self.s3_storage.has_object_matching_meta(
-                key, tag="encoder_version", value=ENCODER_VERSION
+                key, tag="encoder_version", value=enc_version
             ):
                 return False
         video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -770,12 +771,12 @@ class Ted2Zim:
         logger.info(f"downloaded {video_path} from cache at {key}")
         return True
 
-    def upload_to_cache(self, key, video_path):
+    def upload_to_cache(self, key, video_path, enc_version):
 
         # returns true if successfully uploaded to cache
         try:
             self.s3_storage.upload_file(
-                video_path, key, meta={"encoder_version": ENCODER_VERSION}
+                video_path, key, meta={"encoder_version": enc_version}
             )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
