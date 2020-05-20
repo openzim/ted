@@ -14,6 +14,9 @@ from bs4 import BeautifulSoup
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_large_file
+from zimscraperlib.imaging import resize_image
+from zimscraperlib.video.presets import VideoWebmLow, VideoMp4Low
+from zimscraperlib.video.encoding import reencode
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
@@ -28,7 +31,6 @@ from .constants import (
     ALL,
     logger,
 )
-from .converter import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
 
@@ -595,6 +597,45 @@ class Ted2Zim:
             json_data = "json_data = " + json_data
             data_file.write(json_data)
 
+    def post_process_video(self, video_dir, video_id, skip_recompress):
+        # apply custom post-processing to downloaded video
+        # - resize thumbnail
+        # - recompress video if incorrect video_format or low_quality requested
+        # find downloaded video from video_dir
+        files = [
+            p for p in video_dir.iterdir() if p.stem == "video" and p.suffix != ".jpg"
+        ]
+        if len(files) == 0:
+            logger.error(f"Video file missing in {video_dir} for {video_id}")
+            logger.debug(list(video_dir.iterdir()))
+            raise FileNotFoundError(f"Missing video file in {video_dir}")
+        if len(files) > 1:
+            logger.warning(
+                f"Multiple video file candidates for {video_id} in {video_dir}. Picking {files[0]} out of {files}"
+            )
+        src_path = files[0]
+
+        # resize thumbnail. we use max width:248x187px in listing
+        resize_image(
+            src_path.parent.joinpath("thumbnail.jpg"),
+            width=248,
+            height=187,
+            method="cover",
+        )
+
+        # don't reencode if not requesting low-quality and received wanted format
+        if skip_recompress or (
+            not self.low_quality and src_path.suffix[1:] == self.video_format
+        ):
+            return
+
+        dst_path = src_path.parent.joinpath(f"video.{self.video_format}")
+        if self.video_format == "mp4":
+            ffmpeg_args = VideoMp4Low().to_ffmpeg_args()
+        else:
+            ffmpeg_args = VideoWebmLow().to_ffmpeg_args()
+        reencode(src_path, dst_path, ffmpeg_args, delete_src=True, failsafe=False)
+
     def download_video_data(self):
 
         # Download all the TED talk videos and the meta-data for it.
@@ -646,12 +687,8 @@ class Ted2Zim:
 
             # recompress if necessary
             try:
-                post_process_video(
-                    video_dir,
-                    video_id,
-                    self.video_format,
-                    self.low_quality,
-                    skip_recompress=downloaded_from_cache,
+                self.post_process_video(
+                    video_dir, video_id, skip_recompress=downloaded_from_cache,
                 )
             except Exception as e:
                 logger.error(f"Failed to post process video {video_id}")
