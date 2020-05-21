@@ -68,7 +68,7 @@ def main():
     )
 
     parser.add_argument(
-        "--language", help="ISO-639-3 (3 chars) language code of content", default="eng"
+        "--language", help="Comma-seperated list of languages to filter videos"
     )
 
     parser.add_argument(
@@ -136,12 +136,6 @@ def main():
     )
 
     parser.add_argument(
-        "--only-videos-in",
-        help="Comma-seperated list of TED language codes",
-        dest="source_language",
-    )
-
-    parser.add_argument(
         "--subtitles-enough",
         help="Whether to include videos that have a subtitle in requested --language if audio in another language",
         default=False,
@@ -166,15 +160,11 @@ def main():
                 parser.error(
                     "Maximum number of videos to scrape per topic must be greater than or equal to 1"
                 )
-            if args.subtitles_enough and not args.source_language:
+            if args.subtitles_enough and not args.language:
                 parser.error(
-                    "--subtitles-enough is only meant to be used if --only-videos-in is present"
+                    "--subtitles-enough is only meant to be used if --language is present"
                 )
         elif args.playlist:
-            if args.source_language:
-                parser.error(
-                    "--only-videos-in is not compatible with playlists. Use this option only in combination with --topics"
-                )
             if args.subtitles_enough:
                 parser.error("--subtitles-enough is not compatible with playlists")
         else:
