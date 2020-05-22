@@ -163,56 +163,65 @@ class Ted2Zim:
     def playlists_base_url(self):
         return BASE_URL + "playlists"
 
+    def append_part1_or_part3(self, lang_code_list, lang_info):
+        """ Takes in a list and a dict containing iso language info (refer zimscraperlib.i18n)
+            and appends iso-639-1 code (or iso-639-3 code if iso-639-1 is not available) to the list """
+
+        # ignore extra language mappings if supplied query was an iso-639-1 code
+        if "part1" in lang_info["iso_types"]:
+            lang_code_list.append(lang_info["iso-639-1"])
+
+        # supplied query was not iso-639-1
+        else:
+            if lang_info["iso-639-1"]:
+                lang_code_list.append(lang_info["iso-639-1"])
+                # check for extra language codes to include
+                if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
+                    for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
+                        lang_code_list.append(code)
+            elif lang_info["iso-639-3"]:
+                lang_code_list.append(lang_info["iso-639-3"])
+            else:
+                supplied_lang = lang_info["query"]
+                logger.error(f"Language {supplied_lang} is not supported by TED")
+
     def get_lang_codes(self, languages):
-        """ Takes in a list of language codes/ locales/ language names and converts into TED compatible list
+        """ Takes in a list of language codes | locales | language names and converts into TED compatible list
 
             Examples -
                 ["English", "fr", "hin"] => ["en", "fr", "hi"] 
                 ["chi", "fake"] => ["zh", "zh-cn", "zh-tw"] 
         """
 
-        def append_part1_or_part3(lang_code_list, lang_info):
-            if "part1" in lang_info["iso_types"]:
-                lang_code_list.append(lang_info["iso-639-1"])
-            else:
-                if lang_info["iso-639-1"]:
-                    lang_code_list.append(lang_info["iso-639-1"])
-                    if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
-                        for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
-                            lang_code_list.append(code)
-                elif lang_info["iso-639-3"]:
-                    lang_code_list.append(lang_info["iso-639-3"])
-                else:
-                    supplied_lang = lang_info["query"]
-                    logger.error(f"Language {supplied_lang} is not supported by TED")
-
         lang_code_list = []
         for lang in languages:
-            lang_info = get_language_details(lang)
+            lang_info = get_language_details(lang, failsafe=True)
             if lang_info:
                 if lang_info["querytype"] == "purecode":
-                    append_part1_or_part3(lang_code_list, lang_info)
+                    self.append_part1_or_part3(lang_code_list, lang_info)
                 elif lang_info["querytype"] == "locale":
                     query = lang_info["query"].replace("_", "-")
                     if query in TEDLANGS["locales"]:
                         lang_code_list.append(query)
                     else:
-                        append_part1_or_part3(lang_code_list, lang_info)
+                        self.append_part1_or_part3(lang_code_list, lang_info)
                 else:
-                    append_part1_or_part3(lang_code_list, lang_info)
-        print(list(set(lang_code_list)))
+                    self.append_part1_or_part3(lang_code_list, lang_info)
+        logger.debug(list(set(lang_code_list)))
         return list(set(lang_code_list))
 
     def update_zim_lang(self):
+        """ updates the zim language based on requested language(s) """
+
         if not self.language:
             self.zim_lang = "eng"
         else:
             if len(self.source_language) > 1:
                 self.zim_lang = "mul"
             else:
-                self.zim_lang = get_language_details(self.source_language[0])[
-                    "iso-639-3"
-                ]
+                self.zim_lang = get_language_details(
+                    self.source_language[0], failsafe=True
+                )["iso-639-3"]
 
     def extract_videos_from_playlist(self):
 
@@ -308,6 +317,16 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
+    def lang_display_string(self, lang_code, lang_name):
+        if lang_code != "en":
+            return (
+                get_language_details(lang_code, failsafe=True)["native"]
+                + " - "
+                + lang_name
+            )
+        else:
+            return lang_name
+
     def generate_subtitle_list(self, video_id, langs, current_lang):
         """Generate a list of all subtitle languages with the link to its subtitles page. 
 
@@ -325,9 +344,9 @@ class Ted2Zim:
         if self.subtitles_setting == ALL or (not self.source_language and self.topics):
             subtitles = [
                 {
-                    "languageName": lang["languageName"]
-                    + " "
-                    + get_language_details(lang["languageCode"])["native"],
+                    "languageName": self.lang_display_string(
+                        lang["languageCode"], lang["languageName"]
+                    ),
                     "languageCode": lang["languageCode"],
                 }
                 for lang in langs
@@ -337,9 +356,9 @@ class Ted2Zim:
         ):
             subtitles = [
                 {
-                    "languageName": lang["languageName"]
-                    + " "
-                    + get_language_details(lang["languageCode"])["native"],
+                    "languageName": self.lang_display_string(
+                        lang["languageCode"], lang["languageName"]
+                    ),
                     "languageCode": lang["languageCode"],
                 }
                 for lang in langs
@@ -349,9 +368,9 @@ class Ted2Zim:
             if not self.subtitles_enough and self.topics:
                 subtitles = [
                     {
-                        "languageName": lang["languageName"]
-                        + " "
-                        + get_language_details(lang["languageCode"])["native"],
+                        "languageName": self.lang_display_string(
+                            lang["languageCode"], lang["languageName"]
+                        ),
                         "languageCode": lang["languageCode"],
                     }
                     for lang in langs
@@ -360,9 +379,9 @@ class Ted2Zim:
             else:
                 subtitles = [
                     {
-                        "languageName": lang["languageName"]
-                        + " "
-                        + get_language_details(lang["languageCode"])["native"],
+                        "languageName": self.lang_display_string(
+                            lang["languageCode"], lang["languageName"]
+                        ),
                         "languageCode": lang["languageCode"],
                     }
                     for lang in langs
@@ -375,16 +394,8 @@ class Ted2Zim:
         """ Possible URLs for other requested languages based on a video url """
 
         urls = []
-
-        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
+        current_lang, query = self.get_lang_code_from_url(url, with_full_query=True)
         url_parts = list(urllib.parse.urlparse(url))
-
-        # explode url to extract `language` query field value
-        query = dict(urllib.parse.parse_qsl(url_parts[4]))
-        try:
-            current_lang = query["language"]
-        except KeyError:
-            current_lang = None
 
         # update the language query field value with other languages and form URLs
         for language in self.source_language:
@@ -426,6 +437,22 @@ class Ted2Zim:
                 logger.debug(f"Seen {video_link['href']}")
         return nb_extracted
 
+    def get_lang_code_from_url(self, url, with_full_query=False):
+        """ gets the queried language code from a ted talk url """
+
+        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
+        url_parts = list(urllib.parse.urlparse(url))
+
+        # explode url to extract `language` query field value
+        query = dict(urllib.parse.parse_qsl(url_parts[4]))
+        try:
+            current_lang = query["language"]
+        except KeyError:
+            current_lang = None
+        if with_full_query:
+            return current_lang, query
+        return current_lang
+
     def extract_video_info(self, url):
 
         # Extract the meta-data of the video:
@@ -439,6 +466,7 @@ class Ted2Zim:
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
         soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
+        requested_lang_code = self.get_lang_code_from_url(url)
         div = soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
@@ -446,9 +474,13 @@ class Ted2Zim:
             return False
         json_data_tag = script_tags_within_div[-1]
         json_data = json_data_tag.string
-        json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
-        json_data = json.loads(json_data)["__INITIAL_DATA__"]
+        json_data = json.loads(json_data[18:-1])["__INITIAL_DATA__"]
         lang_code = json_data["language"]
+        if requested_lang_code and lang_code != requested_lang_code:
+            logger.error(
+                f"Video has not yet been translated into {requested_lang_code}"
+            )
+            return False
         lang_name = json_data["requested_language_english_name"]
         talk_info = json_data["talks"][0]
         native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
@@ -533,7 +565,12 @@ class Ted2Zim:
                 {
                     "id": video_id,
                     "languages": [
-                        {"languageCode": lang_code, "languageName": lang_name}
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.lang_display_string(
+                                lang_code, lang_name
+                            ),
+                        }
                     ],
                     "title": [{"lang": lang_code, "text": title}],
                     "description": [{"lang": lang_code, "text": description}],
@@ -566,9 +603,9 @@ class Ted2Zim:
                     self.videos[i]["languages"].append(
                         {
                             "languageCode": lang_code,
-                            "languageName": lang_name
-                            + " "
-                            + get_language_details(lang_code)["native"],
+                            "languageName": self.lang_display_string(
+                                lang_code, lang_name
+                            ),
                         }
                     )
                 if self.subtitles_setting == MATCHING:
