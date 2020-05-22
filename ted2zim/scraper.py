@@ -597,10 +597,11 @@ class Ted2Zim:
             data_file.write(json_data)
 
     def post_process_video(self, video_dir, video_id, enc, skip_recompress):
-        # apply custom post-processing to downloaded video
-        # - resize thumbnail
-        # - recompress video if incorrect video_format or low_quality requested
-        # find downloaded video from video_dir
+        """ apply custom post-processing to downloaded video
+            - resize thumbnail
+            - recompress video if incorrect video_format or low_quality requested
+        """
+
         files = [
             p for p in video_dir.iterdir() if p.stem == "video" and p.suffix != ".jpg"
         ]
@@ -629,6 +630,7 @@ class Ted2Zim:
             return
 
         dst_path = src_path.parent.joinpath(f"video.{self.video_format}")
+        logger.debug(f"Converting video {video_id}")
         reencode(
             src_path, dst_path, enc.to_ffmpeg_args(), delete_src=True, failsafe=False
         )
