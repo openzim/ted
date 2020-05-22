@@ -24,3 +24,8 @@ logger = getLogger(NAME, level=logging.DEBUG)
 MATCHING = "matching"
 ALL = "all"
 NONE = "none"
+
+TEDLANGS = {
+    "locales": ["zh-cn", "zh-tw", "pt-br", "fr-ca"],
+    "mappings": {"zh": ["zh-cn", "zh-tw"], "pt": ["pt-br"], "fr": ["fr-ca"],},
+}

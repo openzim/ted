@@ -13,6 +13,7 @@ import urllib.parse
 from bs4 import BeautifulSoup
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
+from zimscraperlib.i18n import get_language_details
 from zimscraperlib.download import save_large_file
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
@@ -25,6 +26,7 @@ from .constants import (
     BASE_URL,
     NONE,
     MATCHING,
+    TEDLANGS,
     ALL,
     logger,
 )
@@ -44,7 +46,7 @@ class Ted2Zim:
         output_dir,
         no_zim,
         fname,
-        language,
+        languages,
         title,
         description,
         creator,
@@ -55,7 +57,6 @@ class Ted2Zim:
         use_any_optimized_version,
         s3_url_with_credentials,
         playlist,
-        source_language,
         subtitles_enough,
         subtitles_setting,
     ):
@@ -66,7 +67,9 @@ class Ted2Zim:
 
         # zim params
         self.fname = fname
-        self.language = language
+        self.languages = (
+            [] if languages is None else [l.strip() for l in languages.split(",")]
+        )
         self.tags = [] if tags is None else [t.strip() for t in tags.split(",")]
         self.title = title
         self.description = description
@@ -86,24 +89,20 @@ class Ted2Zim:
         self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
         self.playlist = playlist
-        self.source_language = (
-            []
-            if not source_language
-            else [lang.strip() for lang in source_language.split(",")]
-        )
         self.subtitles_enough = subtitles_enough
         self.subtitles_setting = (
             subtitles_setting
             if subtitles_setting == ALL
             or subtitles_setting == MATCHING
             or subtitles_setting == NONE
-            else [lang.strip() for lang in subtitles_setting.split(",")]
+            else self.get_lang_codes(
+                [lang.strip() for lang in subtitles_setting.split(",")]
+            )
         )
 
         # zim info
         self.zim_info = ZimInfo(
             homepage="index.html",
-            language=self.language,
             tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
             creator=self.creator,
             publisher=self.publisher,
@@ -127,6 +126,10 @@ class Ted2Zim:
         self.videos = []
         self.playlist_title = None
         self.playlist_description = None
+        self.source_languages = (
+            [] if not self.languages else self.get_lang_codes(self.languages)
+        )
+        self.zim_lang = None
 
     @property
     def root_dir(self):
@@ -160,6 +163,66 @@ class Ted2Zim:
     def playlists_base_url(self):
         return BASE_URL + "playlists"
 
+    def append_part1_or_part3(self, lang_code_list, lang_info):
+        """ Takes in a list and a dict containing iso language info (refer zimscraperlib.i18n)
+            and appends iso-639-1 code (or iso-639-3 code if iso-639-1 is not available) to the list """
+
+        # ignore extra language mappings if supplied query was an iso-639-1 code
+        if "part1" in lang_info["iso_types"]:
+            lang_code_list.append(lang_info["iso-639-1"])
+
+        # supplied query was not iso-639-1
+        else:
+            if lang_info["iso-639-1"]:
+                lang_code_list.append(lang_info["iso-639-1"])
+                # check for extra language codes to include
+                if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
+                    for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
+                        lang_code_list.append(code)
+            elif lang_info["iso-639-3"]:
+                lang_code_list.append(lang_info["iso-639-3"])
+            else:
+                supplied_lang = lang_info["query"]
+                logger.error(f"Language {supplied_lang} is not supported by TED")
+
+    def get_lang_codes(self, languages):
+        """ Takes in a list of language codes | locales | language names and converts into TED compatible list
+
+            Examples -
+                ["English", "fr", "hin"] => ["en", "fr", "hi"] 
+                ["chi", "fake"] => ["zh", "zh-cn", "zh-tw"] 
+        """
+
+        lang_code_list = []
+        for lang in languages:
+            lang_info = get_language_details(lang, failsafe=True)
+            if lang_info:
+                if lang_info["querytype"] == "purecode":
+                    self.append_part1_or_part3(lang_code_list, lang_info)
+                elif lang_info["querytype"] == "locale":
+                    query = lang_info["query"].replace("_", "-")
+                    if query in TEDLANGS["locales"]:
+                        lang_code_list.append(query)
+                    else:
+                        self.append_part1_or_part3(lang_code_list, lang_info)
+                else:
+                    self.append_part1_or_part3(lang_code_list, lang_info)
+        logger.debug(list(set(lang_code_list)))
+        return list(set(lang_code_list))
+
+    def update_zim_lang(self):
+        """ updates the zim language based on requested language(s) """
+
+        if not self.languages:
+            self.zim_lang = "eng"
+        else:
+            if len(self.source_languages) > 1:
+                self.zim_lang = "mul"
+            else:
+                self.zim_lang = get_language_details(
+                    self.source_languages[0], failsafe=True
+                )["iso-639-3"]
+
     def extract_videos_from_playlist(self):
 
         # extracts metadata for all videos in the given playlist
@@ -174,7 +237,14 @@ class Ted2Zim:
         for element in video_elements:
             relative_path = element.get("href")
             url = urllib.parse.urljoin(self.talks_base_url, relative_path)
-            self.extract_video_info(url)
+            if self.extract_video_info(url):
+                if self.source_languages:
+                    other_lang_urls = self.generate_urls_for_other_languages(url)
+                    logger.debug(
+                        f"Searching info for the video in other {len(other_lang_urls)} language(s)"
+                    )
+                    for lang_url in other_lang_urls:
+                        self.extract_video_info(lang_url)
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
@@ -189,8 +259,8 @@ class Ted2Zim:
             topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
             total_videos_scraped = 0
             video_allowance = self.max_videos_per_topic
-            if self.source_language:
-                for lang in self.source_language:
+            if self.source_languages:
+                for lang in self.source_languages:
                     topic_url = topic_url + f"&language={lang}"
                     page = 1
                     while video_allowance:
@@ -222,7 +292,7 @@ class Ted2Zim:
                     f"Removed topic {topic} from topic list as it had no videos"
                 )
         if not self.topics:
-            if self.source_language:
+            if self.source_languages:
                 raise ValueError(
                     "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --only-videos-in"
                 )
@@ -247,64 +317,71 @@ class Ted2Zim:
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"
 
-    def generate_subtitle_list(self, video_id, langs, current_lang):
-        """Generate a list of all subtitle languages with the link to its subtitles page. 
+    def lang_display_string(self, lang_code, lang_name):
+        if lang_code != "en":
+            return (
+                get_language_details(lang_code, failsafe=True)["native"]
+                + " - "
+                + lang_name
+            )
+        return lang_name
+
+    def get_subtitle_dict(self, lang):
+        """ returns a dict of language name and code from a larger dict lang 
 
         It will be in this format:
-        [
-            {
-                'languageCode': 'en',
-                'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
-                'languageName': 'English'
-            }
-        ]
+        {
+            'languageCode': 'en',
+            'languageName': 'English'
+        }
         """
 
+        return {
+            "languageName": self.lang_display_string(
+                lang["languageCode"], lang["languageName"]
+            ),
+            "languageCode": lang["languageCode"],
+        }
+
+    def generate_subtitle_list(self, video_id, langs, current_lang):
+        """ Generate a list of all subtitle languages with the link to its subtitles page """
+
         subtitles = []
-        if self.subtitles_setting == ALL or (not self.source_language and self.topics):
-            subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in langs
-            ]
+        if self.subtitles_setting == ALL or (not self.source_languages and self.topics):
+            subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
             self.subtitles_enough and self.subtitles_setting == NONE
         ):
             subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
+                self.get_subtitle_dict(lang)
                 for lang in langs
                 if lang["languageCode"] == current_lang
             ]
         elif self.subtitles_setting and self.subtitles_setting != NONE:
-            subtitles = [
-                {
-                    "languageName": lang["languageName"],
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in langs
-                if lang["languageCode"] in self.subtitles_setting
-            ]
+            if not self.subtitles_enough and self.topics:
+                subtitles = [
+                    self.get_subtitle_dict(lang)
+                    for lang in langs
+                    if lang["languageCode"] in self.subtitles_setting
+                ]
+            else:
+                subtitles = [
+                    self.get_subtitle_dict(lang)
+                    for lang in langs
+                    if lang["languageCode"] in self.subtitles_setting
+                    or lang["languageCode"] in self.source_languages
+                ]
         return build_subtitle_pages(video_id, subtitles)
 
     def generate_urls_for_other_languages(self, url):
         """ Possible URLs for other requested languages based on a video url """
 
         urls = []
-
-        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
+        current_lang, query = self.get_lang_code_from_url(url, with_full_query=True)
         url_parts = list(urllib.parse.urlparse(url))
 
-        # explode url to extract `language` query field value
-        query = dict(urllib.parse.parse_qsl(url_parts[4]))
-        current_lang = query["language"]
-
         # update the language query field value with other languages and form URLs
-        for language in self.source_language:
+        for language in self.source_languages:
             if language != current_lang:
                 query.update({"language": language})
                 url_parts[4] = urllib.parse.urlencode(query)
@@ -331,7 +408,7 @@ class Ted2Zim:
             ]:
                 if self.extract_video_info(url):
                     nb_extracted += 1
-                    if self.source_language:
+                    if self.source_languages:
                         other_lang_urls = self.generate_urls_for_other_languages(url)
                         logger.debug(
                             f"Searching info for the video in other {len(other_lang_urls)} language(s)"
@@ -342,6 +419,22 @@ class Ted2Zim:
                         break
                 logger.debug(f"Seen {video_link['href']}")
         return nb_extracted
+
+    def get_lang_code_from_url(self, url, with_full_query=False):
+        """ gets the queried language code from a ted talk url """
+
+        # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
+        url_parts = list(urllib.parse.urlparse(url))
+
+        # explode url to extract `language` query field value
+        query = dict(urllib.parse.parse_qsl(url_parts[4]))
+        try:
+            current_lang = query["language"]
+        except KeyError:
+            current_lang = None
+        if with_full_query:
+            return current_lang, query
+        return current_lang
 
     def extract_video_info(self, url):
 
@@ -356,6 +449,7 @@ class Ted2Zim:
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
         soup = BeautifulSoup(download_from_site(url).text, features="html.parser")
+        requested_lang_code = self.get_lang_code_from_url(url)
         div = soup.find("div", attrs={"class": "talks-main"})
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
@@ -363,16 +457,21 @@ class Ted2Zim:
             return False
         json_data_tag = script_tags_within_div[-1]
         json_data = json_data_tag.string
-        json_data = " ".join(json_data.split(",", 1)[1].split(")")[:-1])
-        json_data = json.loads(json_data)["__INITIAL_DATA__"]
+        json_data = json.loads(json_data[18:-1])["__INITIAL_DATA__"]
         lang_code = json_data["language"]
+        if requested_lang_code and lang_code != requested_lang_code:
+            logger.error(
+                f"Video has not yet been translated into {requested_lang_code}"
+            )
+            return False
         lang_name = json_data["requested_language_english_name"]
         talk_info = json_data["talks"][0]
         native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
         if (
             not self.subtitles_enough
-            and self.source_language
+            and self.source_languages
             and native_talk_language != lang_code
+            and self.topics
         ):
             return False
 
@@ -449,7 +548,12 @@ class Ted2Zim:
                 {
                     "id": video_id,
                     "languages": [
-                        {"languageCode": lang_code, "languageName": lang_name}
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.lang_display_string(
+                                lang_code, lang_name
+                            ),
+                        }
                     ],
                     "title": [{"lang": lang_code, "text": title}],
                     "description": [{"lang": lang_code, "text": description}],
@@ -480,7 +584,12 @@ class Ted2Zim:
                         {"lang": lang_code, "text": description}
                     )
                     self.videos[i]["languages"].append(
-                        {"languageCode": lang_code, "languageName": lang_name}
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.lang_display_string(
+                                lang_code, lang_name
+                            ),
+                        }
                     )
                 if self.subtitles_setting == MATCHING:
                     self.videos[i]["subtitles"] += subtitles
@@ -761,6 +870,7 @@ class Ted2Zim:
 
         self.add_default_language()
         self.update_title_and_description()
+        self.update_zim_lang()
 
         # clean the build directory if it already exists
         if self.build_dir.exists():
@@ -781,7 +891,9 @@ class Ted2Zim:
                 self.fname if self.fname else f"{self.name}_{period}.zim"
             )
             logger.info("building ZIM file")
-            self.zim_info.update(title=self.title, description=self.description)
+            self.zim_info.update(
+                title=self.title, description=self.description, language="mul"
+            )
             logger.debug(self.zim_info.to_zimwriterfs_args())
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
             if not self.keep_build_dir:
