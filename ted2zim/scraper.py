@@ -327,63 +327,47 @@ class Ted2Zim:
         else:
             return lang_name
 
-    def generate_subtitle_list(self, video_id, langs, current_lang):
-        """Generate a list of all subtitle languages with the link to its subtitles page. 
+    def get_subtitle_dict(self, lang):
+        """ returns a dict of language name and code from a larger dict lang 
 
         It will be in this format:
-        [
-            {
-                'languageCode': 'en',
-                'link': 'https://www.ted.com/talks/subtitles/id/1907/lang/en',
-                'languageName': 'English'
-            }
-        ]
+        {
+            'languageCode': 'en',
+            'languageName': 'English'
+        }
         """
+
+        return {
+            "languageName": self.lang_display_string(
+                lang["languageCode"], lang["languageName"]
+            ),
+            "languageCode": lang["languageCode"],
+        }
+
+    def generate_subtitle_list(self, video_id, langs, current_lang):
+        """ Generate a list of all subtitle languages with the link to its subtitles page """
 
         subtitles = []
         if self.subtitles_setting == ALL or (not self.source_language and self.topics):
-            subtitles = [
-                {
-                    "languageName": self.lang_display_string(
-                        lang["languageCode"], lang["languageName"]
-                    ),
-                    "languageCode": lang["languageCode"],
-                }
-                for lang in langs
-            ]
+            subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
             self.subtitles_enough and self.subtitles_setting == NONE
         ):
             subtitles = [
-                {
-                    "languageName": self.lang_display_string(
-                        lang["languageCode"], lang["languageName"]
-                    ),
-                    "languageCode": lang["languageCode"],
-                }
+                self.get_subtitle_dict(lang)
                 for lang in langs
                 if lang["languageCode"] == current_lang
             ]
         elif self.subtitles_setting and self.subtitles_setting != NONE:
             if not self.subtitles_enough and self.topics:
                 subtitles = [
-                    {
-                        "languageName": self.lang_display_string(
-                            lang["languageCode"], lang["languageName"]
-                        ),
-                        "languageCode": lang["languageCode"],
-                    }
+                    self.get_subtitle_dict(lang)
                     for lang in langs
                     if lang["languageCode"] in self.subtitles_setting
                 ]
             else:
                 subtitles = [
-                    {
-                        "languageName": self.lang_display_string(
-                            lang["languageCode"], lang["languageName"]
-                        ),
-                        "languageCode": lang["languageCode"],
-                    }
+                    self.get_subtitle_dict(lang)
                     for lang in langs
                     if lang["languageCode"] in self.subtitles_setting
                     or lang["languageCode"] in self.source_language
