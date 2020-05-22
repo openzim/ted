@@ -68,7 +68,7 @@ def main():
     )
 
     parser.add_argument(
-        "--language", help="Comma-seperated list of languages to filter videos"
+        "--languages", help="Comma-seperated list of languages to filter videos"
     )
 
     parser.add_argument(
@@ -137,14 +137,14 @@ def main():
 
     parser.add_argument(
         "--subtitles-enough",
-        help="Whether to include videos that have a subtitle in requested --language if audio in another language",
+        help="Whether to include videos that have a subtitle in requested --languages if audio in another language",
         default=False,
         action="store_true",
     )
 
     parser.add_argument(
         "--subtitles",
-        help="Language setting for subtitles. ALL: include all available subtitles, MATCHING (default): only subtitles matching --language, NONE: include no subtitle. Apart from this, also accepts comma-seperated list of language codes",
+        help="Language setting for subtitles. ALL: include all available subtitles, MATCHING (default): only subtitles matching --languages, NONE: include no subtitle. Apart from this, also accepts comma-seperated list of language codes",
         default=MATCHING,
         dest="subtitles_setting",
     )
@@ -160,9 +160,9 @@ def main():
                 parser.error(
                     "Maximum number of videos to scrape per topic must be greater than or equal to 1"
                 )
-            if args.subtitles_enough and not args.language:
+            if args.subtitles_enough and not args.languages:
                 parser.error(
-                    "--subtitles-enough is only meant to be used if --language is present"
+                    "--subtitles-enough is only meant to be used if --languages is present"
                 )
         elif args.playlist:
             if args.subtitles_enough:

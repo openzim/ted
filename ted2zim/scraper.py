@@ -46,7 +46,7 @@ class Ted2Zim:
         output_dir,
         no_zim,
         fname,
-        language,
+        languages,
         title,
         description,
         creator,
@@ -67,8 +67,8 @@ class Ted2Zim:
 
         # zim params
         self.fname = fname
-        self.language = (
-            [] if language is None else [l.strip() for l in language.split(",")]
+        self.languages = (
+            [] if languages is None else [l.strip() for l in languages.split(",")]
         )
         self.tags = [] if tags is None else [t.strip() for t in tags.split(",")]
         self.title = title
@@ -126,8 +126,8 @@ class Ted2Zim:
         self.videos = []
         self.playlist_title = None
         self.playlist_description = None
-        self.source_language = (
-            [] if not self.language else self.get_lang_codes(self.language)
+        self.source_languages = (
+            [] if not self.languages else self.get_lang_codes(self.languages)
         )
         self.zim_lang = None
 
@@ -213,14 +213,14 @@ class Ted2Zim:
     def update_zim_lang(self):
         """ updates the zim language based on requested language(s) """
 
-        if not self.language:
+        if not self.languages:
             self.zim_lang = "eng"
         else:
-            if len(self.source_language) > 1:
+            if len(self.source_languages) > 1:
                 self.zim_lang = "mul"
             else:
                 self.zim_lang = get_language_details(
-                    self.source_language[0], failsafe=True
+                    self.source_languages[0], failsafe=True
                 )["iso-639-3"]
 
     def extract_videos_from_playlist(self):
@@ -238,7 +238,7 @@ class Ted2Zim:
             relative_path = element.get("href")
             url = urllib.parse.urljoin(self.talks_base_url, relative_path)
             if self.extract_video_info(url):
-                if self.source_language:
+                if self.source_languages:
                     other_lang_urls = self.generate_urls_for_other_languages(url)
                     logger.debug(
                         f"Searching info for the video in other {len(other_lang_urls)} language(s)"
@@ -259,8 +259,8 @@ class Ted2Zim:
             topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
             total_videos_scraped = 0
             video_allowance = self.max_videos_per_topic
-            if self.source_language:
-                for lang in self.source_language:
+            if self.source_languages:
+                for lang in self.source_languages:
                     topic_url = topic_url + f"&language={lang}"
                     page = 1
                     while video_allowance:
@@ -292,7 +292,7 @@ class Ted2Zim:
                     f"Removed topic {topic} from topic list as it had no videos"
                 )
         if not self.topics:
-            if self.source_language:
+            if self.source_languages:
                 raise ValueError(
                     "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --only-videos-in"
                 )
@@ -324,8 +324,7 @@ class Ted2Zim:
                 + " - "
                 + lang_name
             )
-        else:
-            return lang_name
+        return lang_name
 
     def get_subtitle_dict(self, lang):
         """ returns a dict of language name and code from a larger dict lang 
@@ -348,7 +347,7 @@ class Ted2Zim:
         """ Generate a list of all subtitle languages with the link to its subtitles page """
 
         subtitles = []
-        if self.subtitles_setting == ALL or (not self.source_language and self.topics):
+        if self.subtitles_setting == ALL or (not self.source_languages and self.topics):
             subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
             self.subtitles_enough and self.subtitles_setting == NONE
@@ -370,7 +369,7 @@ class Ted2Zim:
                     self.get_subtitle_dict(lang)
                     for lang in langs
                     if lang["languageCode"] in self.subtitles_setting
-                    or lang["languageCode"] in self.source_language
+                    or lang["languageCode"] in self.source_languages
                 ]
         return build_subtitle_pages(video_id, subtitles)
 
@@ -382,7 +381,7 @@ class Ted2Zim:
         url_parts = list(urllib.parse.urlparse(url))
 
         # update the language query field value with other languages and form URLs
-        for language in self.source_language:
+        for language in self.source_languages:
             if language != current_lang:
                 query.update({"language": language})
                 url_parts[4] = urllib.parse.urlencode(query)
@@ -409,7 +408,7 @@ class Ted2Zim:
             ]:
                 if self.extract_video_info(url):
                     nb_extracted += 1
-                    if self.source_language:
+                    if self.source_languages:
                         other_lang_urls = self.generate_urls_for_other_languages(url)
                         logger.debug(
                             f"Searching info for the video in other {len(other_lang_urls)} language(s)"
@@ -470,7 +469,7 @@ class Ted2Zim:
         native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
         if (
             not self.subtitles_enough
-            and self.source_language
+            and self.source_languages
             and native_talk_language != lang_code
             and self.topics
         ):
