@@ -15,6 +15,7 @@ from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.i18n import get_language_details
 from zimscraperlib.download import save_large_file
+from zimscraperlib.video.presets import VideoWebmLow, VideoMp4Low
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
@@ -22,7 +23,6 @@ from .utils import download_from_site, build_subtitle_pages
 from .constants import (
     ROOT_DIR,
     SCRAPER,
-    ENCODER_VERSION,
     BASE_URL,
     NONE,
     MATCHING,
@@ -30,7 +30,7 @@ from .constants import (
     ALL,
     logger,
 )
-from .converter import post_process_video
+from .processing import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
 
@@ -728,13 +728,16 @@ class Ted2Zim:
             if not video_dir.exists():
                 video_dir.mkdir(parents=True)
 
+            # set preset
+            preset = {"mp4": VideoMp4Low}.get(self.video_format, VideoWebmLow)()
+
             # download video
             downloaded_from_cache = False
             logger.debug(f"Downloading {video_title}")
             if self.s3_storage:
                 s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
                 downloaded_from_cache = self.download_from_cache(
-                    s3_key, req_video_file_path
+                    s3_key, req_video_file_path, preset.VERSION
                 )
             if not downloaded_from_cache:
                 try:
@@ -758,9 +761,10 @@ class Ted2Zim:
                 post_process_video(
                     video_dir,
                     video_id,
+                    preset,
                     self.video_format,
                     self.low_quality,
-                    skip_recompress=downloaded_from_cache,
+                    downloaded_from_cache,
                 )
             except Exception as e:
                 logger.error(f"Failed to post process video {video_id}")
@@ -768,7 +772,7 @@ class Ted2Zim:
             else:
                 # upload to cache only if recompress was successful
                 if self.s3_storage and not downloaded_from_cache:
-                    self.upload_to_cache(s3_key, req_video_file_path)
+                    self.upload_to_cache(s3_key, req_video_file_path, preset.VERSION)
 
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
@@ -821,7 +825,7 @@ class Ted2Zim:
             return False
         return True
 
-    def download_from_cache(self, key, video_path):
+    def download_from_cache(self, key, video_path, encoder_version):
 
         # Checks if file is in cache and returns true if
         # successfully downloaded from cache
@@ -830,7 +834,7 @@ class Ted2Zim:
                 return False
         else:
             if not self.s3_storage.has_object_matching_meta(
-                key, tag="encoder_version", value=ENCODER_VERSION
+                key, tag="encoder_version", value=f"v{encoder_version}"
             ):
                 return False
         video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -842,12 +846,12 @@ class Ted2Zim:
         logger.info(f"downloaded {video_path} from cache at {key}")
         return True
 
-    def upload_to_cache(self, key, video_path):
+    def upload_to_cache(self, key, video_path, encoder_version):
 
         # returns true if successfully uploaded to cache
         try:
             self.s3_storage.upload_file(
-                video_path, key, meta={"encoder_version": ENCODER_VERSION}
+                video_path, key, meta={"encoder_version": f"v{encoder_version}"}
             )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
