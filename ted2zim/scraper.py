@@ -14,9 +14,7 @@ from bs4 import BeautifulSoup
 from time import sleep
 from zimscraperlib.zim import ZimInfo, make_zim_file
 from zimscraperlib.download import save_large_file
-from zimscraperlib.imaging import resize_image
 from zimscraperlib.video.presets import VideoWebmLow, VideoMp4Low
-from zimscraperlib.video.encoding import reencode
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 
@@ -30,6 +28,7 @@ from .constants import (
     ALL,
     logger,
 )
+from .processing import post_process_video
 from .WebVTTcreator import WebVTTcreator
 
 
@@ -596,45 +595,6 @@ class Ted2Zim:
             json_data = "json_data = " + json_data
             data_file.write(json_data)
 
-    def post_process_video(self, video_dir, video_id, enc, skip_recompress):
-        """ apply custom post-processing to downloaded video
-            - resize thumbnail
-            - recompress video if incorrect video_format or low_quality requested
-        """
-
-        files = [
-            p for p in video_dir.iterdir() if p.stem == "video" and p.suffix != ".jpg"
-        ]
-        if len(files) == 0:
-            logger.error(f"Video file missing in {video_dir} for {video_id}")
-            logger.debug(list(video_dir.iterdir()))
-            raise FileNotFoundError(f"Missing video file in {video_dir}")
-        if len(files) > 1:
-            logger.warning(
-                f"Multiple video file candidates for {video_id} in {video_dir}. Picking {files[0]} out of {files}"
-            )
-        src_path = files[0]
-
-        # resize thumbnail. we use max width:248x187px in listing
-        resize_image(
-            src_path.parent.joinpath("thumbnail.jpg"),
-            width=248,
-            height=187,
-            method="cover",
-        )
-
-        # don't reencode if not requesting low-quality and received wanted format
-        if skip_recompress or (
-            not self.low_quality and src_path.suffix[1:] == self.video_format
-        ):
-            return
-
-        dst_path = src_path.parent.joinpath(f"video.{self.video_format}")
-        logger.debug(f"Converting video {video_id}")
-        reencode(
-            src_path, dst_path, enc.to_ffmpeg_args(), delete_src=True, failsafe=False
-        )
-
     def download_video_data(self):
 
         # Download all the TED talk videos and the meta-data for it.
@@ -659,11 +619,8 @@ class Ted2Zim:
             if not video_dir.exists():
                 video_dir.mkdir(parents=True)
 
-            # set encoders
-            if self.video_format == "mp4":
-                enc = VideoMp4Low()
-            else:
-                enc = VideoWebmLow()
+            # set preset
+            preset = {"mp4": VideoMp4Low}.get(self.video_format, VideoWebmLow)()
 
             # download video
             downloaded_from_cache = False
@@ -671,7 +628,7 @@ class Ted2Zim:
             if self.s3_storage:
                 s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
                 downloaded_from_cache = self.download_from_cache(
-                    s3_key, req_video_file_path, enc.VERSION
+                    s3_key, req_video_file_path, preset.VERSION
                 )
             if not downloaded_from_cache:
                 try:
@@ -692,14 +649,21 @@ class Ted2Zim:
 
             # recompress if necessary
             try:
-                self.post_process_video(video_dir, video_id, enc, downloaded_from_cache)
+                post_process_video(
+                    video_dir,
+                    video_id,
+                    preset,
+                    self.video_format,
+                    self.low_quality,
+                    downloaded_from_cache,
+                )
             except Exception as e:
                 logger.error(f"Failed to post process video {video_id}")
                 logger.debug(e)
             else:
                 # upload to cache only if recompress was successful
                 if self.s3_storage and not downloaded_from_cache:
-                    self.upload_to_cache(s3_key, req_video_file_path, enc.VERSION)
+                    self.upload_to_cache(s3_key, req_video_file_path, preset.VERSION)
 
     def download_subtitles(self):
         # Download the subtitle files, generate a WebVTT file
@@ -752,7 +716,7 @@ class Ted2Zim:
             return False
         return True
 
-    def download_from_cache(self, key, video_path, enc_version):
+    def download_from_cache(self, key, video_path, encoder_version):
 
         # Checks if file is in cache and returns true if
         # successfully downloaded from cache
@@ -761,7 +725,7 @@ class Ted2Zim:
                 return False
         else:
             if not self.s3_storage.has_object_matching_meta(
-                key, tag="encoder_version", value=enc_version
+                key, tag="encoder_version", value=f"v{encoder_version}"
             ):
                 return False
         video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -773,12 +737,12 @@ class Ted2Zim:
         logger.info(f"downloaded {video_path} from cache at {key}")
         return True
 
-    def upload_to_cache(self, key, video_path, enc_version):
+    def upload_to_cache(self, key, video_path, encoder_version):
 
         # returns true if successfully uploaded to cache
         try:
             self.s3_storage.upload_file(
-                video_path, key, meta={"encoder_version": enc_version}
+                video_path, key, meta={"encoder_version": f"v{encoder_version}"}
             )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
