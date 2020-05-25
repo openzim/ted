@@ -853,7 +853,8 @@ class Ted2Zim:
         logger.info(
             f"Starting scraper with:\n"
             f"  langs: {', '.join(self.source_languages)}\n"
-            f"  subtitles : {', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}"
+            f"  subtitles : {', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}\n"
+            f"  video format : {self.video_format}"
         )
 
         if self.s3_url_with_credentials and not self.s3_credentials_ok():
