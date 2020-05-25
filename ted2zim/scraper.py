@@ -850,8 +850,11 @@ class Ted2Zim:
         return True
 
     def run(self):
-        logger.info(f"Starting scraper with langs: {','.join(self.source_languages)}")
-        logger.info(f"Subtitles : {','.join(self.subtitles_setting)}")
+        logger.info(
+            f"Starting scraper with:\n"
+            f"  langs: {', '.join(self.source_languages)}\n"
+            f"  subtitles : {', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}"
+        )
 
         if self.s3_url_with_credentials and not self.s3_credentials_ok():
             raise ValueError("Unable to connect to Optimization Cache. Check its URL.")
