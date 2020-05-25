@@ -16,9 +16,9 @@
       <img src="assets/img/TED.png" id="title-img"/>
       <table style="width: 100%;"><tr>
         <td style="text-align: left; margin: 0 auto; width: 100%;">
-          <select data-placeholder="Subtitle Language" class="chosen-select" tabindex="2">
+          <select data-placeholder="Language" class="chosen-select" tabindex="2">
             <option value=""></option>
-            <option value="lang-all">Filter videos by subtitle language</option>
+            <option value="lang-all">Filter by language</option>
             {% for language in languages %}
               <option value="{{ language.languageCode }}">{{ language.languageName }}</option>
             {% endfor %}

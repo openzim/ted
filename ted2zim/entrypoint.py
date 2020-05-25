@@ -2,41 +2,42 @@
 # -*- coding: utf-8 -*-
 # vim: ai ts=4 sts=4 et sw=4 nu
 
-import logging
 import argparse
 
-from .constants import NAME, SCRAPER, MATCHING, ALL, NONE, logger
-from .scraper import Ted2Zim
+from .constants import NAME, SCRAPER, MATCHING, ALL, NONE, getLogger, setDebug
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog=NAME, description="Scraper to create ZIM files from TED talks",
+        prog=NAME,
+        description="Scraper to create ZIM files from TED talks topics or playlists",
     )
 
     parser.add_argument(
         "--topics",
-        help="Comma-seperated list of topics to scrape. Should be exactly same as given on ted.com/talks",
+        help="Comma-seperated list of topics to scrape; as given on ted.com/talks",
     )
 
     parser.add_argument(
-        "--max-videos-per-topic",
-        help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
-        default=9999,
-        type=int,
+        "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
     )
 
     parser.add_argument(
-        "--output",
-        help="Output folder for ZIM file or build folder",
-        default="/output",
-        dest="output_dir",
+        "--languages", help="Comma-seperated list of languages to filter videos"
     )
 
     parser.add_argument(
-        "--name",
-        help="ZIM name. Used as identifier and filename (date will be appended)",
-        required=True,
+        "--subtitles-enough",
+        help="Whether to include videos that have a subtitle in requested --languages if audio is in another language",
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--subtitles",
+        help=f"Language setting for subtitles. {ALL}: include all available subtitles, {MATCHING} (default): only subtitles matching --languages, {NONE}: include no subtitle. Also accepts comma-seperated list of language codes",
+        default=MATCHING,
+        dest="subtitles_setting",
     )
 
     parser.add_argument(
@@ -55,30 +56,25 @@ def main():
     )
 
     parser.add_argument(
-        "--no-zim",
-        help="Don't produce a ZIM file, create build folder only.",
+        "--autoplay",
+        help="Enable autoplay on video articles. Behavior differs on platforms/browsers.",
         action="store_true",
         default=False,
     )
 
     parser.add_argument(
-        "--zim-file",
-        help="ZIM file name (based on --name if not provided)",
-        dest="fname",
+        "--name",
+        help="ZIM name. Used as identifier and filename (date will be appended)",
+        required=True,
     )
 
     parser.add_argument(
-        "--languages", help="Comma-seperated list of languages to filter videos"
-    )
-
-    parser.add_argument(
-        "--title",
-        help="Custom title for your project and ZIM. Default value - TED Collection",
+        "--title", help="Custom title for your ZIM. Based on selection otherwise.",
     )
 
     parser.add_argument(
         "--description",
-        help="Custom description for your project and ZIM. Default value - A selection of several topics' videos from TED",
+        help="Custom description for your ZIM. Based on selection otherwise.",
     )
 
     parser.add_argument("--creator", help="Name of content creator", default="TED")
@@ -93,8 +89,41 @@ def main():
     )
 
     parser.add_argument(
+        "--optimization-cache",
+        help="URL with credentials and bucket name to S3 Optimization Cache",
+        dest="s3_url_with_credentials",
+    )
+
+    parser.add_argument(
+        "--use-any-optimized-version",
+        help="Use files on S3 cache if present, whatever the version",
+        default=False,
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--output",
+        help="Output folder for ZIM file",
+        default="/output",
+        dest="output_dir",
+    )
+
+    parser.add_argument(
+        "--zim-file",
+        help="ZIM file name (based on --name if not provided)",
+        dest="fname",
+    )
+
+    parser.add_argument(
+        "--no-zim",
+        help="Don't produce a ZIM file, create build folder only.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
         "--keep",
-        help="Don't erase build folder on start (for debug/devel)",
+        help="Don't remove build folder on start (for debug/devel)",
         default=False,
         action="store_true",
         dest="keep_build_dir",
@@ -112,45 +141,17 @@ def main():
     )
 
     parser.add_argument(
-        "--autoplay",
-        help="Enable autoplay on video articles. Behavior differs on platforms/browsers.",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "--optimization-cache",
-        help="URL with credentials to S3/S3 based bucket for using as optimization cache",
-        dest="s3_url_with_credentials",
-    )
-
-    parser.add_argument(
-        "--use-any-optimized-version",
-        help="Use the cached files if present, whatever the version",
-        default=False,
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
-    )
-
-    parser.add_argument(
-        "--subtitles-enough",
-        help="Whether to include videos that have a subtitle in requested --languages if audio in another language",
-        default=False,
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--subtitles",
-        help="Language setting for subtitles. ALL: include all available subtitles, MATCHING (default): only subtitles matching --languages, NONE: include no subtitle. Apart from this, also accepts comma-seperated list of language codes",
-        default=MATCHING,
-        dest="subtitles_setting",
+        "--max-videos-per-topic",
+        help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
+        default=99999,
+        type=int,
     )
 
     args = parser.parse_args()
-    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
+    setDebug(args.debug)
+    logger = getLogger()
+
+    from .scraper import Ted2Zim
 
     try:
         if args.topics and args.playlist:
@@ -158,7 +159,7 @@ def main():
         elif args.topics:
             if args.max_videos_per_topic < 1:
                 parser.error(
-                    "Maximum number of videos to scrape per topic must be greater than or equal to 1"
+                    "Maximum number of videos to scrape per topic must be positive"
                 )
             if args.subtitles_enough and not args.languages:
                 parser.error(
@@ -170,7 +171,8 @@ def main():
         else:
             parser.error("Either --topics or --playlist is required")
         if not args.subtitles_setting:
-            parser.error("--subtitles cannot take in empty string")
+            parser.error("--subtitles cannot take an empty string")
+
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
     except Exception as exc:

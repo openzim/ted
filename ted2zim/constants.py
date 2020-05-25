@@ -5,7 +5,7 @@
 import pathlib
 import logging
 
-from zimscraperlib.logging import getLogger
+from zimscraperlib.logging import getLogger as lib_getLogger
 
 ROOT_DIR = pathlib.Path(__file__).parent
 NAME = ROOT_DIR.name
@@ -17,13 +17,25 @@ SCRAPER = f"{NAME} {VERSION}"
 
 BASE_URL = "https://ted.com/"
 
-logger = getLogger(NAME, level=logging.DEBUG)
-
 MATCHING = "matching"
 ALL = "all"
 NONE = "none"
 
 TEDLANGS = {
     "locales": ["zh-cn", "zh-tw", "pt-br", "fr-ca"],
-    "mappings": {"zh": ["zh-cn", "zh-tw"], "pt": ["pt-br"], "fr": ["fr-ca"],},
+    "mappings": {"zh": ["zh-cn", "zh-tw"], "pt": ["pt-br"], "fr": ["fr-ca"]},
 }
+
+
+class Global:
+    debug = False
+
+
+def setDebug(debug):
+    """ toggle constants global DEBUG flag (used by getLogger) """
+    Global.debug = bool(debug)
+
+
+def getLogger():
+    """ configured logger respecting DEBUG flag """
+    return lib_getLogger(NAME, level=logging.DEBUG if Global.debug else logging.INFO)
