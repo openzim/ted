@@ -5,7 +5,6 @@
 import argparse
 
 from .constants import NAME, SCRAPER, MATCHING, ALL, NONE, getLogger, setDebug
-from .scraper import Ted2Zim
 
 
 def main():
@@ -151,6 +150,8 @@ def main():
     args = parser.parse_args()
     setDebug(args.debug)
     logger = getLogger()
+
+    from .scraper import Ted2Zim
 
     try:
         if args.topics and args.playlist:

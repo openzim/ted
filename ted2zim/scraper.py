@@ -207,7 +207,6 @@ class Ted2Zim:
                         self.append_part1_or_part3(lang_code_list, lang_info)
                 else:
                     self.append_part1_or_part3(lang_code_list, lang_info)
-        logger.debug(f"to_ted_langcodes(): {list(set(lang_code_list))}")
         return list(set(lang_code_list))
 
     def extract_videos_from_playlist(self):
@@ -852,6 +851,7 @@ class Ted2Zim:
 
     def run(self):
         logger.info(f"Starting scraper with langs: {','.join(self.source_languages)}")
+        logger.info(f"Subtitles : {','.join(self.subtitles_setting)}")
 
         if self.s3_url_with_credentials and not self.s3_credentials_ok():
             raise ValueError("Unable to connect to Optimization Cache. Check its URL.")
