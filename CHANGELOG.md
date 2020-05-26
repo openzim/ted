@@ -1,6 +1,7 @@
-# dev
+# 2.0.1
 
-- n/a
+- fixed missing files in package
+- Fixed docker recipe (zimwriterfs version)
 
 # 2.0.0
 
