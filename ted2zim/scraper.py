@@ -290,9 +290,13 @@ class Ted2Zim:
             if len(self.source_languages) > 1:
                 self.zim_lang = "mul"
             else:
-                self.zim_lang = get_language_details(
+                lang_info = get_language_details(
                     self.source_languages[0], failsafe=True
-                )["iso-639-3"]
+                )
+                if lang_info:
+                    self.zim_lang = lang_info["iso-639-3"]
+                else:
+                    self.zim_lang = "eng"
 
         if self.playlist:
             if not self.title:
@@ -314,12 +318,11 @@ class Ted2Zim:
 
     def get_display_name(self, lang_code, lang_name):
         """ Display name for language """
-        if lang_code != "en":
-            return (
-                get_language_details(lang_code, failsafe=True)["native"]
-                + " - "
-                + lang_name
-            )
+
+        lang_info = get_language_details(lang_code, failsafe=True)
+        if lang_code != "en" and lang_info:
+
+            return lang_info["native"] + " - " + lang_name
         return lang_name
 
     def get_subtitle_dict(self, lang):
