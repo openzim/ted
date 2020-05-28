@@ -306,8 +306,8 @@ class Ted2Zim:
                 if not self.description:
                     self.description = "A selection of TED videos from several topics"
             else:
+                topic_str = self.topics[0].replace("+", " ")
                 if not self.title:
-                    topic_str = self.topics[0].replace("+", " ")
                     self.title = f"{topic_str.capitalize()} from TED"
                 if not self.description:
                     self.description = f"A selection of {topic_str} videos from TED"

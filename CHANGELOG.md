@@ -1,3 +1,7 @@
+# dev
+
+- fixed auto-description when title is supplied
+
 # 2.0.1
 
 - fixed missing files in package
