@@ -438,14 +438,6 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
-    def already_visited_video(self, url):
-        """ checks if a video URL is already visited """
-
-        relative_path = urllib.parse.urlparse(url)[2]
-        if relative_path in self.already_visited:
-            return True
-        return False
-
     def extract_video_info(self, url, retry_count=0):
         """ extract all info from a TED video url and updates self.videos """
 
@@ -460,7 +452,8 @@ class Ted2Zim:
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
 
-        if self.already_visited_video(url):
+        # don't scrape if URL already visited
+        if urllib.parse.urlparse(url)[2] in self.already_visited:
             return False
 
         if retry_count > 5:
