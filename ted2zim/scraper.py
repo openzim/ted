@@ -132,6 +132,7 @@ class Ted2Zim:
             [] if not self.languages else self.to_ted_langcodes(self.languages)
         )
         self.zim_lang = None
+        self.already_visited = []
 
     @property
     def templates_dir(self):
@@ -225,13 +226,14 @@ class Ted2Zim:
             relative_path = element.get("href")
             url = urllib.parse.urljoin(self.talks_base_url, relative_path)
             if self.extract_video_info(url):
-                if self.source_languages:
+                if self.source_languages and len(self.source_languages) > 1:
                     other_lang_urls = self.generate_urls_for_other_languages(url)
                     logger.debug(
                         f"Searching info for the video in other {len(other_lang_urls)} language(s)"
                     )
                     for lang_url in other_lang_urls:
                         self.extract_video_info(lang_url)
+                    self.already_visited.append(urllib.parse.urlparse(url)[2])
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
@@ -342,14 +344,16 @@ class Ted2Zim:
             "languageCode": lang["languageCode"],
         }
 
-    def generate_subtitle_list(self, video_id, langs, page_lang):
+    def generate_subtitle_list(self, video_id, langs, page_lang, audio_lang):
         """ List of all subtitle languages with link to their pages """
 
         subtitles = []
         if self.subtitles_setting == ALL or (not self.source_languages and self.topics):
             subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
-            self.subtitles_enough and self.subtitles_setting == NONE
+            self.subtitles_enough
+            and self.subtitles_setting == NONE
+            and page_lang != audio_lang
         ):
             subtitles = [
                 self.get_subtitle_dict(lang)
@@ -408,13 +412,14 @@ class Ted2Zim:
             ]:
                 if self.extract_video_info(url):
                     nb_extracted += 1
-                    if self.source_languages:
+                    if self.source_languages and len(self.source_languages) > 1:
                         other_lang_urls = self.generate_urls_for_other_languages(url)
                         logger.debug(
                             f"Searching info for video in other {len(other_lang_urls)} language(s)"
                         )
                         for lang_url in other_lang_urls:
                             self.extract_video_info(lang_url)
+                        self.already_visited.append(urllib.parse.urlparse(url)[2])
                     if nb_extracted == video_allowance:
                         break
                 logger.debug(f"Seen {video_link['href']}")
@@ -446,9 +451,15 @@ class Ted2Zim:
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
+
+        # don't scrape if URL already visited
+        if urllib.parse.urlparse(url)[2] in self.already_visited:
+            return False
+
         if retry_count > 5:
             logger.error("Max retries exceeded. Skipping video")
             return False
+
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
 
@@ -547,7 +558,9 @@ class Ted2Zim:
         video_id = talk_info["id"]
 
         langs = talk_info["player_talks"][0]["languages"]
-        subtitles = self.generate_subtitle_list(video_id, langs, lang_code)
+        subtitles = self.generate_subtitle_list(
+            video_id, langs, lang_code, native_talk_language
+        )
 
         # Extract the keywords for the TED talk
         keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
@@ -600,7 +613,7 @@ class Ted2Zim:
                             "languageName": self.get_display_name(lang_code, lang_name),
                         }
                     )
-                if self.subtitles_setting == MATCHING:
+                if self.subtitles_setting == MATCHING or self.subtitles_setting == NONE:
                     self.videos[index]["subtitles"] += subtitles
         return False
 
@@ -660,18 +673,14 @@ class Ted2Zim:
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
-        languages = []
-        for video in self.videos:
-            for language in video["subtitles"]:
-                languages.append(
-                    {
-                        "languageCode": language["languageCode"],
-                        "languageName": language["languageName"],
-                    }
-                )
-            languages += video["languages"]
+        all_langs = {
+            language["languageCode"]: language["languageName"]
+            for video in self.videos
+            for language in video["subtitles"] + video["languages"]
+        }
         languages = [
-            dict(tpl) for tpl in set(tuple(item.items()) for item in languages)
+            {"languageName": value, "languageCode": key}
+            for key, value in all_langs.items()
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
         html = env.get_template("home.html").render(languages=languages)
