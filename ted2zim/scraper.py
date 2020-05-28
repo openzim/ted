@@ -433,7 +433,7 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
-    def extract_video_info(self, url):
+    def extract_video_info(self, url, retry_count=0):
         """ extract all info from a TED video url and updates self.videos """
 
         # Extract the meta-data of the video:
@@ -446,8 +446,17 @@ class Ted2Zim:
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
+        if retry_count > 5:
+            logger.error("Max retries exceeded. Skipping video")
+            return False
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
+        if not div:
+            logger.debug(
+                "Potentially insufficient data returned by server. Retrying in 5 seconds..."
+            )
+            time.sleep(5)
+            return self.extract_video_info(url, retry_count=retry_count + 1)
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
             logger.error("The required script tag containing video meta is not present")
