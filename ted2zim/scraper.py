@@ -451,6 +451,10 @@ class Ted2Zim:
             return False
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
+
+        # TED is sometimes inconsistant in sending HTML content
+        # it sometimes sends the HTML without the required div containing the talks data
+        # so we retry after 5 seconds
         if not div:
             logger.debug(
                 "Potentially insufficient data returned by server. Retrying in 5 seconds..."
