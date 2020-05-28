@@ -292,9 +292,13 @@ class Ted2Zim:
             if len(self.source_languages) > 1:
                 self.zim_lang = "mul"
             else:
-                self.zim_lang = get_language_details(
+                lang_info = get_language_details(
                     self.source_languages[0], failsafe=True
-                )["iso-639-3"]
+                )
+                if lang_info:
+                    self.zim_lang = lang_info["iso-639-3"]
+                else:
+                    self.zim_lang = "eng"
 
         if self.playlist:
             if not self.title:
@@ -316,12 +320,11 @@ class Ted2Zim:
 
     def get_display_name(self, lang_code, lang_name):
         """ Display name for language """
-        if lang_code != "en":
-            return (
-                get_language_details(lang_code, failsafe=True)["native"]
-                + " - "
-                + lang_name
-            )
+
+        lang_info = get_language_details(lang_code, failsafe=True)
+        if lang_code != "en" and lang_info:
+
+            return lang_info["native"] + " - " + lang_name
         return lang_name
 
     def get_subtitle_dict(self, lang):
@@ -443,7 +446,7 @@ class Ted2Zim:
             return True
         return False
 
-    def extract_video_info(self, url):
+    def extract_video_info(self, url, retry_count=0):
         """ extract all info from a TED video url and updates self.videos """
 
         # Extract the meta-data of the video:
@@ -456,10 +459,26 @@ class Ted2Zim:
         # object with JSON in it. We will just stip away the object
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
+
         if self.already_visited_video(url):
             return False
+
+        if retry_count > 5:
+            logger.error("Max retries exceeded. Skipping video")
+            return False
+
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
+
+        # TED is sometimes inconsistant in sending HTML content
+        # it sometimes sends the HTML without the required div containing the talks data
+        # so we retry after 5 seconds
+        if not div:
+            logger.debug(
+                "Potentially insufficient data returned by server. Retrying in 5 seconds..."
+            )
+            time.sleep(5)
+            return self.extract_video_info(url, retry_count=retry_count + 1)
         script_tags_within_div = div.find_all("script")
         if len(script_tags_within_div) == 0:
             logger.error("The required script tag containing video meta is not present")
