@@ -644,14 +644,14 @@ class Ted2Zim:
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
-        subtitles = {
+        all_langs = {
             language["languageCode"]: language["languageName"]
             for video in self.videos
-            for language in video["subtitles"]
+            for language in video["subtitles"] + video["languages"]
         }
         languages = [
             {"languageName": value, "languageCode": key}
-            for key, value in subtitles.items()
+            for key, value in all_langs.items()
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
         html = env.get_template("home.html").render(languages=languages)
