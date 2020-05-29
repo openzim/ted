@@ -210,13 +210,13 @@ class Ted2Zim:
                     self.append_part1_or_part3(lang_code_list, lang_info)
         return list(set(lang_code_list))
 
-    def extract_videos_from_playlist(self):
+    def extract_videos_from_playlist(self, playlist):
         """ extracts metadata for all videos in the given playlist
 
             calls extract_video_info on all links to get this data
         """
 
-        playlist_url = f"{self.playlists_base_url}/{self.playlist}"
+        playlist_url = f"{self.playlists_base_url}/{playlist}"
         soup = BeautifulSoup(download_link(playlist_url).text, features="html.parser")
         video_elements = soup.find_all("a", attrs={"class": "hover/appear"})
         self.playlist_title = soup.find("h1", attrs={"class": "f:4"}).string
@@ -239,50 +239,46 @@ class Ted2Zim:
         if not video_elements:
             raise ValueError("Wrong playlist ID supplied. No videos found")
 
-    def extract_videos_from_topics(self):
-        """ extracts metadata for required number of videos on different topics """
-        for topic in self.topics:
-            logger.debug(f"Fetching video links for topic: {topic}")
-            topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
-            total_videos_scraped = 0
-            video_allowance = self.max_videos_per_topic
+    def generate_search_result_and_scrape(self, topic_url, total_videos_scraped):
+        """ generates a search result and returns the total number of videos scraped """
 
-            if self.source_languages:
-                for lang in self.source_languages:
-                    topic_url = topic_url + f"&language={lang}"
-                    page = 1
-                    while video_allowance:
-                        html = download_link(f"{topic_url}&page={page}").text
-                        num_videos_extracted = self.extract_videos_on_topic_page(
-                            html, video_allowance,
-                        )
-                        if num_videos_extracted == 0:
-                            break
-                        video_allowance -= num_videos_extracted
-                        total_videos_scraped += num_videos_extracted
-                        page += 1
-            else:
-                page = 1
-                while video_allowance:
-                    html = download_link(f"{topic_url}&page={page}").text
-                    num_videos_extracted = self.extract_videos_on_topic_page(
-                        html, video_allowance,
-                    )
-                    if num_videos_extracted == 0:
-                        break
-                    video_allowance -= num_videos_extracted
-                    total_videos_scraped += num_videos_extracted
-                    page += 1
-            logger.info(f"Total video links found in {topic}: {total_videos_scraped}")
-            if total_videos_scraped == 0:
-                self.topics.remove(topic)
-                logger.debug(f"Removed topic {topic} from list as it had no videos")
-        if not self.topics:
-            if self.source_languages:
-                raise ValueError(
-                    "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --languages"
+        video_allowance = self.max_videos_per_topic
+        page = 1
+        while video_allowance:
+            html = download_link(f"{topic_url}&page={page}").text
+            num_videos_extracted = self.extract_videos_on_topic_page(
+                html, video_allowance,
+            )
+            if num_videos_extracted == 0:
+                break
+            video_allowance -= num_videos_extracted
+            total_videos_scraped += num_videos_extracted
+            page += 1
+        return total_videos_scraped
+
+    def extract_videos_from_topics(self, topic):
+        """ extracts metadata for required number of videos on different topics """
+
+        logger.debug(f"Fetching video links for topic: {topic}")
+        topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
+        total_videos_scraped = 0
+
+        if self.source_languages:
+            for lang in self.source_languages:
+                topic_url = topic_url + f"&language={lang}"
+                total_videos_scraped += self.generate_search_result_and_scrape(
+                    topic_url, total_videos_scraped
                 )
-            raise ValueError("Wrong topic(s) were supplied. No videos found")
+
+        else:
+            total_videos_scraped = self.generate_search_result_and_scrape(
+                topic_url, total_videos_scraped
+            )
+
+        logger.info(f"Total video links found in {topic}: {total_videos_scraped}")
+        if total_videos_scraped == 0:
+            return False
+        return True
 
     def update_zim_metadata(self):
 
@@ -874,6 +870,18 @@ class Ted2Zim:
         logger.info(f"uploaded {video_path} to cache at {key}")
         return True
 
+    def remove_failed_topics_and_check_extraction(self, failed_topics):
+        """ removes failed topics from topics list and raises error if scraper cannot continue """
+
+        for topic in failed_topics:
+            self.topics.remove(topic)
+        if not self.topics:
+            if self.source_languages:
+                raise ValueError(
+                    "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --languages"
+                )
+            raise ValueError("Wrong topic(s) were supplied. No videos found")
+
     def run(self):
         logger.info(
             f"Starting scraper with:\n"
@@ -889,10 +897,18 @@ class Ted2Zim:
                 f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
             )
 
+        # playlist mode requested
         if self.playlist:
-            self.extract_videos_from_playlist()
+            self.extract_videos_from_playlist(self.playlist)
+        # topic(s) mode requested
         else:
-            self.extract_videos_from_topics()
+            failed = []
+            for topic in self.topics:
+                if not self.extract_videos_from_topics(topic):
+                    failed.append(topic)
+                else:
+                    logger.debug(f"Successfully scraped {topic}")
+            self.remove_failed_topics_and_check_extraction(failed)
 
         self.add_default_language()
         self.update_zim_metadata()
