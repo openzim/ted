@@ -4,8 +4,8 @@
  */
 
  /* exported videoDB */
-var videoDB;
-videoDB = (function() {
+
+var videoDB = (function() {
   var ITEMS_PER_PAGE = 40;
   var db = {};
   var data;
