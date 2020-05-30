@@ -39,7 +39,6 @@ logger = getLogger()
 class Ted2Zim:
     def __init__(
         self,
-        max_videos_per_topic,
         topics,
         debug,
         name,
@@ -88,7 +87,6 @@ class Ted2Zim:
             if not topics
             else [c.strip().replace(" ", "+") for c in topics.split(",")]
         )
-        self.max_videos_per_topic = max_videos_per_topic
         self.autoplay = autoplay
         self.playlist = playlist
         self.subtitles_enough = subtitles_enough
@@ -242,17 +240,15 @@ class Ted2Zim:
     def generate_search_result_and_scrape(self, topic_url, total_videos_scraped):
         """ generates a search result and returns the total number of videos scraped """
 
-        video_allowance = self.max_videos_per_topic
         page = 1
-        while video_allowance:
+        while True:
             html = download_link(f"{topic_url}&page={page}").text
-            num_videos_extracted = self.extract_videos_on_topic_page(
-                html, video_allowance,
+            nb_videos_extracted, nb_videos_on_page = self.extract_videos_on_topic_page(
+                html
             )
-            if num_videos_extracted == 0:
+            if nb_videos_on_page == 0:
                 break
-            video_allowance -= num_videos_extracted
-            total_videos_scraped += num_videos_extracted
+            total_videos_scraped += nb_videos_extracted
             page += 1
         return total_videos_scraped
 
@@ -266,7 +262,7 @@ class Ted2Zim:
         if self.source_languages:
             for lang in self.source_languages:
                 topic_url = topic_url + f"&language={lang}"
-                total_videos_scraped += self.generate_search_result_and_scrape(
+                total_videos_scraped = self.generate_search_result_and_scrape(
                     topic_url, total_videos_scraped
                 )
 
@@ -388,7 +384,7 @@ class Ted2Zim:
                 urls.append(urllib.parse.urlunparse(url_parts))
         return urls
 
-    def extract_videos_on_topic_page(self, page_html, video_allowance):
+    def extract_videos_on_topic_page(self, page_html):
 
         # all videos are embedded in a <div> with the class name 'row'.
         # we are searching for the div inside this div, that has an <a>-tag
@@ -398,7 +394,8 @@ class Ted2Zim:
         soup = BeautifulSoup(page_html, features="html.parser")
         video_links = soup.select("div.row div.media__image a")
         nb_extracted = 0
-        logger.debug(f"{str(len(video_links))} video(s) found on current page")
+        nb_listed = len(video_links)
+        logger.debug(f"{nb_listed} video(s) found on current page")
         for video_link in video_links:
             url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
             if not [
@@ -416,10 +413,8 @@ class Ted2Zim:
                         for lang_url in other_lang_urls:
                             self.extract_video_info(lang_url)
                         self.already_visited.append(urllib.parse.urlparse(url)[2])
-                    if nb_extracted == video_allowance:
-                        break
                 logger.debug(f"Seen {video_link['href']}")
-        return nb_extracted
+        return nb_extracted, nb_listed
 
     def get_lang_code_from_url(self, url, with_full_query=False):
         """ gets the queried language code from a ted talk url """
