@@ -424,35 +424,47 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
-    def update_videos_list(self, **kwargs):
+    def update_videos_list(
+        self,
+        video_id,
+        lang_code,
+        lang_name,
+        title,
+        description,
+        speaker,
+        speaker_profession,
+        speaker_bio,
+        speaker_picture,
+        date,
+        thumbnail,
+        video_link,
+        length,
+        subtitles,
+    ):
         # append to self.videos and return if not present
-        video_id = kwargs["video_id"]
         if not [video for video in self.videos if video.get("id", None) == video_id]:
-            video_meta = {
-                "id": video_id,
-                "languages": [
-                    {
-                        "languageCode": kwargs["lang_code"],
-                        "languageName": self.get_display_name(
-                            kwargs["lang_code"], kwargs["lang_name"]
-                        ),
-                    }
-                ],
-                "title": [{"lang": kwargs["lang_code"], "text": kwargs["title"]}],
-                "description": [
-                    {"lang": kwargs["lang_code"], "text": kwargs["description"]}
-                ],
-            }
-            for key, val in kwargs.items():
-                if key not in [
-                    "title",
-                    "description",
-                    "lang_code",
-                    "lang_name",
-                    "video_id",
-                ]:
-                    video_meta.update({key: val})
-            self.videos.append(video_meta)
+            self.videos.append(
+                {
+                    "id": video_id,
+                    "languages": [
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.get_display_name(lang_code, lang_name),
+                        }
+                    ],
+                    "title": [{"lang": lang_code, "text": title}],
+                    "description": [{"lang": lang_code, "text": description}],
+                    "speaker": speaker,
+                    "speaker_profession": speaker_profession,
+                    "speaker_bio": speaker_bio,
+                    "speaker_picture": speaker_picture,
+                    "date": date,
+                    "thumbnail": thumbnail,
+                    "video_link": video_link,
+                    "length": length,
+                    "subtitles": subtitles,
+                }
+            )
             logger.debug(f"Successfully inserted video {video_id} into video list")
             return True
 
@@ -461,25 +473,21 @@ class Ted2Zim:
         logger.debug(f"Video {video_id} already present in video list")
         for index, video in enumerate(self.videos):
             if video.get("id", None) == video_id:
-                if {"lang": kwargs["lang_code"], "text": kwargs["title"]} not in video[
-                    "title"
-                ]:
+                if {"lang": lang_code, "text": title} not in video["title"]:
                     self.videos[index]["title"].append(
-                        {"lang": kwargs["lang_code"], "text": kwargs["title"]}
+                        {"lang": lang_code, "text": title}
                     )
                     self.videos[index]["description"].append(
-                        {"lang": kwargs["lang_code"], "text": kwargs["description"]}
+                        {"lang": lang_code, "text": description}
                     )
                     self.videos[index]["languages"].append(
                         {
-                            "languageCode": kwargs["lang_code"],
-                            "languageName": self.get_display_name(
-                                kwargs["lang_code"], kwargs["lang_name"]
-                            ),
+                            "languageCode": lang_code,
+                            "languageName": self.get_display_name(lang_code, lang_name),
                         }
                     )
                 if self.subtitles_setting == MATCHING or self.subtitles_setting == NONE:
-                    self.videos[index]["subtitles"] += kwargs["subtitles"]
+                    self.videos[index]["subtitles"] += subtitles
         return False
 
     def extract_video_info_from_json(self, json_data):
@@ -539,23 +547,22 @@ class Ted2Zim:
         subtitles = self.generate_subtitle_list(
             video_id, langs, lang_code, native_talk_language
         )
-        collected_details = {
-            "video_id": video_id,
-            "lang_code": lang_code,
-            "lang_name": lang_name,
-            "title": title,
-            "description": description,
-            "speaker": speaker,
-            "speaker_profession": speaker_profession,
-            "speaker_bio": speaker_bio,
-            "speaker_picture": speaker_picture,
-            "date": date,
-            "thumbnail": thumbnail,
-            "video_link": video_link,
-            "length": length,
-            "subtitles": subtitles,
-        }
-        return self.update_videos_list(**collected_details)
+        return self.update_videos_list(
+            video_id=video_id,
+            lang_code=lang_code,
+            lang_name=lang_name,
+            title=title,
+            description=description,
+            speaker=speaker,
+            speaker_profession=speaker_profession,
+            speaker_bio=speaker_bio,
+            speaker_picture=speaker_picture,
+            date=date,
+            thumbnail=thumbnail,
+            video_link=video_link,
+            length=length,
+            subtitles=subtitles,
+        )
 
     def extract_info_from_video_page(self, url, retry_count=0):
         """ extract all info from a TED video page url and update self.videos """
