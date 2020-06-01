@@ -223,14 +223,14 @@ class Ted2Zim:
         for element in video_elements:
             relative_path = element.get("href")
             url = urllib.parse.urljoin(self.talks_base_url, relative_path)
-            if self.extract_video_info(url):
+            if self.extract_info_from_video_page(url):
                 if self.source_languages and len(self.source_languages) > 1:
                     other_lang_urls = self.generate_urls_for_other_languages(url)
                     logger.debug(
                         f"Searching info for the video in other {len(other_lang_urls)} language(s)"
                     )
                     for lang_url in other_lang_urls:
-                        self.extract_video_info(lang_url)
+                        self.extract_info_from_video_page(lang_url)
                     self.already_visited.append(urllib.parse.urlparse(url)[2])
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
@@ -398,22 +398,17 @@ class Ted2Zim:
         logger.debug(f"{nb_listed} video(s) found on current page")
         for video_link in video_links:
             url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
-            if not [
-                video
-                for video in self.videos
-                if video.get("tedpath", None) == video_link["href"]
-            ]:
-                if self.extract_video_info(url):
-                    nb_extracted += 1
-                    if self.source_languages and len(self.source_languages) > 1:
-                        other_lang_urls = self.generate_urls_for_other_languages(url)
-                        logger.debug(
-                            f"Searching info for video in other {len(other_lang_urls)} language(s)"
-                        )
-                        for lang_url in other_lang_urls:
-                            self.extract_video_info(lang_url)
-                        self.already_visited.append(urllib.parse.urlparse(url)[2])
-                logger.debug(f"Seen {video_link['href']}")
+            if self.extract_info_from_video_page(url):
+                nb_extracted += 1
+                if self.source_languages and len(self.source_languages) > 1:
+                    other_lang_urls = self.generate_urls_for_other_languages(url)
+                    logger.debug(
+                        f"Searching info for video in other {len(other_lang_urls)} language(s)"
+                    )
+                    for lang_url in other_lang_urls:
+                        self.extract_info_from_video_page(lang_url)
+                    self.already_visited.append(urllib.parse.urlparse(url)[2])
+            logger.debug(f"Seen {video_link['href']}")
         return nb_extracted, nb_listed
 
     def get_lang_code_from_url(self, url, with_full_query=False):
@@ -429,55 +424,74 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
-    def extract_video_info(self, url, retry_count=0):
-        """ extract all info from a TED video url and updates self.videos """
-
-        # Extract the meta-data of the video:
-        # Speaker, the profession of the speaker, a short biography of
-        # the speaker, the link to a picture of the speaker, title,
-        # publishing date, view count, description of the TED talk,
-        # direct download link to the video, download link to the subtitle
-        # files and a link to a thumbnail of the video.
-        # Every TED video page has a <script>-tag with a Javascript
-        # object with JSON in it. We will just stip away the object
-        # signature and load the json to extract meta-data out of it.
-        # returns True if successfully scraped new video
-
-        # don't scrape if URL already visited
-        if urllib.parse.urlparse(url)[2] in self.already_visited:
-            return False
-
-        if retry_count > 5:
-            logger.error("Max retries exceeded. Skipping video")
-            return False
-
-        soup = BeautifulSoup(download_link(url).text, features="html.parser")
-        div = soup.find("div", attrs={"class": "talks-main"})
-
-        # TED is sometimes inconsistant in sending HTML content
-        # it sometimes sends the HTML without the required div containing the talks data
-        # so we retry after 5 seconds
-        if not div:
-            logger.debug(
-                "Potentially insufficient data returned by server. Retrying in 5 seconds..."
+    def update_videos_list(
+        self,
+        video_id,
+        lang_code,
+        lang_name,
+        title,
+        description,
+        speaker,
+        speaker_profession,
+        speaker_bio,
+        speaker_picture,
+        date,
+        thumbnail,
+        video_link,
+        length,
+        subtitles,
+    ):
+        # append to self.videos and return if not present
+        if not [video for video in self.videos if video.get("id", None) == video_id]:
+            self.videos.append(
+                {
+                    "id": video_id,
+                    "languages": [
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.get_display_name(lang_code, lang_name),
+                        }
+                    ],
+                    "title": [{"lang": lang_code, "text": title}],
+                    "description": [{"lang": lang_code, "text": description}],
+                    "speaker": speaker,
+                    "speaker_profession": speaker_profession,
+                    "speaker_bio": speaker_bio,
+                    "speaker_picture": speaker_picture,
+                    "date": date,
+                    "thumbnail": thumbnail,
+                    "video_link": video_link,
+                    "length": length,
+                    "subtitles": subtitles,
+                }
             )
-            time.sleep(5)
-            return self.extract_video_info(url, retry_count=retry_count + 1)
-        script_tags_within_div = div.find_all("script")
-        if len(script_tags_within_div) == 0:
-            logger.error("The required script tag containing video meta is not present")
-            return False
-        json_data_tag = script_tags_within_div[-1]
-        json_data = json_data_tag.string
-        json_data = json.loads(json_data[18:-1])["__INITIAL_DATA__"]
+            logger.debug(f"Successfully inserted video {video_id} into video list")
+            return True
+
+        # update localized meta for video if already in self.videos
+        # based on --subtitles=matching
+        logger.debug(f"Video {video_id} already present in video list")
+        for index, video in enumerate(self.videos):
+            if video.get("id", None) == video_id:
+                if {"lang": lang_code, "text": title} not in video["title"]:
+                    self.videos[index]["title"].append(
+                        {"lang": lang_code, "text": title}
+                    )
+                    self.videos[index]["description"].append(
+                        {"lang": lang_code, "text": description}
+                    )
+                    self.videos[index]["languages"].append(
+                        {
+                            "languageCode": lang_code,
+                            "languageName": self.get_display_name(lang_code, lang_name),
+                        }
+                    )
+                if self.subtitles_setting == MATCHING or self.subtitles_setting == NONE:
+                    self.videos[index]["subtitles"] += subtitles
+        return False
+
+    def extract_video_info_from_json(self, json_data):
         lang_code = json_data["language"]
-
-        requested_lang_code = self.get_lang_code_from_url(url)
-        if requested_lang_code and lang_code != requested_lang_code:
-            logger.error(
-                f"Video has not yet been translated into {requested_lang_code}"
-            )
-            return False
         lang_name = json_data["requested_language_english_name"]
         talk_info = json_data["talks"][0]
         native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
@@ -510,31 +524,16 @@ class Ted2Zim:
             else:
                 speaker = "None"
 
-        # Extract the profession of the speaker of the TED talk
+        # Extract the ted talk details from json
+        video_id = talk_info["id"]
         speaker_profession = speaker_info["description"]
-
-        # Extract the short biography of the speaker of the TED talk
         speaker_bio = speaker_info["whotheyare"]
-
-        # Extract the Url to the picture of the speaker of the TED talk
         speaker_picture = speaker_info["photo_url"]
-
-        # Extract the title of the TED talk
         title = talk_info["title"]
-
-        # Extract the description of the TED talk
         description = talk_info["description"]
-
-        # Extract the upload date of the TED talk
         date = dateutil.parser.parse(talk_info["recorded_at"]).strftime("%d %B %Y")
-
-        # Extract the length of the TED talk in minutes
         length = int(talk_info["duration"]) // 60
-
-        # Extract the thumbnail of the of the TED talk video
         thumbnail = talk_info["player_talks"][0]["thumb"]
-
-        # Extract the download link of the TED talk video
         download_links = talk_info["downloads"]["nativeDownloads"]
         if not download_links:
             logger.error("No direct download links found for the video")
@@ -544,69 +543,70 @@ class Ted2Zim:
             logger.error("No link to download video in medium quality")
             return False
 
-        # Extract the video Id of the TED talk video.
-        # We need this to generate the subtitle page.
-        video_id = talk_info["id"]
-
         langs = talk_info["player_talks"][0]["languages"]
         subtitles = self.generate_subtitle_list(
             video_id, langs, lang_code, native_talk_language
         )
+        return self.update_videos_list(
+            video_id=video_id,
+            lang_code=lang_code,
+            lang_name=lang_name,
+            title=title,
+            description=description,
+            speaker=speaker,
+            speaker_profession=speaker_profession,
+            speaker_bio=speaker_bio,
+            speaker_picture=speaker_picture,
+            date=date,
+            thumbnail=thumbnail,
+            video_link=video_link,
+            length=length,
+            subtitles=subtitles,
+        )
 
-        # Extract the keywords for the TED talk
-        keywords = soup.find("meta", attrs={"name": "keywords"})["content"]
-        keywords = [key.strip() for key in keywords.split(",")]
+    def extract_info_from_video_page(self, url, retry_count=0):
+        """ extract all info from a TED video page url and update self.videos """
 
-        # append to self.videos and return if not present
-        if not [video for video in self.videos if video.get("id", None) == video_id]:
-            self.videos.append(
-                {
-                    "id": video_id,
-                    "languages": [
-                        {
-                            "languageCode": lang_code,
-                            "languageName": self.get_display_name(lang_code, lang_name),
-                        }
-                    ],
-                    "title": [{"lang": lang_code, "text": title}],
-                    "description": [{"lang": lang_code, "text": description}],
-                    "speaker": speaker,
-                    "speaker_profession": speaker_profession,
-                    "speaker_bio": speaker_bio,
-                    "speaker_picture": speaker_picture,
-                    "date": date,
-                    "thumbnail": thumbnail,
-                    "video_link": video_link,
-                    "length": length,
-                    "subtitles": subtitles,
-                    "keywords": keywords,
-                    "tedpath": urllib.parse.urlparse(url)[2],
-                }
+        # Every TED video page has a <script>-tag with a Javascript
+        # object with JSON in it. We will just stip away the object
+        # signature and load the json to extract meta-data out of it.
+        # returns True if successfully scraped new video
+
+        # don't scrape if URL already visited
+        if urllib.parse.urlparse(url)[2] in self.already_visited:
+            return False
+
+        # don't scrape if maximum retry count is reached
+        if retry_count > 5:
+            logger.error("Max retries exceeded. Skipping video")
+            return False
+
+        soup = BeautifulSoup(download_link(url).text, features="html.parser")
+        div = soup.find("div", attrs={"class": "talks-main"})
+
+        # TED is sometimes inconsistant in sending HTML content
+        # it sometimes sends the HTML without the required div containing the talks data
+        # so we retry after 5 seconds
+        if not div:
+            logger.debug(
+                "Potentially insufficient data returned by server. Retrying in 5 seconds..."
             )
-            logger.debug(f"Successfully inserted video {video_id} into video list")
-            return True
+            time.sleep(5)
+            return self.extract_info_from_video_page(url, retry_count=retry_count + 1)
 
-        # update localized meta for video if already in self.videos
-        # based on --subtitles=matching
-        logger.debug(f"Video {video_id} already present in video list")
-        for index, video in enumerate(self.videos):
-            if video.get("id", None) == video_id:
-                if {"lang": lang_code, "text": title} not in video["title"]:
-                    self.videos[index]["title"].append(
-                        {"lang": lang_code, "text": title}
-                    )
-                    self.videos[index]["description"].append(
-                        {"lang": lang_code, "text": description}
-                    )
-                    self.videos[index]["languages"].append(
-                        {
-                            "languageCode": lang_code,
-                            "languageName": self.get_display_name(lang_code, lang_name),
-                        }
-                    )
-                if self.subtitles_setting == MATCHING or self.subtitles_setting == NONE:
-                    self.videos[index]["subtitles"] += subtitles
-        return False
+        script_tags_within_div = div.find_all("script")
+        if len(script_tags_within_div) == 0:
+            logger.error("The required script tag containing video meta is not present")
+            return False
+        json_data = script_tags_within_div[-1].string
+        json_data = json.loads(json_data[18:-1])["__INITIAL_DATA__"]
+        requested_lang_code = self.get_lang_code_from_url(url)
+        if requested_lang_code and json_data["language"] != requested_lang_code:
+            logger.error(
+                f"Video has not yet been translated into {requested_lang_code}"
+            )
+            return False
+        return self.extract_video_info_from_json(json_data)
 
     def add_default_language(self):
         """ add metatada in default language (english or first avail) on all videos """
