@@ -1,6 +1,7 @@
 # dev
 
 - fixed auto-description when title is supplied
+- remove --max-videos-per-topic option to decrease complexity
 
 # 2.0.1
 
