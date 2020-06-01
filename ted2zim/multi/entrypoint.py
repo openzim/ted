@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog=f"{NAME}-multi",
         description="Scraper to create ZIM file(s) from TED topic(s) or playlist(s)",
-        epilog="Playlists titles, descriptions and names can use the following variables: {title}, {description}, {playlist_id}, {slug} (from title), {creator_id}, {creator_name}.",
+        epilog="All titles, descriptions and names can use the {identity} to get playlist ID or topic name (with underscores) in each case",
     )
 
     parser.add_argument(
@@ -22,8 +22,7 @@ def main():
     )
 
     parser.add_argument(
-        "--playlists",
-        help="Comma seperated list of playlist IDs to scrape",
+        "--playlists", help="Comma seperated list of playlist IDs to scrape",
     )
 
     parser.add_argument(
@@ -56,8 +55,7 @@ def main():
     )
 
     parser.add_argument(
-        "--description-format",
-        help="Custom description format for individual ZIMs",
+        "--description-format", help="Custom description format for individual ZIMs",
     )
 
     parser.add_argument(
