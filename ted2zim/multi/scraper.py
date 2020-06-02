@@ -63,7 +63,7 @@ class TedHandler(object):
     @staticmethod
     def download_playlist_list_from_site(topic_list):
         records = []
-        for topic in topic_list[:10]:
+        for topic in topic_list:
             logger.debug(f"Getting playlists related to {topic}")
             playlist_sub_list = json.loads(
                 download_link(
@@ -82,7 +82,14 @@ class TedHandler(object):
         if not s3_storage.has_object(key, s3_storage.bucket_name):
             return False
         try:
-            s3_storage.download_file(key, fpath)
+            (meta,) = s3_storage.get_object_head(key, only=[s3_storage.META_KEY])
+            if (
+                datetime.datetime.strptime(meta.get("expires"), "%Y-%m-%d %H:%M:%S.%f")
+                > datetime.datetime.now()
+            ):
+                s3_storage.download_file(key, fpath)
+            else:
+                raise Exception("File too old")
         except Exception as exc:
             logger.error(f"{key} failed to download from cache: {exc}")
             return False
@@ -99,13 +106,17 @@ class TedHandler(object):
         with open(fpath, "w") as fp:
             json.dump(playlist_list, fp)
         try:
-            s3_storage.upload_file(fpath, key)
+            s3_storage.upload_file(
+                fpath,
+                key,
+                meta={
+                    "expires": str(datetime.datetime.now() + datetime.timedelta(days=7))
+                },
+            )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
         else:
             logger.info(f"successfully uploaded playlist list to cache at {key}")
-            # will uncomment once we have autodelete working on kiwixstorage
-            # s3_storage.set_object_autodelete_on(key, datetime.datetime.now() + datetime.timedelta(days=7))
         finally:
             fpath.unlink()
 
@@ -173,7 +184,8 @@ class TedHandler(object):
         if self.playlists:
             if self.playlists == ["all"]:
                 self.playlists = [
-                    playlist["id"] for playlist in self.get_list_of_all(mode="playlist")
+                    str(playlist["id"])
+                    for playlist in self.get_list_of_all(mode="playlist")
                 ]
             if len(self.playlists) > 1:
                 for playlist in self.playlists:
