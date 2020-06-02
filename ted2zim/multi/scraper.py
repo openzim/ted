@@ -133,13 +133,12 @@ class TedHandler(object):
             ):
                 logger.error("S3 credential check failed. Continuing without S3")
                 return self.download_playlist_list_from_site(topic_list)
-            else:
-                self.output_dir.mkdir(parents=True, exist_ok=True)
-                playlist_list = self.download_playlist_list_from_cache(s3_storage)
-                if not playlist_list:
-                    playlist_list = self.download_playlist_list_from_site(topic_list)
-                    self.upload_playlist_list_to_cache(playlist_list, s3_storage)
-                return playlist_list
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            playlist_list = self.download_playlist_list_from_cache(s3_storage)
+            if not playlist_list:
+                playlist_list = self.download_playlist_list_from_site(topic_list)
+                self.upload_playlist_list_to_cache(playlist_list, s3_storage)
+            return playlist_list
         return self.download_playlist_list_from_site(topic_list)
 
     def run(self):
