@@ -8,13 +8,15 @@ import sys
 import json
 import shutil
 import pathlib
+import datetime
 import subprocess
 
 import requests
 from zimscraperlib.logging import nicer_args_join
+from kiwixstorage import KiwixStorage
 
 from ..constants import NAME, getLogger
-from ..utils import has_argument
+from ..utils import has_argument, download_link
 
 logger = getLogger()
 
@@ -58,6 +60,88 @@ class TedHandler(object):
     def compute_format(item, fmt):
         return fmt.format(identity=item.replace(" ", "_"))
 
+    @staticmethod
+    def download_playlist_list_from_site(topic_list):
+        records = []
+        for topic in topic_list[:10]:
+            logger.debug(f"Getting playlists related to {topic}")
+            playlist_sub_list = json.loads(
+                download_link(
+                    f"https://www.ted.com/playlists/browse.json?topics={topic['value'].replace(' ', '+')}"
+                ).text
+            )
+            for record in playlist_sub_list["records"]:
+                if not [rec for rec in records if rec["id"] == record["id"]]:
+                    records.append(record)
+            logger.debug("..OK")
+        return records
+
+    def download_playlist_list_from_cache(self, s3_storage):
+        key = "kiwixfiles/playlist"
+        fpath = self.output_dir.joinpath("playlist_list.json")
+        if not s3_storage.has_object(key, s3_storage.bucket_name):
+            return False
+        try:
+            s3_storage.download_file(key, fpath)
+        except Exception as exc:
+            logger.error(f"{key} failed to download from cache: {exc}")
+            return False
+        logger.info(f"downloaded playlist list from cache at {key}")
+        json_data = None
+        with open(fpath, "r") as fp:
+            json_data = json.load(fp)
+        fpath.unlink()
+        return json_data
+
+    def upload_playlist_list_to_cache(self, playlist_list, s3_storage):
+        key = "kiwixfiles/playlist"
+        fpath = self.output_dir.joinpath("playlist_list.json")
+        with open(fpath, "w") as fp:
+            json.dump(playlist_list, fp)
+        try:
+            s3_storage.upload_file(fpath, key)
+        except Exception as exc:
+            logger.error(f"{key} failed to upload to cache: {exc}")
+        else:
+            logger.info(f"successfully uploaded playlist list to cache at {key}")
+            # will uncomment once we have autodelete working on kiwixstorage
+            # s3_storage.set_object_autodelete_on(key, datetime.datetime.now() + datetime.timedelta(days=7))
+        finally:
+            fpath.unlink()
+
+    def get_list_of_all(self, mode):
+        """ returns a list of topics or playlists"""
+        if mode != "topic" and mode != "playlist":
+            raise ValueError(f"Mode {mode} not supported. Use playlist or topic")
+        # get all topics
+        topic_list = json.loads(
+            download_link("https://www.ted.com/topics/combo?models=Talks").text
+        )
+        if mode == "topic":
+            return topic_list
+
+        # mode is playlist
+        s3_url_with_credentials = None
+        for arg in self.extra_args:
+            if "--optimization-cache" in arg:
+                s3_url_with_credentials = arg[21:]
+
+        if s3_url_with_credentials:
+            s3_storage = KiwixStorage(s3_url_with_credentials)
+            if not s3_storage.check_credentials(
+                list_buckets=True, bucket=True, write=True, read=True, failsafe=True
+            ):
+                logger.error("S3 credential check failed. Continuing without S3")
+                return self.download_playlist_list_from_site(topic_list)
+            else:
+                self.output_dir.mkdir(parents=True, exist_ok=True)
+                playlist_list = self.download_playlist_list_from_cache(s3_storage)
+                if not playlist_list:
+                    playlist_list = self.download_playlist_list_from_site(topic_list)
+                    self.upload_playlist_list_to_cache(playlist_list, s3_storage)
+                return playlist_list
+        return self.download_playlist_list_from_site(topic_list)
+
     def run(self):
         def log_run_result(success, process):
             if success:
@@ -72,6 +156,10 @@ class TedHandler(object):
         self.fetch_metadata()
 
         if self.topics:
+            if self.topics == ["all"]:
+                self.topics = [
+                    topic["value"] for topic in self.get_list_of_all(mode="topic")
+                ]
             if self.indiv_zims and len(self.topics) > 1:
                 for topic in self.topics:
                     logger.info(f"Executing ted2zim for topic {topic}")
@@ -84,6 +172,10 @@ class TedHandler(object):
                     logger.error("ted2zim Failed")
 
         if self.playlists:
+            if self.playlists == ["all"]:
+                self.playlists = [
+                    playlist["id"] for playlist in self.get_list_of_all(mode="playlist")
+                ]
             if len(self.playlists) > 1:
                 for playlist in self.playlists:
                     logger.info(f"Executing ted2zim for playlist {playlist}")
