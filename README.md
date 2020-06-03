@@ -73,7 +73,7 @@ You can create ZIMs for multiple topics (should be same as given [here](https://
 - --metadata-from - Path to a JSON file containing the metadata. Should be of the following format -
 ```
 {
-    "<playlist-id/topic-name-with-underscores": {
+    "<playlist-id/topic-name-with-underscores>": {
         "name": "sample_name_{identity}",
         "description": "Sample description",
         "title": "Custom title",
@@ -83,6 +83,7 @@ You can create ZIMs for multiple topics (should be same as given [here](https://
     }
 }
 ```
+See ted2zim-multi --help for details.
 
 ## License :book:
 
