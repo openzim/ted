@@ -1,6 +1,7 @@
 # dev
 
 - fixed auto-description when title is supplied
+- add ted2zim-multi for multi zim creation
 
 # 2.0.1
 

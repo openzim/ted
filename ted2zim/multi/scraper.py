@@ -135,7 +135,13 @@ class TedHandler(object):
         s3_url_with_credentials = None
         for arg in self.extra_args:
             if "--optimization-cache" in arg:
-                s3_url_with_credentials = arg[21:]
+                # handle both = seperated and space seperated values
+                if len(arg) > 21:
+                    s3_url_with_credentials = arg[21:]
+                else:
+                    s3_url_with_credentials = self.extra_args[
+                        self.extra_args.index(arg) + 1
+                    ]
 
         if s3_url_with_credentials:
             s3_storage = KiwixStorage(s3_url_with_credentials)
@@ -170,7 +176,7 @@ class TedHandler(object):
                 self.topics = [
                     topic["value"] for topic in self.get_list_of_all(mode="topic")
                 ]
-            if self.indiv_zims and len(self.topics) > 1:
+            if self.indiv_zims:
                 for topic in self.topics:
                     logger.info(f"Executing ted2zim for topic {topic}")
                     success, process = self.run_indiv_zim_mode(topic, mode="topic")
@@ -187,7 +193,10 @@ class TedHandler(object):
                     str(playlist["id"])
                     for playlist in self.get_list_of_all(mode="playlist")
                 ]
-            if len(self.playlists) > 1:
+            # automatically set self.indiv_zims if not already set and multiple playlists
+            if len(self.playlists) > 1 and not self.indiv_zims:
+                self.indiv_zims = True
+            if self.indiv_zims:
                 for playlist in self.playlists:
                     logger.info(f"Executing ted2zim for playlist {playlist}")
                     success, process = self.run_indiv_zim_mode(
@@ -279,7 +288,7 @@ class TedHandler(object):
         else:
             raise ValueError(f"Unsupported mode {mode}")
         args += self.extra_args
-        if "--name" not in self.extra_args and self.name_format:
+        if not ["--name" in item for item in self.extra_args] and self.name_format:
             name_item = "_".join(self.topics) if mode == "topic" else self.playlists[0]
             args += ["--name", self.compute_format(name_item, self.name_format)]
         if self.debug:

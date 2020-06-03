@@ -18,11 +18,11 @@ def main():
 
     parser.add_argument(
         "--topics",
-        help="Comma seperated list of topics to scrape. Should be same as on ted.com/talks",
+        help="Comma seperated list of topics to scrape. Should be same as on ted.com/talks. Pass all to scrape all",
     )
 
     parser.add_argument(
-        "--playlists", help="Comma seperated list of playlist IDs to scrape",
+        "--playlists", help="Comma seperated list of playlist IDs to scrape. Pass all to scrape all",
     )
 
     parser.add_argument(
@@ -42,7 +42,6 @@ def main():
     parser.add_argument(
         "--name-format",
         help="Format for building individual --name argument. Required in individual ZIMs mode.",
-        required=True,
     )
 
     parser.add_argument(
@@ -83,8 +82,8 @@ def main():
                 f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set format."
             )
 
-    # playlists-name mandatory in playlist-mode
-    if args.indiv_zims and not args.name_format:
+    # name-format mandatory if indiv-zims and metadata file not specified
+    if args.indiv_zims and not args.name_format and not args.metadata_from:
         parser.error("--name-format is mandatory in individual ZIMs mode")
 
     setDebug(args.debug)
