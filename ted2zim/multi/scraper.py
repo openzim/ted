@@ -81,12 +81,14 @@ class TedHandler(object):
             return False
         try:
             meta = s3_storage.get_object_stat(key).meta
-            if datetime.date.fromisoformat(
+            if datetime.datetime.fromisoformat(
                 meta.get("retrieved_on")
-            ) > datetime.date.today() - datetime.timedelta(days=7):
+            ) > datetime.datetime.now() - datetime.timedelta(days=7):
                 s3_storage.download_file(key, fpath)
             else:
-                logger.error("File is too old")
+                logger.debug(
+                    "playlists_list.json in optimization cache is too old to be used"
+                )
                 return False
         except Exception as exc:
             logger.error(f"{key} failed to download from cache: {exc}")
@@ -103,7 +105,7 @@ class TedHandler(object):
             json.dump(playlists_list, fp)
         try:
             s3_storage.upload_file(
-                fpath, key, meta={"retrieved_on": datetime.date.today().isoformat()},
+                fpath, key, meta={"retrieved_on": datetime.datetime.now().isoformat()},
             )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
@@ -142,6 +144,7 @@ class TedHandler(object):
             self.output_dir.mkdir(parents=True, exist_ok=True)
             playlists_list = self.download_playlists_list_from_cache(key, s3_storage)
             if not playlists_list:
+                logger.debug("Attempting to retrieve playlists list from TED")
                 playlists_list = self.download_playlists_list_from_site(topics_list)
                 self.upload_playlists_list_to_cache(playlists_list, key, s3_storage)
             return playlists_list
