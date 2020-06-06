@@ -22,7 +22,8 @@ def main():
     )
 
     parser.add_argument(
-        "--playlists", help="Comma seperated list of playlist IDs to scrape. Pass all to scrape all",
+        "--playlists",
+        help="Comma seperated list of playlist IDs to scrape. Pass all to scrape all",
     )
 
     parser.add_argument(

@@ -345,7 +345,7 @@ class Ted2Zim:
 
         subtitles = []
         if self.subtitles_setting == ALL or (
-            not self.source_languages and self.topics and not self.subtitles_setting
+            not self.source_languages and self.topics and self.subtitles_setting != NONE
         ):
             subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
