@@ -121,35 +121,31 @@ class TedHandler(object):
         if mode == "topic":
             return topics_list
 
-        elif mode == "playlist":
-            s3_url_with_credentials = None
-            s3_arg = "--optimization-cache"
-            for index, arg in enumerate(self.extra_args):
-                if arg.startswith(s3_arg):
-                    s3_url_with_credentials = (
-                        arg[len(s3_arg) + 1 :]
-                        if "=" in arg
-                        else self.extra_args[index + 1]
-                    )
-                    break
-
-            if s3_url_with_credentials:
-                s3_storage = KiwixStorage(s3_url_with_credentials)
-                if not s3_storage.check_credentials(
-                    list_buckets=True, bucket=True, write=True, read=True, failsafe=True
-                ):
-                    logger.error("S3 credential check failed. Continuing without S3")
-                    return self.download_playlists_list_from_site(topics_list)
-                key = "playlists_list.json"
-                self.output_dir.mkdir(parents=True, exist_ok=True)
-                playlists_list = self.download_playlists_list_from_cache(
-                    key, s3_storage
+        # mode is playlist
+        s3_url_with_credentials = None
+        s3_arg = "--optimization-cache"
+        for index, arg in enumerate(self.extra_args):
+            if arg.startswith(s3_arg):
+                s3_url_with_credentials = (
+                    arg[len(s3_arg) + 1 :] if "=" in arg else self.extra_args[index + 1]
                 )
-                if not playlists_list:
-                    playlists_list = self.download_playlists_list_from_site(topics_list)
-                    self.upload_playlists_list_to_cache(playlists_list, key, s3_storage)
-                return playlists_list
-            return self.download_playlists_list_from_site(topics_list)
+                break
+
+        if s3_url_with_credentials:
+            s3_storage = KiwixStorage(s3_url_with_credentials)
+            if not s3_storage.check_credentials(
+                list_buckets=True, bucket=True, write=True, read=True, failsafe=True
+            ):
+                logger.error("S3 credential check failed. Continuing without S3")
+                return self.download_playlists_list_from_site(topics_list)
+            key = "playlists_list.json"
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            playlists_list = self.download_playlists_list_from_cache(key, s3_storage)
+            if not playlists_list:
+                playlists_list = self.download_playlists_list_from_site(topics_list)
+                self.upload_playlists_list_to_cache(playlists_list, key, s3_storage)
+            return playlists_list
+        return self.download_playlists_list_from_site(topics_list)
 
     def log_run_result(self, success, process):
         if success:
