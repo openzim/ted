@@ -140,13 +140,6 @@ def main():
         version=SCRAPER,
     )
 
-    parser.add_argument(
-        "--max-videos-per-topic",
-        help="Max number of videos to scrape in each topic. Default behaviour is to scrape all",
-        default=99999,
-        type=int,
-    )
-
     args = parser.parse_args()
     setDebug(args.debug)
     logger = getLogger()
@@ -157,10 +150,6 @@ def main():
         if args.topics and args.playlist:
             parser.error("--topics is incompatible with --playlist")
         elif args.topics:
-            if args.max_videos_per_topic < 1:
-                parser.error(
-                    "Maximum number of videos to scrape per topic must be positive"
-                )
             if args.subtitles_enough and not args.languages:
                 parser.error(
                     "--subtitles-enough is only meant to be used if --languages is present"

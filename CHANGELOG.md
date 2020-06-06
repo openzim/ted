@@ -1,7 +1,15 @@
 # dev
 
+- added ted2zim-multi for multi zim creation
+
+# 2.0.2
+
+- now handling incorrect TED website responses with retries
+- fixed crash on missing language details
+- removed duplicated subtitles
 - fixed auto-description when title is supplied
-- add ted2zim-multi for multi zim creation
+- removed --max-videos-per-topic option to decrease complexity
+- refactoring of code
 
 # 2.0.1
 
