@@ -340,7 +340,9 @@ class Ted2Zim:
         """ List of all subtitle languages with link to their pages """
 
         subtitles = []
-        if self.subtitles_setting == ALL or (not self.source_languages and self.topics):
+        if self.subtitles_setting == ALL or (
+            not self.source_languages and self.topics and self.subtitles_setting != NONE
+        ):
             subtitles = [self.get_subtitle_dict(lang) for lang in langs]
         elif self.subtitles_setting == MATCHING or (
             self.subtitles_enough

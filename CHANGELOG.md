@@ -1,6 +1,6 @@
 # dev
 
-- n/a
+- added ted2zim-multi for multi zim creation
 
 # 2.0.2
 

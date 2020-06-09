@@ -37,7 +37,12 @@ setup(
     ],
     zip_safe=False,
     include_package_data=True,
-    entry_points={"console_scripts": ["ted2zim=ted2zim.__main__:main"]},
+    entry_points={
+        "console_scripts": [
+            "ted2zim=ted2zim.__main__:main",
+            "ted2zim-multi=ted2zim.multi.__main__:main",
+        ]
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

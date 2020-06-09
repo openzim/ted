@@ -40,6 +40,10 @@ Make sure that you have `python3`, `unzip`, `ffmpeg`, `wget` and `curl` installe
 One can eaisly install the PyPI version but let's setup the source version. Firstly, clone this repository and install the package as given below.
 
 ```
+pip3 install -r requirements.txt
+```
+
+```
 python3 setup.py install
 ```
 
@@ -61,6 +65,25 @@ This project can also be run with docker. Use the provided [Dockerfile](Dockerfi
 
 ## Features :robot:
 You can create ZIMs for multiple topics (should be same as given [here](https://ted.com/talks)), choose between different video formats (webm/mp4), different compression rates, and even use an S3 based cache.
+
+#### Want more flexibility? There's a multitool
+`ted2zim-multi` is an extra command available that allows you to do much more with the scraper. It falls back to `ted2zim` if normal commands are passed. It supports creation of multiple ZIMs with single command for both playlists and topics and even getting metadata from a specified JSON file. It supports the following extra arguments -
+- --indiv-zims - Allows you to create one zim/topic or one zim/playlist
+- --{name|description|zim-file|title}-format - Allows you to add custom format for the equivalent `ted2zim` arguments. You can add {identity} as a placeholder in these values to get the playlist ID / topic name in it's place
+- --metadata-from - Path to a JSON file containing the metadata. Should be of the following format -
+```
+{
+    "<playlist-id/topic-name-with-underscores>": {
+        "name": "sample_name_{identity}",
+        "description": "Sample description",
+        "title": "Custom title",
+        "zim_file": "sample.zim",
+        "tags": "tag",
+        "creator": "Yourself"
+    }
+}
+```
+See ted2zim-multi --help for details.
 
 ## License :book:
 
