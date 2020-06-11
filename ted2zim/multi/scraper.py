@@ -7,7 +7,7 @@ import re
 import sys
 import json
 import pathlib
-import shutil
+import tempfile
 import datetime
 import subprocess
 
@@ -36,9 +36,6 @@ class TedHandler(object):
                 setattr(self, key, value_list)
 
         self.extra_args = extra_args
-
-        self.output_dir = pathlib.Path(self.output_dir).expanduser().resolve()
-        self.build_dir = self.output_dir.joinpath("build")
 
         # metadata_from JSON file
         self.metadata_from = (
@@ -77,7 +74,7 @@ class TedHandler(object):
         return records
 
     def download_playlists_list_from_cache(self, key, s3_storage):
-        fpath = self.output_dir.joinpath("playlists_list.json")
+        fpath = pathlib.Path(tempfile.NamedTemporaryFile(delete=False).name)
         if not s3_storage.has_object(key):
             return False
         try:
@@ -101,7 +98,7 @@ class TedHandler(object):
         return json_data
 
     def upload_playlists_list_to_cache(self, playlists_list, key, s3_storage):
-        fpath = self.output_dir.joinpath("playlists_list.json")
+        fpath = pathlib.Path(tempfile.NamedTemporaryFile(delete=False).name)
         with open(fpath, "w") as fp:
             json.dump(playlists_list, fp)
         try:
@@ -202,7 +199,7 @@ class TedHandler(object):
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
 
-        args = self.ted2zim_exe + ["--output", str(self.output_dir)]
+        args = self.ted2zim_exe
 
         if mode == "topic":
             args += [
@@ -258,7 +255,7 @@ class TedHandler(object):
     def handle_single_zim(self, mode):
         """ redirect request to standard ted2zim """
 
-        args = self.ted2zim_exe + ["--output", str(self.output_dir)]
+        args = self.ted2zim_exe
         if mode == "topic":
             args += [
                 "--topics",

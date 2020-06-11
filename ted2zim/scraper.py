@@ -889,6 +889,37 @@ class Ted2Zim:
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
 
+    def post_process_build_dir(self):
+        """ Deletes/keeps build_dir according to user's choice """
+
+        if self.keep_build_dir and not self.custom_build_dir:
+            logger.info("Saving build directory")
+            shutil.copytree(
+                self.build_dir, self.output_dir.joinpath(f"{self.fname}_build")
+            )
+        elif not self.keep_build_dir and self.custom_build_dir:
+            logger.info("Removing build directory")
+            shutil.rmtree(self.build_dir, ignore_errors=True)
+
+    def create_zim_file(self):
+        """ Creates ZIM files by using make_zim_file() from zimscraperlib """
+
+        if not self.no_zim:
+            period = datetime.datetime.now().strftime("%Y-%m")
+            self.fname = (
+                self.fname
+                if self.fname
+                else f"{self.name.replace(' ', '_')}_{period}.zim"
+            )
+            logger.info("building ZIM file")
+            self.zim_info.update(
+                title=self.title, description=self.description, language=self.zim_lang
+            )
+            logger.debug(self.zim_info.to_zimwriterfs_args())
+            if not self.output_dir.exists():
+                self.output_dir.mkdir(parents=True)
+            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
+
     def run(self):
         logger.info(
             f"Starting scraper with:\n"
@@ -933,28 +964,8 @@ class Ted2Zim:
         self.copy_files_to_build_directory()
         self.generate_datafile()
 
-        # create ZIM file
-        if not self.no_zim:
-            period = datetime.datetime.now().strftime("%Y-%m")
-            self.fname = (
-                self.fname
-                if self.fname
-                else f"{self.name.replace(' ', '_')}_{period}.zim"
-            )
-            logger.info("building ZIM file")
-            self.zim_info.update(
-                title=self.title, description=self.description, language=self.zim_lang
-            )
-            logger.debug(self.zim_info.to_zimwriterfs_args())
-            if not self.output_dir.exists():
-                self.output_dir.mkdir(parents=True)
-            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
-            if self.keep_build_dir and not self.custom_build_dir:
-                logger.info("Saving build directory")
-                shutil.copytree(
-                    self.build_dir, self.output_dir.joinpath(f"{self.fname}_build")
-                )
-            elif not self.keep_build_dir and self.custom_build_dir:
-                logger.info("Removing build directory")
-                shutil.rmtree(self.build_dir, ignore_errors=True)
+        # zim creation and cleanup
+        self.create_zim_file()
+        self.post_process_build_dir()
+
         logger.info("Done Everything")

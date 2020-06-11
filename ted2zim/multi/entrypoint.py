@@ -27,13 +27,6 @@ def main():
     )
 
     parser.add_argument(
-        "--output",
-        help="Output folder for ZIM file or build folder",
-        default="/output",
-        dest="output_dir",
-    )
-
-    parser.add_argument(
         "--indiv-zims",
         help="Make individual ZIMs for topics. Multiple ZIMs are always created for multiple playlists",
         action="store_true",
