@@ -109,6 +109,10 @@ def main():
     )
 
     parser.add_argument(
+        "--build-dir", help="Custom build folder to build ZIM from",
+    )
+
+    parser.add_argument(
         "--zim-file",
         help="ZIM file name (based on --name if not provided)",
         dest="fname",

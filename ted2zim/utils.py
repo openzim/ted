@@ -8,6 +8,11 @@ import json
 import requests
 
 
+def has_argument(arg_name, all_args):
+    """ whether --arg_name is specified in all_args """
+    return list(filter(lambda x: x.startswith(f"--{arg_name}"), all_args))
+
+
 def update_subtitles_list(video_id, language_list):
     """ adds `link` to each language dict containing the subtitle url """
 

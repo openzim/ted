@@ -7,6 +7,7 @@ import re
 import sys
 import json
 import pathlib
+import shutil
 import datetime
 import subprocess
 
@@ -201,21 +202,17 @@ class TedHandler(object):
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
 
-        args = self.ted2zim_exe
+        args = self.ted2zim_exe + ["--output", str(self.output_dir)]
 
         if mode == "topic":
             args += [
                 "--topics",
                 item,
-                "--output",
-                str(self.output_dir.joinpath("topics", item.replace(" ", "_"))),
             ]
         elif mode == "playlist":
             args += [
                 "--playlist",
                 item,
-                "--output",
-                str(self.output_dir.joinpath("playlists", item)),
             ]
         else:
             raise ValueError(f"Unsupported mode {mode}")
@@ -229,6 +226,7 @@ class TedHandler(object):
             "description",
             "tags",
             "creator",
+            "build-dir",
         ):
             # use value from metadata JSON if present else from command-line
             value = metadata.get(
@@ -260,20 +258,16 @@ class TedHandler(object):
     def handle_single_zim(self, mode):
         """ redirect request to standard ted2zim """
 
-        args = self.ted2zim_exe
+        args = self.ted2zim_exe + ["--output", str(self.output_dir)]
         if mode == "topic":
             args += [
                 "--topics",
                 ",".join(self.topics),
-                "--output",
-                str(self.output_dir.joinpath("topics")),
             ]
         elif mode == "playlist":
             args += [
                 "--playlist",
                 self.playlists[0],
-                "--output",
-                str(self.output_dir.joinpath("playlists")),
             ]
         else:
             raise ValueError(f"Unsupported mode {mode}")

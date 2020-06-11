@@ -7,6 +7,7 @@ import json
 import time
 import pathlib
 import shutil
+import tempfile
 import datetime
 import urllib.parse
 
@@ -60,6 +61,7 @@ class Ted2Zim:
         playlist,
         subtitles_enough,
         subtitles_setting,
+        build_dir,
     ):
 
         # video-encoding info
@@ -78,8 +80,12 @@ class Ted2Zim:
         self.publisher = publisher
         self.name = name
 
-        # output directory
+        # directory setup
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
+        self.temp_dir = tempfile.TemporaryDirectory() if not build_dir else None
+        self.custom_build_dir = (
+            pathlib.Path(build_dir).expanduser().resolve if build_dir else None
+        )
 
         # scraper options
         self.topics = (
@@ -138,7 +144,11 @@ class Ted2Zim:
 
     @property
     def build_dir(self):
-        return self.output_dir.joinpath("build")
+        return (
+            self.custom_build_dir
+            if self.custom_build_dir
+            else pathlib.Path(self.temp_dir.name)
+        )
 
     @property
     def videos_dir(self):
@@ -146,11 +156,11 @@ class Ted2Zim:
 
     @property
     def ted_videos_json(self):
-        return self.output_dir.joinpath("ted_videos.json")
+        return self.build_dir.joinpath("ted_videos.json")
 
     @property
     def ted_topics_json(self):
-        return self.output_dir.joinpath("ted_topics.json")
+        return self.build_dir.joinpath("ted_topics.json")
 
     @property
     def talks_base_url(self):
@@ -294,9 +304,9 @@ class Ted2Zim:
 
         if self.playlist:
             if not self.title:
-                self.title = self.playlist_title
+                self.title = self.playlist_title.strip()
             if not self.description:
-                self.description = self.playlist_description
+                self.description = self.playlist_description.strip()
         else:
             if len(self.topics) > 1:
                 if not self.title:
@@ -910,10 +920,11 @@ class Ted2Zim:
         self.add_default_language()
         self.update_zim_metadata()
 
-        # clean the build directory if it already exists
-        if self.build_dir.exists():
-            shutil.rmtree(self.build_dir)
-        self.build_dir.mkdir(parents=True)
+        # clean the custom build directory if it already exists
+        if self.custom_build_dir:
+            if self.build_dir.exists():
+                shutil.rmtree(self.build_dir)
+            self.build_dir.mkdir(parents=True)
 
         self.download_video_files()
         self.download_subtitles()
@@ -925,16 +936,25 @@ class Ted2Zim:
         # create ZIM file
         if not self.no_zim:
             period = datetime.datetime.now().strftime("%Y-%m")
-            self.fname = pathlib.Path(
-                self.fname if self.fname else f"{self.name}_{period}.zim"
+            self.fname = (
+                self.fname
+                if self.fname
+                else f"{self.name.replace(' ', '_')}_{period}.zim"
             )
             logger.info("building ZIM file")
             self.zim_info.update(
                 title=self.title, description=self.description, language=self.zim_lang
             )
             logger.debug(self.zim_info.to_zimwriterfs_args())
+            if not self.output_dir.exists():
+                self.output_dir.mkdir(parents=True)
             make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
-            if not self.keep_build_dir:
-                logger.info("removing build directory")
+            if self.keep_build_dir and not self.custom_build_dir:
+                logger.info("Saving build directory")
+                shutil.copytree(
+                    self.build_dir, self.output_dir.joinpath(f"{self.fname}_build")
+                )
+            elif not self.keep_build_dir and self.custom_build_dir:
+                logger.info("Removing build directory")
                 shutil.rmtree(self.build_dir, ignore_errors=True)
         logger.info("Done Everything")
