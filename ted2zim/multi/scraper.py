@@ -16,7 +16,7 @@ from zimscraperlib.logging import nicer_args_join
 from kiwixstorage import KiwixStorage
 
 from ..constants import NAME, getLogger
-from ..utils import has_argument, download_link
+from ..utils import download_link
 
 logger = getLogger()
 
@@ -223,7 +223,6 @@ class TedHandler(object):
             "description",
             "tags",
             "creator",
-            "build-dir",
         ):
             # use value from metadata JSON if present else from command-line
             value = metadata.get(
@@ -232,12 +231,6 @@ class TedHandler(object):
 
             if value:  # only set arg if we have a value so it can be defaulted
                 args += [f"--{key}", self.compute_format(item, str(value))]
-
-        # ensure we supplied a name
-        if not has_argument("name", args):
-            raise ValueError(
-                "Cannot supply a --name argument to ted2zim. Ensure you have a supplied either --name-format or have name in metadata JSON"
-            )
 
         # append regular ted2zim args
         args += self.extra_args

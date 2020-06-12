@@ -109,7 +109,7 @@ def main():
     )
 
     parser.add_argument(
-        "--build-dir", help="Custom build folder to build ZIM from",
+        "--tmp-dir", help="Path to create temp folder in. Used for building ZIM file. Receives all data (storage space)",
     )
 
     parser.add_argument(

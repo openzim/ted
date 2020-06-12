@@ -61,7 +61,7 @@ class Ted2Zim:
         playlist,
         subtitles_enough,
         subtitles_setting,
-        build_dir,
+        tmp_dir,
     ):
 
         # video-encoding info
@@ -82,10 +82,9 @@ class Ted2Zim:
 
         # directory setup
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
-        self.temp_dir = tempfile.TemporaryDirectory() if not build_dir else None
-        self.custom_build_dir = (
-            pathlib.Path(build_dir).expanduser().resolve() if build_dir else None
-        )
+        if tmp_dir:
+            pathlib.Path(tmp_dir).mkdir(parents=True, exist_ok=True)
+        self.build_dir = pathlib.Path(tempfile.mkdtemp(dir=tmp_dir))
 
         # scraper options
         self.topics = (
@@ -141,14 +140,6 @@ class Ted2Zim:
     @property
     def templates_dir(self):
         return ROOT_DIR.joinpath("templates")
-
-    @property
-    def build_dir(self):
-        return (
-            self.custom_build_dir
-            if self.custom_build_dir
-            else pathlib.Path(self.temp_dir.name)
-        )
 
     @property
     def videos_dir(self):
@@ -889,37 +880,6 @@ class Ted2Zim:
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
 
-    def post_process_build_dir(self):
-        """ Deletes/keeps build_dir according to user's choice """
-
-        if self.keep_build_dir and not self.custom_build_dir:
-            logger.info("Saving build directory")
-            shutil.copytree(
-                self.build_dir, self.output_dir.joinpath(f"{self.fname}_build")
-            )
-        elif not self.keep_build_dir and self.custom_build_dir:
-            logger.info("Removing build directory")
-            shutil.rmtree(self.build_dir, ignore_errors=True)
-
-    def create_zim_file(self):
-        """ Creates ZIM files by using make_zim_file() from zimscraperlib """
-
-        if not self.no_zim:
-            period = datetime.datetime.now().strftime("%Y-%m")
-            self.fname = (
-                self.fname
-                if self.fname
-                else f"{self.name.replace(' ', '_')}_{period}.zim"
-            )
-            logger.info("building ZIM file")
-            self.zim_info.update(
-                title=self.title, description=self.description, language=self.zim_lang
-            )
-            logger.debug(self.zim_info.to_zimwriterfs_args())
-            if not self.output_dir.exists():
-                self.output_dir.mkdir(parents=True)
-            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
-
     def run(self):
         logger.info(
             f"Starting scraper with:\n"
@@ -950,13 +910,6 @@ class Ted2Zim:
 
         self.add_default_language()
         self.update_zim_metadata()
-
-        # clean the custom build directory if it already exists
-        if self.custom_build_dir:
-            if self.build_dir.exists():
-                shutil.rmtree(self.build_dir)
-            self.build_dir.mkdir(parents=True)
-
         self.download_video_files()
         self.download_subtitles()
         self.render_home_page()
@@ -965,7 +918,23 @@ class Ted2Zim:
         self.generate_datafile()
 
         # zim creation and cleanup
-        self.create_zim_file()
-        self.post_process_build_dir()
+        if not self.no_zim:
+            period = datetime.datetime.now().strftime("%Y-%m")
+            self.fname = (
+                self.fname
+                if self.fname
+                else f"{self.name.replace(' ', '_')}_{period}.zim"
+            )
+            logger.info("building ZIM file")
+            self.zim_info.update(
+                title=self.title, description=self.description, language=self.zim_lang
+            )
+            logger.debug(self.zim_info.to_zimwriterfs_args())
+            if not self.output_dir.exists():
+                self.output_dir.mkdir(parents=True)
+            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
+            if not self.keep_build_dir:
+                logger.info("removing temp folder")
+                shutil.rmtree(self.build_dir, ignore_errors=True)
 
         logger.info("Done Everything")
