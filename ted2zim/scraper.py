@@ -84,7 +84,7 @@ class Ted2Zim:
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
         self.temp_dir = tempfile.TemporaryDirectory() if not build_dir else None
         self.custom_build_dir = (
-            pathlib.Path(build_dir).expanduser().resolve if build_dir else None
+            pathlib.Path(build_dir).expanduser().resolve() if build_dir else None
         )
 
         # scraper options

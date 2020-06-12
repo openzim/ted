@@ -235,7 +235,9 @@ class TedHandler(object):
 
         # ensure we supplied a name
         if not has_argument("name", args):
-            args += ["--name", self.compute_format(item, self.name_format)]
+            raise ValueError(
+                "Cannot supply a --name argument to ted2zim. Ensure you have a supplied either --name-format or have name in metadata JSON"
+            )
 
         # append regular ted2zim args
         args += self.extra_args

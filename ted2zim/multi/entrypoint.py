@@ -9,6 +9,28 @@ from ..constants import NAME, SCRAPER, getLogger, setDebug
 from ..utils import has_argument
 
 
+def check_passed_args(args, extra_args, parser):
+    # prevent setting --title and --description
+    for arg in ("name", "title", "description", "zim-file"):
+        if args.indiv_zims and has_argument(arg, extra_args):
+            parser.error(
+                f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set format."
+            )
+
+    # name-format mandatory if indiv-zims and metadata file not specified
+    if not args.metadata_from:
+        if args.indiv_zims and not args.name_format:
+            parser.error("--name-format is mandatory in individual ZIMs mode")
+
+        if "{identity}" not in args.name_format:
+            parser.error("--name-format must have {identity} to ensure unique names")
+
+        if args.build_dir_format and "{identity}" not in args.build_dir_format:
+            parser.error(
+                "--build-dir-format must have {identity} to ensure unique names for custom build directories"
+            )
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog=f"{NAME}-multi",
@@ -74,28 +96,7 @@ def main():
 
     args, extra_args = parser.parse_known_args()
 
-    # prevent setting --title and --description
-    for arg in ("name", "title", "description", "zim-file"):
-        if args.indiv_zims and has_argument(arg, extra_args):
-            parser.error(
-                f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set format."
-            )
-
-    # name-format mandatory if indiv-zims and metadata file not specified
-    if args.indiv_zims and not args.name_format and not args.metadata_from:
-        parser.error("--name-format is mandatory in individual ZIMs mode")
-
-    if "{identity}" not in args.name_format and not args.metadata_from:
-        parser.error("--name-format must have {identity} to ensure unique names")
-
-    if (
-        args.build_dir_format
-        and "{identity}" not in args.build_dir_format
-        and not args.metadata_from
-    ):
-        parser.error(
-            "--build-dir-format must have {identity} to ensure unique names for custom build directories"
-        )
+    check_passed_args(args, extra_args, parser)
 
     setDebug(args.debug)
     logger = getLogger()
