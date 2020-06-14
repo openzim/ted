@@ -14,6 +14,10 @@
   <a href="https://pypi.org/project/ted2zim/">
     <img alt="PyPI" src="https://img.shields.io/pypi/v/ted2zim?style=for-the-badge">
   </a>
+  <!-- Docker version -->
+  <a href="https://hub.docker.com/r/openzim/youtube">
+    <img alt="Docker" src="https://img.shields.io/docker/build/openzim/youtube?style=for-the-badge">
+  </a>
   <!-- Codefactor grade -->
   <a href="https://www.codefactor.io/repository/github/openzim/ted">
     <img alt="CodeFactor Grade"
@@ -28,36 +32,38 @@
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. One can eaisly find all the TED videos [here](https://ted.com/talks).
 
-This project is aimed at creating a sustainable solution to make TED accessible offline by creating ZIM files providing these videos in a similar manner like online.  
+This project is aimed at creating a sustainable solution to make TED accessible offline by creating ZIM files providing these videos in a similar manner like online.
 
 
 ## Getting started :rocket:
 
 #### Install the dependencies
-Make sure that you have `python3`, `unzip`, `ffmpeg`, `wget` and `curl` installed on your system before running the scraper (otherwise you'll get a warning to install them). 
+Make sure that you have `python3`, `unzip`, `ffmpeg`, `wget` and `curl` installed on your system before running the scraper (otherwise you'll get a warning to install them).
 
 #### Setup the package
 One can eaisly install the PyPI version but let's setup the source version. Firstly, clone this repository and install the package as given below.
 
-```
+```bash
 pip3 install -r requirements.txt
 ```
 
-```
+```bash
 python3 setup.py install
 ```
 
 That's it. You can now run `ted2zim` from your terminal
 
-```
+```bash
 ted2zim --topics [TOPICS] --name [NAME]
 ```
+
 For the full list of arguments, see [this](ted2zim/entrypoint.py) file or run the following
-```
+```bash
 ted2zim --help
 ```
+
 Example usage
-```
+```bash
 ted2zim --topics="augmented reality" --max-videos-per-topic=10 --debug --name="augumented_reality" --format=mp4 --title="Augmented Reality" --description="TED videos in AR category" --creator="TED" --publisher="openzim" --output="output" --keep --low-quality
 ```
 
@@ -71,7 +77,7 @@ You can create ZIMs for multiple topics (should be same as given [here](https://
 - --indiv-zims - Allows you to create one zim/topic or one zim/playlist
 - --{name|description|zim-file|title}-format - Allows you to add custom format for the equivalent `ted2zim` arguments. You can add {identity} as a placeholder in these values to get the playlist ID / topic name in it's place
 - --metadata-from - Path to a JSON file containing the metadata. Should be of the following format -
-```
+```bash
 {
     "<playlist-id/topic-name-with-underscores>": {
         "name": "sample_name_{identity}",
