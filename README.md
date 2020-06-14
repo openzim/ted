@@ -15,8 +15,8 @@
     <img alt="PyPI" src="https://img.shields.io/pypi/v/ted2zim?style=for-the-badge">
   </a>
   <!-- Docker version -->
-  <a href="https://hub.docker.com/r/openzim/youtube">
-    <img alt="Docker" src="https://img.shields.io/docker/build/openzim/youtube?style=for-the-badge">
+  <a href="https://hub.docker.com/r/openzim/ted">
+    <img alt="Docker" src="https://img.shields.io/docker/build/openzim/ted?style=for-the-badge">
   </a>
   <!-- Codefactor grade -->
   <a href="https://www.codefactor.io/repository/github/openzim/ted">
