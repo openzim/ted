@@ -4,6 +4,9 @@
 
 import time
 import json
+import pathlib
+import tempfile
+import contextlib
 
 import requests
 
@@ -94,3 +97,14 @@ class WebVTT:
                 )
                 document += content + "\n\n"
         return document
+
+
+@contextlib.contextmanager
+def get_temp_fpath(**kwargs):
+    try:
+        fh = tempfile.NamedTemporaryFile(delete=False, **kwargs)
+        fpath = pathlib.Path(fh.name)
+        fh.close()
+        yield fpath
+    finally:
+        fpath.unlink()
