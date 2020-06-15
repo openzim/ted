@@ -1,6 +1,7 @@
 # dev
 
 - added ted2zim-multi for multi zim creation
+- added --tmp-dir to specify the path folder where the temporary build directory will be created
 
 # 2.0.2
 

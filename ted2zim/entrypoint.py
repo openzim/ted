@@ -109,6 +109,11 @@ def main():
     )
 
     parser.add_argument(
+        "--tmp-dir",
+        help="Path to create temp folder in. Used for building ZIM file. Receives all data (storage space)",
+    )
+
+    parser.add_argument(
         "--zim-file",
         help="ZIM file name (based on --name if not provided)",
         dest="fname",

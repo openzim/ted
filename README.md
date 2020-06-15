@@ -83,9 +83,10 @@ You can create ZIMs for multiple topics (should be same as given [here](https://
         "name": "sample_name_{identity}",
         "description": "Sample description",
         "title": "Custom title",
-        "zim_file": "sample.zim",
+        "zim-file": "sample.zim",
         "tags": "tag",
-        "creator": "Yourself"
+        "creator": "Yourself",
+        "build-dir": "/custom_build_dir"
     }
 }
 ```

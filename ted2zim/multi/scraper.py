@@ -15,7 +15,7 @@ from zimscraperlib.logging import nicer_args_join
 from kiwixstorage import KiwixStorage
 
 from ..constants import NAME, getLogger
-from ..utils import has_argument, download_link
+from ..utils import download_link, get_temp_fpath
 
 logger = getLogger()
 
@@ -35,9 +35,6 @@ class TedHandler(object):
                 setattr(self, key, value_list)
 
         self.extra_args = extra_args
-
-        self.output_dir = pathlib.Path(self.output_dir).expanduser().resolve()
-        self.build_dir = self.output_dir.joinpath("build")
 
         # metadata_from JSON file
         self.metadata_from = (
@@ -76,43 +73,43 @@ class TedHandler(object):
         return records
 
     def download_playlists_list_from_cache(self, key, s3_storage):
-        fpath = self.output_dir.joinpath("playlists_list.json")
-        if not s3_storage.has_object(key):
-            return False
-        try:
-            meta = s3_storage.get_object_stat(key).meta
-            if datetime.datetime.fromisoformat(
-                meta.get("retrieved_on")
-            ) > datetime.datetime.now() - datetime.timedelta(days=7):
-                s3_storage.download_file(key, fpath)
-            else:
-                logger.debug(
-                    "playlists_list.json in optimization cache is too old to be used"
-                )
+        with get_temp_fpath() as fpath:
+            if not s3_storage.has_object(key):
                 return False
-        except Exception as exc:
-            logger.error(f"{key} failed to download from cache: {exc}")
-            return False
-        logger.info(f"downloaded playlist list from cache at {key}")
-        with open(fpath, "r") as fp:
-            json_data = json.load(fp)
-        fpath.unlink()
-        return json_data
+            try:
+                meta = s3_storage.get_object_stat(key).meta
+                if datetime.datetime.fromisoformat(
+                    meta.get("retrieved_on")
+                ) > datetime.datetime.now() - datetime.timedelta(days=7):
+                    s3_storage.download_file(key, fpath)
+                else:
+                    logger.debug(
+                        "playlists_list.json in optimization cache is too old to be used"
+                    )
+                    return False
+            except Exception as exc:
+                logger.error(f"{key} failed to download from cache: {exc}")
+                return False
+            logger.info(f"downloaded playlist list from cache at {key}")
+            with open(fpath, "r") as fp:
+                json_data = json.load(fp)
+
+            return json_data
 
     def upload_playlists_list_to_cache(self, playlists_list, key, s3_storage):
-        fpath = self.output_dir.joinpath("playlists_list.json")
-        with open(fpath, "w") as fp:
-            json.dump(playlists_list, fp)
-        try:
-            s3_storage.upload_file(
-                fpath, key, meta={"retrieved_on": datetime.datetime.now().isoformat()},
-            )
-        except Exception as exc:
-            logger.error(f"{key} failed to upload to cache: {exc}")
-        else:
-            logger.info(f"successfully uploaded playlist list to cache at {key}")
-        finally:
-            fpath.unlink()
+        with get_temp_fpath() as fpath:
+            with open(fpath, "w") as fp:
+                json.dump(playlists_list, fp)
+            try:
+                s3_storage.upload_file(
+                    fpath,
+                    key,
+                    meta={"retrieved_on": datetime.datetime.now().isoformat()},
+                )
+            except Exception as exc:
+                logger.error(f"{key} failed to upload to cache: {exc}")
+            else:
+                logger.info(f"successfully uploaded playlist list to cache at {key}")
 
     def get_list_of_all(self, mode):
         """ returns a list of topics or playlists"""
@@ -140,8 +137,8 @@ class TedHandler(object):
             ):
                 logger.error("S3 credential check failed. Continuing without S3")
                 return self.download_playlists_list_from_site(topics_list)
+
             key = "playlists_list.json"
-            self.output_dir.mkdir(parents=True, exist_ok=True)
             playlists_list = self.download_playlists_list_from_cache(key, s3_storage)
             if not playlists_list:
                 logger.debug("Attempting to retrieve playlists list from TED")
@@ -207,15 +204,11 @@ class TedHandler(object):
             args += [
                 "--topics",
                 item,
-                "--output",
-                str(self.output_dir.joinpath("topics", item.replace(" ", "_"))),
             ]
         elif mode == "playlist":
             args += [
                 "--playlist",
                 item,
-                "--output",
-                str(self.output_dir.joinpath("playlists", item)),
             ]
         else:
             raise ValueError(f"Unsupported mode {mode}")
@@ -237,10 +230,6 @@ class TedHandler(object):
 
             if value:  # only set arg if we have a value so it can be defaulted
                 args += [f"--{key}", self.compute_format(item, str(value))]
-
-        # ensure we supplied a name
-        if not has_argument("name", args):
-            args += ["--name", self.compute_format(item, self.name_format)]
 
         # append regular ted2zim args
         args += self.extra_args
@@ -265,15 +254,11 @@ class TedHandler(object):
             args += [
                 "--topics",
                 ",".join(self.topics),
-                "--output",
-                str(self.output_dir.joinpath("topics")),
             ]
         elif mode == "playlist":
             args += [
                 "--playlist",
                 self.playlists[0],
-                "--output",
-                str(self.output_dir.joinpath("playlists")),
             ]
         else:
             raise ValueError(f"Unsupported mode {mode}")

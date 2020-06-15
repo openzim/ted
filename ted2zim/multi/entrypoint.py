@@ -27,13 +27,6 @@ def main():
     )
 
     parser.add_argument(
-        "--output",
-        help="Output folder for ZIM file or build folder",
-        default="/output",
-        dest="output_dir",
-    )
-
-    parser.add_argument(
         "--indiv-zims",
         help="Make individual ZIMs for topics. Multiple ZIMs are always created for multiple playlists",
         action="store_true",
@@ -83,8 +76,8 @@ def main():
                 f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set format."
             )
 
-    # name-format mandatory if indiv-zims and metadata file not specified
-    if args.indiv_zims and not args.name_format and not args.metadata_from:
+    # name-format mandatory if indiv-zims
+    if args.indiv_zims and not args.name_format:
         parser.error("--name-format is mandatory in individual ZIMs mode")
 
     setDebug(args.debug)

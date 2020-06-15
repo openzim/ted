@@ -4,8 +4,16 @@
 
 import time
 import json
+import pathlib
+import tempfile
+import contextlib
 
 import requests
+
+
+def has_argument(arg_name, all_args):
+    """ whether --arg_name is specified in all_args """
+    return list(filter(lambda x: x.startswith(f"--{arg_name}"), all_args))
 
 
 def update_subtitles_list(video_id, language_list):
@@ -89,3 +97,14 @@ class WebVTT:
                 )
                 document += content + "\n\n"
         return document
+
+
+@contextlib.contextmanager
+def get_temp_fpath(**kwargs):
+    try:
+        fh = tempfile.NamedTemporaryFile(delete=False, **kwargs)
+        fpath = pathlib.Path(fh.name)
+        fh.close()
+        yield fpath
+    finally:
+        fpath.unlink()
