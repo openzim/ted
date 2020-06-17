@@ -47,10 +47,11 @@ class TedHandler(object):
         """ ted2zim executable """
 
         # handle either `python ted2zim` or `ted2zim`
-        executable = pathlib.Path(sys.executable)
-        if re.match(r"python[0-9]*", executable.name):
-            return [str(executable), "ted2zim"]
-        return [str(executable)]
+        cmd = "ted2zim"
+        dev_cmd = f"{cmd}/multi"
+        if sys.argv[0] == dev_cmd:
+            return [sys.executable, cmd]
+        return [sys.argv[0].replace(f"{cmd}-multi", cmd)]
 
     @staticmethod
     def compute_format(item, fmt):
