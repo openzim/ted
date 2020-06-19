@@ -2,6 +2,7 @@
 
 - added ted2zim-multi for multi zim creation
 - added --tmp-dir to specify the path folder where the temporary build directory will be created
+- `{period}` can be passed in `--zim-file` and be replaced with date as YYYY-MM
 
 # 2.0.2
 

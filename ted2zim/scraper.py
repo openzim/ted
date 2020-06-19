@@ -919,12 +919,9 @@ class Ted2Zim:
 
         # zim creation and cleanup
         if not self.no_zim:
-            period = datetime.datetime.now().strftime("%Y-%m")
             self.fname = (
-                self.fname
-                if self.fname
-                else f"{self.name.replace(' ', '_')}_{period}.zim"
-            )
+                self.fname or f"{self.name.replace(' ', '-')}_{{period}}.zim"
+            ).format(period=datetime.datetime.now().strftime("%Y-%m"))
             logger.info("building ZIM file")
             self.zim_info.update(
                 title=self.title, description=self.description, language=self.zim_lang
