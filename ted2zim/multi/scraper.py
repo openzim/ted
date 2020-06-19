@@ -55,7 +55,7 @@ class TedHandler(object):
 
     @staticmethod
     def compute_format(item, fmt):
-        return fmt.format(identity=item.replace(" ", "_"))
+        return fmt.format(identity=item.replace(" ", "-"), period="{}")
 
     @staticmethod
     def download_playlists_list_from_site(topics_list):
