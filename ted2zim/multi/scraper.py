@@ -154,7 +154,6 @@ class TedHandler(object):
         else:
             logger.error(".. ERROR. Printing scraper output and exiting.")
             logger.error(process.stdout)
-            return process.returncode
 
     def run(self):
         logger.info(f"starting {NAME}-multi scraper")
@@ -171,10 +170,11 @@ class TedHandler(object):
                     logger.info(f"Executing ted2zim for topic {topic}")
                     success, process = self.run_indiv_zim_mode(topic, mode="topic")
                     self.log_run_result(success, process)
+                    if not success:
+                        raise Exception(f"ted2zim Failed with: {process.returncode}")
 
             else:
-                if not self.handle_single_zim(mode="topic"):
-                    logger.error("ted2zim Failed")
+                self.handle_single_zim(mode="topic")
 
         if self.playlists:
             if self.playlists == ["all"]:
@@ -192,9 +192,10 @@ class TedHandler(object):
                         playlist, mode="playlist"
                     )
                     self.log_run_result(success, process)
+                    if not success:
+                        raise Exception(f"ted2zim Failed with: {process.returncode}")
             else:
-                if not self.handle_single_zim(mode="playlist"):
-                    logger.error("ted2zim Failed")
+                self.handle_single_zim(mode="playlist")
 
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
@@ -266,7 +267,7 @@ class TedHandler(object):
         args += self.extra_args
         if self.debug:
             args += ["--debug"]
-        return subprocess.run(args).returncode == 0
+        subprocess.run(args, check=True)
 
     def fetch_metadata(self):
         """ retrieves and loads metadata from --metadata-from """

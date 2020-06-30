@@ -14,6 +14,7 @@ def main():
         prog=f"{NAME}-multi",
         description="Scraper to create ZIM file(s) from TED topic(s) or playlist(s)",
         epilog="All titles, descriptions and names can use the {identity} to get playlist ID or topic name (with underscores) in each case",
+        allow_abbrev=False,
     )
 
     parser.add_argument(
