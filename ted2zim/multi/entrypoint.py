@@ -70,6 +70,14 @@ def main():
 
     args, extra_args = parser.parse_known_args()
 
+    # prevent launching without any topic(s)/playlist(s)
+    if (
+        not args.playlists
+        and not args.topics
+        and not has_argument("playlist", extra_args)
+    ):
+        parser.error("Please provide topic(s) and/or playlist(s) to scrape")
+
     # prevent setting --title and --description
     for arg in ("name", "title", "description", "zim-file"):
         if args.indiv_zims and has_argument(arg, extra_args):
