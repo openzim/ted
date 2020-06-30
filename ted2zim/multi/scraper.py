@@ -171,10 +171,13 @@ class TedHandler(object):
                     success, process = self.run_indiv_zim_mode(topic, mode="topic")
                     self.log_run_result(success, process)
                     if not success:
-                        raise Exception(f"ted2zim Failed with: {process.returncode}")
+                        return process.returncode
 
             else:
-                self.handle_single_zim(mode="topic")
+                success, process = self.handle_single_zim(mode="topic")
+                self.log_run_result(success, process)
+                if not success:
+                    return process.returncode
 
         if self.playlists:
             if self.playlists == ["all"]:
@@ -193,9 +196,12 @@ class TedHandler(object):
                     )
                     self.log_run_result(success, process)
                     if not success:
-                        raise Exception(f"ted2zim Failed with: {process.returncode}")
+                        return process.returncode
             else:
                 self.handle_single_zim(mode="playlist")
+                self.log_run_result(success, process)
+                if not success:
+                    return process.returncode
 
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
@@ -267,7 +273,13 @@ class TedHandler(object):
         args += self.extra_args
         if self.debug:
             args += ["--debug"]
-        subprocess.run(args, check=True)
+        process = subprocess.run(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+        )
+        return process.returncode == 0, process
 
     def fetch_metadata(self):
         """ retrieves and loads metadata from --metadata-from """
