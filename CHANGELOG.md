@@ -1,6 +1,7 @@
 # 2.0.4.dev0
 
-- n/a
+- ted2zim-multi now returns correct return codes
+- argument abbreviations not allowed in ted2zim-multi to prevent --name being read as --name-format
 
 # 2.0.3
 

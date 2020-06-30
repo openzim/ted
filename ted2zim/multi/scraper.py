@@ -155,53 +155,61 @@ class TedHandler(object):
             logger.error(".. ERROR. Printing scraper output and exiting.")
             logger.error(process.stdout)
 
+    def handle_topics(self):
+        if self.topics == ["all"]:
+            self.topics = [
+                topic["value"] for topic in self.get_list_of_all(mode="topic")
+            ]
+        if self.indiv_zims:
+            for topic in self.topics:
+                logger.info(f"Executing ted2zim for topic {topic}")
+                success, process = self.run_indiv_zim_mode(topic, mode="topic")
+                self.log_run_result(success, process)
+                if not success:
+                    return process.returncode
+
+        else:
+            success, process = self.handle_single_zim(mode="topic")
+            self.log_run_result(success, process)
+            if not success:
+                return process.returncode
+
+    def handle_playlists(self):
+        if self.playlists == ["all"]:
+            self.playlists = [
+                str(playlist["id"])
+                for playlist in self.get_list_of_all(mode="playlist")
+            ]
+        # automatically set self.indiv_zims if not already set and multiple playlists
+        if len(self.playlists) > 1 and not self.indiv_zims:
+            self.indiv_zims = True
+        if self.indiv_zims:
+            for playlist in self.playlists:
+                logger.info(f"Executing ted2zim for playlist {playlist}")
+                success, process = self.run_indiv_zim_mode(playlist, mode="playlist")
+                self.log_run_result(success, process)
+                if not success:
+                    return process.returncode
+        else:
+            self.handle_single_zim(mode="playlist")
+            self.log_run_result(success, process)
+            if not success:
+                return process.returncode
+
     def run(self):
         logger.info(f"starting {NAME}-multi scraper")
 
         self.fetch_metadata()
 
         if self.topics:
-            if self.topics == ["all"]:
-                self.topics = [
-                    topic["value"] for topic in self.get_list_of_all(mode="topic")
-                ]
-            if self.indiv_zims:
-                for topic in self.topics:
-                    logger.info(f"Executing ted2zim for topic {topic}")
-                    success, process = self.run_indiv_zim_mode(topic, mode="topic")
-                    self.log_run_result(success, process)
-                    if not success:
-                        return process.returncode
-
-            else:
-                success, process = self.handle_single_zim(mode="topic")
-                self.log_run_result(success, process)
-                if not success:
-                    return process.returncode
+            ret = self.handle_topics()
+            if ret is not None:
+                return ret
 
         if self.playlists:
-            if self.playlists == ["all"]:
-                self.playlists = [
-                    str(playlist["id"])
-                    for playlist in self.get_list_of_all(mode="playlist")
-                ]
-            # automatically set self.indiv_zims if not already set and multiple playlists
-            if len(self.playlists) > 1 and not self.indiv_zims:
-                self.indiv_zims = True
-            if self.indiv_zims:
-                for playlist in self.playlists:
-                    logger.info(f"Executing ted2zim for playlist {playlist}")
-                    success, process = self.run_indiv_zim_mode(
-                        playlist, mode="playlist"
-                    )
-                    self.log_run_result(success, process)
-                    if not success:
-                        return process.returncode
-            else:
-                self.handle_single_zim(mode="playlist")
-                self.log_run_result(success, process)
-                if not success:
-                    return process.returncode
+            ret = self.handle_playlists()
+            if ret is not None:
+                return ret
 
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
