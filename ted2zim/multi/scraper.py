@@ -212,8 +212,7 @@ class TedHandler(object):
             if self.indiv_zims:
                 logger.info(f"Starting {NAME}-multi scraper for playlists")
                 return self.handle_indiv_playlists()
-            else:
-                return self.handle_single_zim(mode="playlist")
+            return self.handle_single_zim(mode="playlist")
 
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
