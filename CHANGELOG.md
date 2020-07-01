@@ -1,3 +1,7 @@
+# 2.0.5.dev0
+
+- n/a
+
 # 2.0.4
 
 - ted2zim-multi forwards return-code from ted2zim process on failure
