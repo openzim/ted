@@ -3,7 +3,6 @@
 # vim: ai ts=4 sts=4 et sw=4 nu
 
 
-import re
 import sys
 import json
 import pathlib
@@ -154,29 +153,32 @@ class TedHandler(object):
         else:
             logger.error(".. ERROR. Printing scraper output and exiting.")
             logger.error(process.stdout)
-            return process.returncode
 
-    def run(self):
-        logger.info(f"starting {NAME}-multi scraper")
+    def handle_indiv_topics(self):
+        for topic in self.topics:
+            logger.info(f"Executing ted2zim for topic {topic}")
+            success, process = self.run_indiv_zim_mode(topic, mode="topic")
+            self.log_run_result(success, process)
+            if not success:
+                return process.returncode
 
-        self.fetch_metadata()
+    def handle_indiv_playlists(self):
+        for playlist in self.playlists:
+            logger.info(f"Executing ted2zim for playlist {playlist}")
+            success, process = self.run_indiv_zim_mode(playlist, mode="playlist")
+            self.log_run_result(success, process)
+            if not success:
+                return process.returncode
 
-        if self.topics:
+    def preprocess_inputs(self, mode):
+        """ Prepare the playlist and topic list if all is passed.
+            Also automatically set self.indiv_zims if not already set and multiple playlists """
+        if mode == "topic":
             if self.topics == ["all"]:
                 self.topics = [
                     topic["value"] for topic in self.get_list_of_all(mode="topic")
                 ]
-            if self.indiv_zims:
-                for topic in self.topics:
-                    logger.info(f"Executing ted2zim for topic {topic}")
-                    success, process = self.run_indiv_zim_mode(topic, mode="topic")
-                    self.log_run_result(success, process)
-
-            else:
-                if not self.handle_single_zim(mode="topic"):
-                    logger.error("ted2zim Failed")
-
-        if self.playlists:
+        elif mode == "playlist":
             if self.playlists == ["all"]:
                 self.playlists = [
                     str(playlist["id"])
@@ -185,16 +187,32 @@ class TedHandler(object):
             # automatically set self.indiv_zims if not already set and multiple playlists
             if len(self.playlists) > 1 and not self.indiv_zims:
                 self.indiv_zims = True
+        else:
+            raise ValueError(f"Unsupported mode {mode}")
+
+    def run(self):
+        # Fetch metadata from JSON if available
+        self.fetch_metadata()
+
+        if self.topics:
+            self.preprocess_inputs(mode="topic")
             if self.indiv_zims:
-                for playlist in self.playlists:
-                    logger.info(f"Executing ted2zim for playlist {playlist}")
-                    success, process = self.run_indiv_zim_mode(
-                        playlist, mode="playlist"
-                    )
-                    self.log_run_result(success, process)
+                logger.info(f"Starting {NAME}-multi scraper for topics")
+                ret = self.handle_indiv_topics()
+                # return only on errorneous return code as we want to run playlists
+                if ret is not None:
+                    return ret
             else:
-                if not self.handle_single_zim(mode="playlist"):
-                    logger.error("ted2zim Failed")
+                ret = self.handle_single_zim(mode="topic")
+                if ret != 0:
+                    return ret
+
+        if self.playlists:
+            self.preprocess_inputs(mode="playlist")
+            if self.indiv_zims:
+                logger.info(f"Starting {NAME}-multi scraper for playlists")
+                return self.handle_indiv_playlists()
+            return self.handle_single_zim(mode="playlist")
 
     def run_indiv_zim_mode(self, item, mode):
         """ run ted2zim for an individual topic/playlist """
@@ -266,7 +284,7 @@ class TedHandler(object):
         args += self.extra_args
         if self.debug:
             args += ["--debug"]
-        return subprocess.run(args).returncode == 0
+        return subprocess.run(args).returncode
 
     def fetch_metadata(self):
         """ retrieves and loads metadata from --metadata-from """

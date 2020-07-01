@@ -14,6 +14,7 @@ def main():
         prog=f"{NAME}-multi",
         description="Scraper to create ZIM file(s) from TED topic(s) or playlist(s)",
         epilog="All titles, descriptions and names can use the {identity} to get playlist ID or topic name (with underscores) in each case",
+        allow_abbrev=False,
     )
 
     parser.add_argument(
@@ -69,6 +70,14 @@ def main():
 
     args, extra_args = parser.parse_known_args()
 
+    # prevent launching without any topic(s)/playlist(s)
+    if (
+        not args.playlists
+        and not args.topics
+        and not has_argument("playlist", extra_args)
+    ):
+        parser.error("Please provide topic(s) and/or playlist(s) to scrape")
+
     # prevent setting --title and --description
     for arg in ("name", "title", "description", "zim-file"):
         if args.indiv_zims and has_argument(arg, extra_args):
@@ -88,7 +97,7 @@ def main():
 
     try:
         handler = TedHandler(dict(args._get_kwargs()), extra_args=extra_args)
-        handler.run()
+        raise SystemExit(handler.run())
     except Exception as exc:
         logger.error(f"FAILED. An error occurred: {exc}")
         if args.debug:
