@@ -520,7 +520,7 @@ class Ted2Zim:
             speaker_info = {
                 "description": "None",
                 "whotheyare": "None",
-                "photo_url": "None",
+                "photo_url": "",
             }
             if "speaker_name" in talk_info:
                 speaker = talk_info["speaker_name"]
@@ -761,7 +761,7 @@ class Ted2Zim:
                     logger.error(f"Could not download {org_video_file_path}")
 
             # download an image of the speaker
-            if video_speaker == "None" or video_speaker == "":
+            if not video_speaker:
                 logger.debug("Speaker doesn't have an image")
             else:
                 logger.debug(f"Downloading Speaker image for {video_title}")
