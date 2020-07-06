@@ -531,9 +531,7 @@ class Ted2Zim:
         video_id = talk_info["id"]
         speaker_profession = speaker_info["description"]
         speaker_bio = speaker_info["whotheyare"]
-        speaker_picture = (
-            speaker_info["photo_url"] if speaker_info["photo_url"] else False
-        )
+        speaker_picture = speaker_info["photo_url"]
         title = talk_info["title"]
         description = talk_info["description"]
         date = dateutil.parser.parse(talk_info["recorded_at"]).strftime("%d %B %Y")
