@@ -19,4 +19,6 @@ COPY ted2zim /src/ted2zim
 COPY setup.py *.md get_js_deps.sh MANIFEST.in /src/
 RUN cd /src/ && python3 ./setup.py install
 
+RUN mkdir -p /output
+WORKDIR /output
 CMD ["ted2zim", "--help"]
