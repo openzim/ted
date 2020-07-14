@@ -13,7 +13,7 @@ import urllib.parse
 
 import jinja2
 from bs4 import BeautifulSoup
-from zimscraperlib.zim import ZimInfo, make_zim_file
+from zimscraperlib.zim import make_zim_file
 from zimscraperlib.i18n import get_language_details
 from zimscraperlib.download import save_large_file
 from zimscraperlib.video.presets import VideoWebmLow, VideoMp4Low
@@ -103,17 +103,6 @@ class Ted2Zim:
             else self.to_ted_langcodes(
                 [lang.strip() for lang in subtitles_setting.split(",")]
             )
-        )
-
-        # zim info
-        self.zim_info = ZimInfo(
-            homepage="index.html",
-            tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
-            creator=self.creator,
-            publisher=self.publisher,
-            name=self.name,
-            scraper=SCRAPER,
-            favicon="favicon.png",
         )
 
         # optimization cache
@@ -923,13 +912,22 @@ class Ted2Zim:
                 self.fname or f"{self.name.replace(' ', '-')}_{{period}}.zim"
             ).format(period=datetime.datetime.now().strftime("%Y-%m"))
             logger.info("building ZIM file")
-            self.zim_info.update(
-                title=self.title, description=self.description, language=self.zim_lang
-            )
-            logger.debug(self.zim_info.to_zimwriterfs_args())
             if not self.output_dir.exists():
                 self.output_dir.mkdir(parents=True)
-            make_zim_file(self.build_dir, self.output_dir, self.fname, self.zim_info)
+            make_zim_file(
+                build_dir=self.build_dir,
+                fpath=self.output_dir.joinpath(self.fname),
+                name=self.name,
+                main_page="index.html",
+                favicon="favicon.png",
+                title=self.title,
+                description=self.description,
+                language=self.zim_lang,
+                creator=self.creator,
+                publisher=self.publisher,
+                tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
+                scraper=SCRAPER,
+            )
             if not self.keep_build_dir:
                 logger.info("removing temp folder")
                 shutil.rmtree(self.build_dir, ignore_errors=True)
