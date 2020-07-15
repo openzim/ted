@@ -53,9 +53,15 @@ class TedHandler(object):
         return [sys.argv[0].replace(f"{cmd}-multi", cmd)]
 
     @staticmethod
-    def compute_format(item, slug, fmt):
-        return fmt.format(
-            identity=item.replace(" ", "-"), period="{}", slug=slug.replace("_", "-")
+    def compute_format(item, fmt, mode):
+        identity = item.replace(" ", "-")
+        slug = TedHandler.get_playlist_slug(item) if mode == "playlist" else identity
+        return fmt.format(identity=identity, period="{}", slug=slug.replace("_", "-"))
+
+    @staticmethod
+    def get_playlist_slug(item):
+        return requests.get(f"https://www.ted.com/playlists/{item}").url.replace(
+            f"https://www.ted.com/playlists/{item}/", ""
         )
 
     @staticmethod
@@ -226,15 +232,11 @@ class TedHandler(object):
                 "--topics",
                 item,
             ]
-            slug = item.replace(" ", "-")
         elif mode == "playlist":
             args += [
                 "--playlist",
                 item,
             ]
-            slug = requests.get(f"https://www.ted.com/playlists/{item}").url.replace(
-                f"https://www.ted.com/playlists/{item}/", ""
-            )
         else:
             raise ValueError(f"Unsupported mode {mode}")
 
@@ -254,7 +256,7 @@ class TedHandler(object):
             )
 
             if value:  # only set arg if we have a value so it can be defaulted
-                args += [f"--{key}", self.compute_format(item, slug, str(value))]
+                args += [f"--{key}", self.compute_format(item, str(value), mode)]
 
         # append regular ted2zim args
         args += self.extra_args
