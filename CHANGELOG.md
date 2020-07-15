@@ -1,6 +1,7 @@
 # 2.0.5.dev0
 
 - use pylibzim to create zim
+- add variable "{slug}" in ted2zim-multi which will be replaced by the playlist/topic slug (with dashes) automatically
 
 # 2.0.4
 

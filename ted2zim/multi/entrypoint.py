@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog=f"{NAME}-multi",
         description="Scraper to create ZIM file(s) from TED topic(s) or playlist(s)",
-        epilog="All titles, descriptions and names can use the {identity} to get playlist ID or topic name (with underscores) in each case",
+        epilog="All titles, descriptions and names can use the variables {identity} to get playlist ID or topic name (with dashes) in each case, or {slug} to get the slug (with dashes)",
         allow_abbrev=False,
     )
 
