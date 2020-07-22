@@ -63,6 +63,9 @@ a:hover {
 #title-img {
     width: 280px;
     padding-top: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 #meta-data {
@@ -276,12 +279,13 @@ div.backtotop {
     height: 35px;
     display: flex;
     display: -webkit-flex;
-    float: left;
+    margin-left: auto;
+    margin-right: auto;
     color: #000000;
     cursor: pointer;
 }
 
-.pagination {
+#pagination {
     margin: auto 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     border-radius: 5px;
@@ -290,15 +294,16 @@ div.backtotop {
     height: 35px;
     display: flex;
     display: -webkit-flex;
-    float: right;
+    margin-left: auto;
+    margin-right: auto;
     color: #000000;
 }
 
-.pagination-text {
+#pagination-text {
     margin: auto;
 }
 
-.left-arrow {
+#left-arrow {
     cursor: pointer;
     width:20px;
     padding-left:20px;
@@ -306,7 +311,7 @@ div.backtotop {
     margin: auto;
 }
 
-.right-arrow {
+#right-arrow {
     cursor: pointer;
     width:20px;
     padding-left:20px;
@@ -335,3 +340,6 @@ a.nostyle:active {
     color: #000000;
 }
 
+.chosen-container.chosen-container-single {
+    width: 240px !important;
+}
