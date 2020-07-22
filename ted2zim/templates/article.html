@@ -24,16 +24,17 @@
             {% for title in titles %}
             <p class="title lang-{{ title.lang }}">{{ title.text }}</p>
             {% endfor %}
-            <video class="video-js vjs-default-skin"
-                controls preload="auto"
-                poster="videos/{{ video_id }}/thumbnail.jpg"
-                width="480px" height="270px"
-                data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
-                <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />
-                    {% for language in languages %}
-                    <track kind="subtitles" src="videos/{{ video_id }}/subs/subs_{{ language.languageCode }}.vtt" srclang="{{ language.languageCode }}" label="{{ language.languageName }}" />
-                    {% endfor %}
+            <div id="video-wrapper">
+                <video class="video-js vjs-default-skin vjs-fill"
+                    controls preload="auto"
+                    poster="videos/{{ video_id }}/thumbnail.jpg"
+                    data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
+                    <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />
+                        {% for language in languages %}
+                        <track kind="subtitles" src="videos/{{ video_id }}/subs/subs_{{ language.languageCode }}.vtt" srclang="{{ language.languageCode }}" label="{{ language.languageName }}" />
+                        {% endfor %}
                 </video>
+            </div>
                 <div id="descriptions">
                     {% for description in descriptions %}
                     <p class="description lang-{{ description.lang }}">{{ description.text }}</p>

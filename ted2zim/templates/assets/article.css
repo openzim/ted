@@ -87,6 +87,11 @@ hr {
     font-size: 30px;
 }
 
+#video-wrapper {
+    max-width: 480px;
+    height: 270px;
+}
+
 #speaker_img {
     width: 125px;
     height: auto;
@@ -112,14 +117,13 @@ hr {
 }
 
 #speaker_desc {
-    width: 480px;
+    width: auto;
     margin: 0;
     font-family: "RobotoLight";
 }
 
 #date {
     text-align: right;
-    width: 480px;
     max-width:100%;
 }
 

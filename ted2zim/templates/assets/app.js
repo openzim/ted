@@ -48,16 +48,15 @@ function setupLanguageFilter() {
 */
 function setupPagination() {
 
-    function handlePagination(){
+  function handlePagination(){
 	var data = videoDB.getPage(videoDB.getPageNumber());
 	refreshVideos(undefined, data);
 	refreshPagination();
 	window.scrollTo(0, 0);
-    }
+  }
 
-    for (var i = 0 ; i<2 ; i++) {
-	var leftArrow = document.getElementsByClassName('left-arrow')[i];
-	var rightArrow = document.getElementsByClassName('right-arrow')[i];
+	var leftArrow = document.getElementById('left-arrow');
+	var rightArrow = document.getElementById('right-arrow');
 	
 	leftArrow.onclick = function() {
 	    videoDB.pageBackwards(function() {
@@ -70,7 +69,6 @@ function setupPagination() {
 		handlePagination();
 	    });
 	}
-    }
 }
 
 /**
@@ -78,15 +76,13 @@ function setupPagination() {
  * if a new language has been applied.
  */
 function refreshPagination() {
-    var pageCount = videoDB.getPageCount();
-
-    for (var i = 0 ; i<2 ; i++) {
-	var pageBox = document.getElementsByClassName('pagination')[i];
-	var leftArrow = document.getElementsByClassName('left-arrow')[i];
-	var rightArrow = document.getElementsByClassName('right-arrow')[i];
+  var pageCount = videoDB.getPageCount();
+	var pageBox = document.getElementById('pagination');
+	var leftArrow = document.getElementById('left-arrow');
+	var rightArrow = document.getElementById('right-arrow');
 	
 	if (pageCount > 1) {
-	    var pageText = document.getElementsByClassName('pagination-text')[i];
+	    var pageText = document.getElementById('pagination-text');
 	    var pageNumber = videoDB.getPageNumber();
 	    pageText.innerHTML = 'Page ' + pageNumber + '/' + pageCount;
 	    
@@ -107,7 +103,6 @@ function refreshPagination() {
 	    leftArrow.style.visibility = 'hidden';
 	    rightArrow.style.visibility = 'hidden';	
 	}
-    }
 }
 
 /**
