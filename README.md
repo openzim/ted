@@ -1,34 +1,12 @@
-<h1 align="center">ted2zim</h1>
+# ted2zim
 
-<div align="center">
-  <strong>Get the best :bulb: TED videos offline :arrow_down:</strong>
-</div>
-<div align="center">
-  An offliner to create ZIM :package: files from TED talks
-</div>
+##### Get the best :bulb: TED videos offline :arrow_down:
+An offliner to create ZIM :package: files from TED talks
 
-<br />
-
-<div align="center">
-  <!-- PyPI version -->
-  <a href="https://pypi.org/project/ted2zim/">
-    <img alt="PyPI" src="https://img.shields.io/pypi/v/ted2zim?style=for-the-badge">
-  </a>
-  <!-- Docker version -->
-  <a href="https://hub.docker.com/r/openzim/ted">
-    <img alt="Docker" src="https://img.shields.io/docker/build/openzim/ted?style=for-the-badge">
-  </a>
-  <!-- Codefactor grade -->
-  <a href="https://www.codefactor.io/repository/github/openzim/ted">
-    <img alt="CodeFactor Grade"
-     src="https://img.shields.io/codefactor/grade/github/openzim/ted/master?label=codefactor&style=for-the-badge">
-  </a>
-  <!-- License -->
-  <a href="https://www.gnu.org/licenses/gpl-3.0">
-    <img alt="GitHub" src="https://img.shields.io/github/license/openzim/ted?color=blueviolet&style=for-the-badge">
-  </a>
-</div>
-
+[![PyPI](https://img.shields.io/pypi/v/ted2zim?style=for-the-badge)](https://pypi.org/project/ted2zim/)
+[![Docker](https://img.shields.io/docker/build/openzim/ted?style=for-the-badge)](https://hub.docker.com/r/openzim/ted)
+[![Codefactor Grade](https://img.shields.io/codefactor/grade/github/openzim/ted/master?label=codefactor&style=for-the-badge)](https://www.codefactor.io/repository/github/openzim/ted)
+[![License](https://img.shields.io/github/license/openzim/ted?color=blueviolet&style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. One can eaisly find all the TED videos [here](https://ted.com/talks).
 
