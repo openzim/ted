@@ -1,3 +1,7 @@
+# 2.0.6.dev0
+
+- n/a
+
 # 2.0.5
 
 - use pylibzim to create zim
