@@ -1,6 +1,6 @@
 # 2.0.6.dev0
 
-- n/a
+- [multi] added retry over failure to get playlist slug
 
 # 2.0.5
 

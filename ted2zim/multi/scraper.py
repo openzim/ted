@@ -4,6 +4,7 @@
 
 
 import sys
+import time
 import json
 import pathlib
 import datetime
@@ -60,9 +61,14 @@ class TedHandler(object):
 
     @staticmethod
     def get_playlist_slug(item):
-        return requests.get(f"https://www.ted.com/playlists/{item}").url.replace(
-            f"https://www.ted.com/playlists/{item}/", ""
-        )
+        partial_url = f"https://www.ted.com/playlists/{item}/"
+        for attempt in range(5):
+            resp = requests.get(partial_url, allow_redirects=True)
+            if resp.status_code == 200:
+                # we get the slug from the final url after the partial url gets redirected
+                return resp.url.replace(partial_url, "")
+            time.sleep(30 * attempt)
+        raise Exception(f"Could not get slug for playlist {item}")
 
     @staticmethod
     def download_playlists_list_from_site(topics_list):
