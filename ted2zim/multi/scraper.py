@@ -7,10 +7,12 @@ import sys
 import time
 import json
 import pathlib
+import urllib
 import datetime
 import subprocess
 
 import requests
+from slugify import slugify
 from zimscraperlib.logging import nicer_args_join
 from kiwixstorage import KiwixStorage
 
@@ -68,7 +70,10 @@ class TedHandler(object):
             resp = requests.get(partial_url, allow_redirects=True)
             if resp.status_code == 200:
                 # we get the slug from the final url after the partial url gets redirected
-                return resp.url.replace(partial_url, "")
+                return slugify(
+                    urllib.parse.unquote(resp.url.replace(partial_url, "")),
+                    separator="-",
+                )
             time.sleep(30 * attempt)
         raise Exception(f"Could not get slug for playlist {item}")
 
