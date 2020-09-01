@@ -151,10 +151,10 @@ class Ted2Zim:
         return BASE_URL + "playlists"
 
     def append_part1_or_part3(self, lang_code_list, lang_info):
-        """ Fills missing ISO languages codes for all in list
+        """Fills missing ISO languages codes for all in list
 
-            lang_code_list: list og lang codes
-            lang_info: see zimscraperlib.i18n """
+        lang_code_list: list og lang codes
+        lang_info: see zimscraperlib.i18n"""
 
         # ignore extra language mappings if supplied query was an iso-639-1 code
         if "part1" in lang_info["iso_types"]:
@@ -175,11 +175,11 @@ class Ted2Zim:
                 logger.error(f"Language {supplied_lang} is not supported by TED")
 
     def to_ted_langcodes(self, languages):
-        """ Converts languages queries into TED language codes
+        """Converts languages queries into TED language codes
 
-            Examples:
-                ["English", "fr", "hin"] => ["en", "fr", "hi"]
-                ["chi", "fake"] => ["zh", "zh-cn", "zh-tw"]
+        Examples:
+            ["English", "fr", "hin"] => ["en", "fr", "hi"]
+            ["chi", "fake"] => ["zh", "zh-cn", "zh-tw"]
         """
 
         lang_code_list = []
@@ -199,9 +199,9 @@ class Ted2Zim:
         return list(set(lang_code_list))
 
     def extract_videos_from_playlist(self, playlist):
-        """ extracts metadata for all videos in the given playlist
+        """extracts metadata for all videos in the given playlist
 
-            calls extract_video_info on all links to get this data
+        calls extract_video_info on all links to get this data
         """
 
         playlist_url = f"{self.playlists_base_url}/{playlist}"
@@ -310,7 +310,7 @@ class Ted2Zim:
         return lang_name
 
     def get_subtitle_dict(self, lang):
-        """ dict of language name and code from a larger dict lang
+        """dict of language name and code from a larger dict lang
 
         Example:
         {

@@ -22,7 +22,9 @@ logger = getLogger()
 
 class TedHandler(object):
     def __init__(
-        self, options, extra_args,
+        self,
+        options,
+        extra_args,
     ):
         # save options as properties
         for key, value in options.items():
@@ -185,8 +187,8 @@ class TedHandler(object):
                 return process.returncode
 
     def preprocess_inputs(self, mode):
-        """ Prepare the playlist and topic list if all is passed.
-            Also automatically set self.indiv_zims if not already set and multiple playlists """
+        """Prepare the playlist and topic list if all is passed.
+        Also automatically set self.indiv_zims if not already set and multiple playlists"""
         if mode == "topic":
             if self.topics == ["all"]:
                 self.topics = [

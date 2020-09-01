@@ -19,7 +19,8 @@ def main():
     )
 
     parser.add_argument(
-        "--playlist", help="A playlist ID from ted.com/playlists to scrape videos from",
+        "--playlist",
+        help="A playlist ID from ted.com/playlists to scrape videos from",
     )
 
     parser.add_argument(
@@ -69,7 +70,8 @@ def main():
     )
 
     parser.add_argument(
-        "--title", help="Custom title for your ZIM. Based on selection otherwise.",
+        "--title",
+        help="Custom title for your ZIM. Based on selection otherwise.",
     )
 
     parser.add_argument(

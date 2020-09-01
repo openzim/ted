@@ -59,9 +59,9 @@ class WebVTT:
 
     @staticmethod
     def miliseconds_to_human(miliseconds):
-        """ Human/VTT formatted time code from miliseconds
+        """Human/VTT formatted time code from miliseconds
 
-            ex: 00:00:00.000 """
+        ex: 00:00:00.000"""
 
         hours, remainder = divmod(miliseconds, 3600000)
         minutes, remainder = divmod(remainder, 60000)
@@ -70,17 +70,17 @@ class WebVTT:
 
     @staticmethod
     def json_to_vtt(json_subtitles, offset=11820):
-        """ WebVTT string from TED JSON subtitles list
+        """WebVTT string from TED JSON subtitles list
 
-            TED format: {"captions": [
-                {'duration': 1726,
-                 'content': 'And more concretely,',
-                 'startOfParagraph': False,
-                 'startTime': 382083
-                },
-            ]}
+        TED format: {"captions": [
+            {'duration': 1726,
+             'content': 'And more concretely,',
+             'startOfParagraph': False,
+             'startTime': 382083
+            },
+        ]}
 
-            https://en.wikipedia.org/wiki/WebVTT """
+        https://en.wikipedia.org/wiki/WebVTT"""
 
         document = "WEBVTT\n\n"
         if "captions" in json_subtitles:

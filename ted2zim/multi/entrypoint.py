@@ -45,11 +45,13 @@ def main():
     )
 
     parser.add_argument(
-        "--title-format", help="Custom title format for individual ZIMs",
+        "--title-format",
+        help="Custom title format for individual ZIMs",
     )
 
     parser.add_argument(
-        "--description-format", help="Custom description format for individual ZIMs",
+        "--description-format",
+        help="Custom description format for individual ZIMs",
     )
 
     parser.add_argument(
