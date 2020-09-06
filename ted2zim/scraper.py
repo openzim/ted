@@ -13,6 +13,7 @@ import urllib.parse
 
 import jinja2
 from bs4 import BeautifulSoup
+from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.zim import make_zim_file
 from zimscraperlib.i18n import get_language_details
 from zimscraperlib.download import save_large_file
@@ -710,6 +711,17 @@ class Ted2Zim:
     def download_video_files(self):
         """ download all video files (video, thumbnail, speaker) """
 
+        def download_jpeg_image_and_convert(url, fpath):
+            """ downloads a JPEG image and converts and optimizes it into desired format detected from fpath """
+
+            org_jpeg_path = pathlib.Path(
+                tempfile.NamedTemporaryFile(
+                    dir=video_dir, delete=False, suffix=".jpg"
+                ).name
+            )
+            save_large_file(url, org_jpeg_path)
+            optimize_image(org_jpeg_path, fpath, convert=True, delete_src=True)
+
         # Download all the TED talk videos and the meta-data for it.
         # Save the videos in build_dir/{video id}/video.mp4.
         # Save the thumbnail for the video in build_dir/{video id}/thumbnail.jpg.
@@ -725,8 +737,8 @@ class Ted2Zim:
             video_dir = self.videos_dir.joinpath(video_id)
             org_video_file_path = video_dir.joinpath("video.mp4")
             req_video_file_path = video_dir.joinpath(f"video.{self.video_format}")
-            speaker_path = video_dir.joinpath("speaker.jpg")
-            thumbnail_path = video_dir.joinpath("thumbnail.jpg")
+            speaker_path = video_dir.joinpath("speaker.webp")
+            thumbnail_path = video_dir.joinpath("thumbnail.webp")
 
             # ensure that video directory exists
             if not video_dir.exists():
@@ -754,11 +766,11 @@ class Ted2Zim:
                 logger.debug("Speaker doesn't have an image")
             else:
                 logger.debug(f"Downloading Speaker image for {video_title}")
-                save_large_file(video_speaker, speaker_path)
+                download_jpeg_image_and_convert(video_speaker, speaker_path)
 
             # download the thumbnail of the video
             logger.debug(f"Downloading thumbnail for {video_title}")
-            save_large_file(video_thumbnail, thumbnail_path)
+            download_jpeg_image_and_convert(video_thumbnail, thumbnail_path)
 
             # recompress if necessary
             try:
