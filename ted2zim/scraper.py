@@ -13,6 +13,8 @@ import urllib.parse
 
 import jinja2
 from bs4 import BeautifulSoup
+from zimscraperlib.image.presets import WebpMedium
+from zimscraperlib.image.transformation import resize_image
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.zim import make_zim_file
 from zimscraperlib.i18n import get_language_details
@@ -708,19 +710,85 @@ class Ted2Zim:
         with open(assets_path.joinpath("data.js"), "w") as data_file:
             data_file.write("json_data = " + json.dumps(video_list, indent=4))
 
+    def download_jpeg_image_and_convert(
+        self, url, fpath, preset_options={}, resize=None
+    ):
+        """ downloads a JPEG image and converts and optimizes it into desired format detected from fpath """
+
+        org_jpeg_path = pathlib.Path(
+            tempfile.NamedTemporaryFile(delete=False, suffix=".jpg").name
+        )
+        save_large_file(url, org_jpeg_path)
+        if resize is not None:
+            resize_image(
+                org_jpeg_path,
+                width=resize[0],
+                height=resize[1],
+                method="cover",
+            )
+        optimize_image(
+            org_jpeg_path, fpath, convert=True, delete_src=True, **preset_options
+        )
+        logger.debug(f"Converted {org_jpeg_path} to {fpath} and optimized ")
+
+    def download_speaker_image(
+        self, video_id, video_title, video_speaker, speaker_path
+    ):
+        """ downloads the speaker image """
+
+        downloaded_from_cache = False
+        preset = WebpMedium()
+        if self.s3_storage:
+            s3_key = f"speaker_image/{video_id}"
+            downloaded_from_cache = self.download_from_cache(
+                s3_key, speaker_path, preset.VERSION
+            )
+        if not downloaded_from_cache:
+            try:
+                # download an image of the speaker
+                if not video_speaker:
+                    logger.debug("Speaker doesn't have an image")
+                else:
+                    logger.debug(f"Downloading Speaker image for {video_title}")
+                    self.download_jpeg_image_and_convert(
+                        video_speaker, speaker_path, preset_options=preset.options
+                    )
+            except Exception:
+                logger.error(f"Could not download speaker image for {video_title}")
+            else:
+                if self.s3_storage:
+                    self.upload_to_cache(s3_key, speaker_path, preset.VERSION)
+
+    def download_thumbnail(
+        self, video_id, video_title, video_thumbnail, thumbnail_path
+    ):
+        """ download the thumbnail """
+
+        downloaded_from_cache = False
+        preset = WebpMedium()
+        if self.s3_storage:
+            s3_key = f"thumbnail/{video_id}"
+            downloaded_from_cache = self.download_from_cache(
+                s3_key, thumbnail_path, preset.VERSION
+            )
+        if not downloaded_from_cache:
+            try:
+                # download the thumbnail of the video
+                logger.debug(f"Downloading thumbnail for {video_title}")
+                self.download_jpeg_image_and_convert(
+                    video_thumbnail,
+                    thumbnail_path,
+                    preset_options=preset.options,
+                    resize=(248, 187),
+                )
+            except Exception:
+                logger.error(f"Could not download thumbnail for {video_title}")
+            else:
+                if self.s3_storage:
+                    self.upload_to_cache(s3_key, thumbnail_path, preset.VERSION)
+
     def download_video_files(self):
         """ download all video files (video, thumbnail, speaker) """
-
-        def download_jpeg_image_and_convert(url, fpath):
-            """ downloads a JPEG image and converts and optimizes it into desired format detected from fpath """
-
-            org_jpeg_path = pathlib.Path(
-                tempfile.NamedTemporaryFile(
-                    dir=video_dir, delete=False, suffix=".jpg"
-                ).name
-            )
-            save_large_file(url, org_jpeg_path)
-            optimize_image(org_jpeg_path, fpath, convert=True, delete_src=True)
 
         # Download all the TED talk videos and the meta-data for it.
         # Save the videos in build_dir/{video id}/video.mp4.
@@ -761,16 +829,13 @@ class Ted2Zim:
                 except Exception:
                     logger.error(f"Could not download {org_video_file_path}")
 
-            # download an image of the speaker
-            if not video_speaker:
-                logger.debug("Speaker doesn't have an image")
-            else:
-                logger.debug(f"Downloading Speaker image for {video_title}")
-                download_jpeg_image_and_convert(video_speaker, speaker_path)
-
-            # download the thumbnail of the video
-            logger.debug(f"Downloading thumbnail for {video_title}")
-            download_jpeg_image_and_convert(video_thumbnail, thumbnail_path)
+            # download speaker and thumbnail images
+            self.download_speaker_image(
+                video_id, video_title, video_speaker, speaker_path
+            )
+            self.download_thumbnail(
+                video_id, video_title, video_thumbnail, thumbnail_path
+            )
 
             # recompress if necessary
             try:
@@ -836,7 +901,7 @@ class Ted2Zim:
             return False
         return True
 
-    def download_from_cache(self, key, video_path, encoder_version):
+    def download_from_cache(self, key, object_path, encoder_version):
         """ whether it downloaded from S3 cache """
 
         if self.use_any_optimized_version:
@@ -847,26 +912,26 @@ class Ted2Zim:
                 key, tag="encoder_version", value=f"v{encoder_version}"
             ):
                 return False
-        video_path.parent.mkdir(parents=True, exist_ok=True)
+        object_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            self.s3_storage.download_file(key, video_path)
+            self.s3_storage.download_file(key, object_path)
         except Exception as exc:
             logger.error(f"{key} failed to download from cache: {exc}")
             return False
-        logger.info(f"downloaded {video_path} from cache at {key}")
+        logger.info(f"downloaded {object_path} from cache at {key}")
         return True
 
-    def upload_to_cache(self, key, video_path, encoder_version):
+    def upload_to_cache(self, key, object_path, encoder_version):
         """ whether it uploaded from S3 cache """
 
         try:
             self.s3_storage.upload_file(
-                video_path, key, meta={"encoder_version": f"v{encoder_version}"}
+                object_path, key, meta={"encoder_version": f"v{encoder_version}"}
             )
         except Exception as exc:
             logger.error(f"{key} failed to upload to cache: {exc}")
             return False
-        logger.info(f"uploaded {video_path} to cache at {key}")
+        logger.info(f"uploaded {object_path} to cache at {key}")
         return True
 
     def remove_failed_topics_and_check_extraction(self, failed_topics):
