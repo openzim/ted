@@ -20,7 +20,9 @@ def post_process_video(
     """
 
     # find downloaded video from video_dir
-    files = [p for p in video_dir.iterdir() if p.stem == "video" and p.suffix != ".jpg"]
+    files = [
+        p for p in video_dir.iterdir() if p.stem == "video" and p.suffix != ".webp"
+    ]
     if len(files) == 0:
         logger.error(f"Video file missing in {video_dir} for {video_id}")
         logger.debug(list(video_dir.iterdir()))
