@@ -14,7 +14,7 @@ import concurrent.futures
 
 import jinja2
 from bs4 import BeautifulSoup
-from zimscraperlib.download import YoutubeDownloader
+from zimscraperlib.download import YoutubeDownloader, BestWebm, BestMp4
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
 from zimscraperlib.image.optimization import optimize_image
@@ -849,7 +849,16 @@ class Ted2Zim:
         if not downloaded_from_cache:
             try:
                 if "https://" not in video_link:
-                    self.yt_downloader.download(video_link, org_video_file_path)
+                    options = (
+                        BestWebm.get_options(
+                            target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
+                        )
+                        if self.video_format == "webm"
+                        else BestMp4.get_options(
+                            target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
+                        )
+                    )
+                    self.yt_downloader.download(video_link, options)
                 else:
                     save_large_file(video_link, org_video_file_path)
             except Exception:
@@ -861,14 +870,14 @@ class Ted2Zim:
 
         # recompress if necessary
         try:
-            post_process_video(
-                video_dir,
-                video_id,
-                preset,
-                self.video_format,
-                self.low_quality,
-                downloaded_from_cache,
-            )
+            if not downloaded_from_cache:
+                post_process_video(
+                    video_dir,
+                    video_id,
+                    preset,
+                    self.video_format,
+                    self.low_quality,
+                )
         except Exception as e:
             logger.error(f"Failed to post process video {video_id}")
             logger.debug(e)

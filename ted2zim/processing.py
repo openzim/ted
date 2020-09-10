@@ -10,9 +10,7 @@ from .constants import getLogger
 logger = getLogger()
 
 
-def post_process_video(
-    video_dir, video_id, preset, video_format, low_quality, skip_recompress
-):
+def post_process_video(video_dir, video_id, preset, video_format, low_quality):
     """apply custom post-processing to downloaded video
 
     - resize thumbnail
@@ -34,7 +32,7 @@ def post_process_video(
     src_path = files[0]
 
     # don't reencode if not requesting low-quality and received wanted format
-    if skip_recompress or (not low_quality and src_path.suffix[1:] == video_format):
+    if not low_quality and src_path.suffix[1:] == video_format:
         return
 
     dst_path = src_path.parent.joinpath(f"video.{video_format}")
