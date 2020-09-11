@@ -850,13 +850,9 @@ class Ted2Zim:
             try:
                 if "https://" not in video_link:
                     options = (
-                        BestWebm.get_options(
-                            target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
-                        )
-                        if self.video_format == "webm"
-                        else BestMp4.get_options(
-                            target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
-                        )
+                        BestWebm if self.video_format == "webm" else BestMp4
+                    ).get_options(
+                        target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
                     )
                     self.yt_downloader.download(video_link, options)
                 else:

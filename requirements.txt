@@ -1,5 +1,5 @@
 python-dateutil==2.8.1
-zimscraperlib@git+git://github.com/openzim/python_scraperlib@youtube_downloader#egg=zimscraperlib
+zimscraperlib>=1.3.3,<1.4
 requests>=2.23,<3.0
 beautifulsoup4==4.9.1
 Jinja2==2.10.1
