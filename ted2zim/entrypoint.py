@@ -141,6 +141,13 @@ def main():
     )
 
     parser.add_argument(
+        "--threads",
+        help="Maximum number of parallel threads to use",
+        default=1,
+        type=int,
+    )
+
+    parser.add_argument(
         "--version",
         help="Display scraper version and exit",
         action="version",
@@ -168,6 +175,9 @@ def main():
             parser.error("Either --topics or --playlist is required")
         if not args.subtitles_setting:
             parser.error("--subtitles cannot take an empty string")
+
+        if not args.threads >= 1:
+            parser.error("--threads must be provided a positive integer")
 
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()

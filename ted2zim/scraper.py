@@ -10,9 +10,11 @@ import shutil
 import tempfile
 import datetime
 import urllib.parse
+import concurrent.futures
 
 import jinja2
 from bs4 import BeautifulSoup
+from zimscraperlib.download import YoutubeDownloader, BestWebm, BestMp4
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
 from zimscraperlib.image.optimization import optimize_image
@@ -65,6 +67,7 @@ class Ted2Zim:
         subtitles_enough,
         subtitles_setting,
         tmp_dir,
+        threads,
     ):
 
         # video-encoding info
@@ -107,6 +110,8 @@ class Ted2Zim:
                 [lang.strip() for lang in subtitles_setting.split(",")]
             )
         )
+        self.threads = threads
+        self.yt_downloader = None
 
         # optimization cache
         self.s3_url_with_credentials = s3_url_with_credentials
@@ -419,6 +424,28 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
+    def extract_download_link(self, talk_info):
+        """ Returns download link / youtube video ID for a TED video """
+
+        download_links = talk_info["downloads"]["nativeDownloads"]
+        if not download_links:
+            logger.error(
+                "No direct download links found for the video. Trying to fetch YouTube link"
+            )
+            external_downloads = talk_info["player_talks"][0]["external"]
+            if external_downloads["service"] == "YouTube":
+                try:
+                    return external_downloads["code"]
+                except KeyError:
+                    logger.error("No download link found for the video")
+                    return None
+        else:
+            try:
+                return download_links["medium"]
+            except KeyError:
+                logger.error("No link to download video in medium quality")
+                return None
+
     def update_videos_list(
         self,
         video_id,
@@ -529,13 +556,9 @@ class Ted2Zim:
         date = dateutil.parser.parse(talk_info["recorded_at"]).strftime("%d %B %Y")
         length = int(talk_info["duration"]) // 60
         thumbnail = talk_info["player_talks"][0]["thumb"]
-        download_links = talk_info["downloads"]["nativeDownloads"]
-        if not download_links:
-            logger.error("No direct download links found for the video")
-            return False
-        video_link = download_links["medium"]
+        video_link = self.extract_download_link(talk_info)
         if not video_link:
-            logger.error("No link to download video in medium quality")
+            logger.error("No suitable download link found. Skipping video")
             return False
 
         langs = talk_info["player_talks"][0]["languages"]
@@ -756,7 +779,7 @@ class Ted2Zim:
             except Exception:
                 logger.error(f"Could not download speaker image for {video_title}")
             else:
-                if self.s3_storage:
+                if self.s3_storage and video_speaker:
                     self.upload_to_cache(s3_key, speaker_path, preset.VERSION)
 
     def download_thumbnail(
@@ -787,105 +810,135 @@ class Ted2Zim:
                 if self.s3_storage:
                     self.upload_to_cache(s3_key, thumbnail_path, preset.VERSION)
 
-    def download_video_files(self):
+    def download_video_files(self, video):
         """ download all video files (video, thumbnail, speaker) """
 
         # Download all the TED talk videos and the meta-data for it.
         # Save the videos in build_dir/{video id}/video.mp4.
         # Save the thumbnail for the video in build_dir/{video id}/thumbnail.jpg.
         # Save the image of the speaker in build_dir/{video id}/speaker.jpg.
-        for video in self.videos:
-            # set up variables
-            video_id = str(video["id"])
-            # Take the english version of title or else whatever language it's available in
-            video_title = video["title"][0]["text"]
-            video_link = video["video_link"]
-            video_speaker = video["speaker_picture"]
-            video_thumbnail = video["thumbnail"]
-            video_dir = self.videos_dir.joinpath(video_id)
-            org_video_file_path = video_dir.joinpath("video.mp4")
-            req_video_file_path = video_dir.joinpath(f"video.{self.video_format}")
-            speaker_path = video_dir.joinpath("speaker.webp")
-            thumbnail_path = video_dir.joinpath("thumbnail.webp")
 
-            # ensure that video directory exists
-            if not video_dir.exists():
-                video_dir.mkdir(parents=True)
+        # set up variables
+        video_id = str(video["id"])
+        # Take the english version of title or else whatever language it's available in
+        video_title = video["title"][0]["text"]
+        video_link = video["video_link"]
+        video_speaker = video["speaker_picture"]
+        video_thumbnail = video["thumbnail"]
+        video_dir = self.videos_dir.joinpath(video_id)
+        org_video_file_path = video_dir.joinpath("video.mp4")
+        req_video_file_path = video_dir.joinpath(f"video.{self.video_format}")
+        speaker_path = video_dir.joinpath("speaker.webp")
+        thumbnail_path = video_dir.joinpath("thumbnail.webp")
 
-            # set preset
-            preset = {"mp4": VideoMp4Low}.get(self.video_format, VideoWebmLow)()
+        # ensure that video directory exists
+        if not video_dir.exists():
+            video_dir.mkdir(parents=True)
 
-            # download video
-            downloaded_from_cache = False
-            logger.debug(f"Downloading {video_title}")
-            if self.s3_storage:
-                s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
-                downloaded_from_cache = self.download_from_cache(
-                    s3_key, req_video_file_path, preset.VERSION
-                )
-            if not downloaded_from_cache:
-                try:
-                    save_large_file(video_link, org_video_file_path)
-                except Exception:
-                    logger.error(f"Could not download {org_video_file_path}")
+        # set preset
+        preset = {"mp4": VideoMp4Low}.get(self.video_format, VideoWebmLow)()
 
-            # download speaker and thumbnail images
-            self.download_speaker_image(
-                video_id, video_title, video_speaker, speaker_path
+        # download video
+        downloaded_from_cache = False
+        logger.debug(f"Downloading {video_title}")
+        if self.s3_storage:
+            s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
+            downloaded_from_cache = self.download_from_cache(
+                s3_key, req_video_file_path, preset.VERSION
             )
-            self.download_thumbnail(
-                video_id, video_title, video_thumbnail, thumbnail_path
-            )
-
-            # recompress if necessary
+        if not downloaded_from_cache:
             try:
+                if "https://" not in video_link:
+                    options = (
+                        BestWebm if self.video_format == "webm" else BestMp4
+                    ).get_options(
+                        target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
+                    )
+                    self.yt_downloader.download(video_link, options)
+                else:
+                    save_large_file(video_link, org_video_file_path)
+            except Exception:
+                logger.error(f"Could not download {org_video_file_path}")
+
+        # download speaker and thumbnail images
+        self.download_speaker_image(video_id, video_title, video_speaker, speaker_path)
+        self.download_thumbnail(video_id, video_title, video_thumbnail, thumbnail_path)
+
+        # recompress if necessary
+        try:
+            if not downloaded_from_cache:
                 post_process_video(
                     video_dir,
                     video_id,
                     preset,
                     self.video_format,
                     self.low_quality,
-                    downloaded_from_cache,
                 )
-            except Exception as e:
-                logger.error(f"Failed to post process video {video_id}")
-                logger.debug(e)
-            else:
-                # upload to cache only if recompress was successful
-                if self.s3_storage and not downloaded_from_cache:
-                    self.upload_to_cache(s3_key, req_video_file_path, preset.VERSION)
+        except Exception as e:
+            logger.error(f"Failed to post process video {video_id}")
+            logger.debug(e)
+        else:
+            # upload to cache only if recompress was successful
+            if self.s3_storage and not downloaded_from_cache:
+                self.upload_to_cache(s3_key, req_video_file_path, preset.VERSION)
 
-    def download_subtitles(self):
-        """ download, converts and writes VTT subtitles for all videos """
+    def download_video_files_parallel(self):
+        """ download videos and images parallely """
+
+        self.yt_downloader = YoutubeDownloader(threads=1 if self.threads == 1 else 2)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.threads
+        ) as executor:
+            fs = [
+                executor.submit(self.download_video_files, video)
+                for video in self.videos
+            ]
+            concurrent.futures.wait(fs, return_when=concurrent.futures.ALL_COMPLETED)
+        self.yt_downloader.shutdown()
+
+    def download_subtitles(self, index, video):
+        """ download, converts and writes VTT subtitles for a video at a specific index in self.videos """
+
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
         # build_dir/{video id}/subs/subs_{language code}.vtt
-        for index, video in enumerate(self.videos):
-            if not video["subtitles"]:
-                continue
-            video_dir = self.videos_dir.joinpath(video["id"])
-            subs_dir = video_dir.joinpath("subs")
-            if not subs_dir.exists():
-                subs_dir.mkdir(parents=True)
-            else:
-                logger.debug(f"Subs dir exists already")
+        if not video["subtitles"]:
+            return
+        video_dir = self.videos_dir.joinpath(video["id"])
+        subs_dir = video_dir.joinpath("subs")
+        if not subs_dir.exists():
+            subs_dir.mkdir(parents=True)
+        else:
+            logger.debug(f"Subs dir exists already")
 
-            # download subtitles
-            logger.debug(f"Downloading subtitles for {video['title'][0]['text']}")
-            valid_subs = []
-            for subtitle in video["subtitles"]:
-                time.sleep(0.5)  # throttling
-                vtt_subtitle = WebVTT(subtitle["link"]).convert()
-                if not vtt_subtitle:
-                    logger.error(
-                        f"Subtitle file for {subtitle['languageCode']} could not be created"
-                    )
-                    continue
-                valid_subs.append(subtitle)
-                vtt_path = subs_dir.joinpath(f"subs_{subtitle['languageCode']}.vtt")
-                with open(vtt_path, "w", encoding="utf-8") as sub_file:
-                    sub_file.write(vtt_subtitle)
-            self.videos[index]["subtitles"] = valid_subs
+        # download subtitles
+        logger.debug(f"Downloading subtitles for {video['title'][0]['text']}")
+        valid_subs = []
+        for subtitle in video["subtitles"]:
+            time.sleep(0.5)  # throttling
+            vtt_subtitle = WebVTT(subtitle["link"]).convert()
+            if not vtt_subtitle:
+                logger.error(
+                    f"Subtitle file for {subtitle['languageCode']} could not be created"
+                )
+                continue
+            valid_subs.append(subtitle)
+            vtt_path = subs_dir.joinpath(f"subs_{subtitle['languageCode']}.vtt")
+            with open(vtt_path, "w", encoding="utf-8") as sub_file:
+                sub_file.write(vtt_subtitle)
+        self.videos[index]["subtitles"] = valid_subs
+
+    def download_subtitles_parallel(self):
+        """ download subtitles for all videos parallely """
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.threads
+        ) as executor:
+            fs = [
+                executor.submit(self.download_subtitles, index, video)
+                for index, video in enumerate(self.videos)
+            ]
+            concurrent.futures.wait(fs, return_when=concurrent.futures.ALL_COMPLETED)
 
     def s3_credentials_ok(self):
         logger.info("Testing S3 Optimization Cache credentials")
@@ -976,8 +1029,8 @@ class Ted2Zim:
 
         self.add_default_language()
         self.update_zim_metadata()
-        self.download_video_files()
-        self.download_subtitles()
+        self.download_video_files_parallel()
+        self.download_subtitles_parallel()
         self.render_home_page()
         self.render_video_pages()
         self.copy_files_to_build_directory()

@@ -2,6 +2,7 @@
 
 - [multi] added retry over failure to get playlist slug
 - use WebP images instead of JPEG for thumbnails and speaker images
+- add multithreading support and ability to download videos hosted on youtube
 
 # 2.0.5
 
