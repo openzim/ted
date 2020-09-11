@@ -3,7 +3,6 @@
 # vim: ai ts=4 sts=4 et sw=4 nu
 
 from zimscraperlib.video.encoding import reencode
-from zimscraperlib.imaging import resize_image
 
 from .constants import getLogger
 
@@ -31,14 +30,6 @@ def post_process_video(
             f"Multiple video file candidates for {video_id} in {video_dir}. Picking {files[0]} out of {files}"
         )
     src_path = files[0]
-
-    # resize thumbnail. we use max width:248x187px in listing
-    resize_image(
-        src_path.parent.joinpath("thumbnail.jpg"),
-        width=248,
-        height=187,
-        method="cover",
-    )
 
     # don't reencode if not requesting low-quality and received wanted format
     if skip_recompress or (not low_quality and src_path.suffix[1:] == video_format):

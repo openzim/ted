@@ -15,7 +15,9 @@
         <script src="assets/ogvjs/ogv.js"></script>
         <script src="assets/videojs-ogvjs.js"></script>
         <script src="assets/jquery.min.js"></script>
-        <script src="assets/article.js"></script>        
+        <script src="assets/article.js"></script>
+        <script src="assets/polyfills.js"></script>
+        <script src="assets/webp-hero.bundle.js"></script>        
     </head>
     <body>
         <div id="content">
@@ -27,7 +29,7 @@
             <div id="video-wrapper">
                 <video class="video-js vjs-default-skin vjs-fill"
                     controls preload="auto"
-                    poster="videos/{{ video_id }}/thumbnail.jpg"
+                    poster="videos/{{ video_id }}/thumbnail.webp"
                     data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
                     <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />
                         {% for language in languages %}
@@ -45,7 +47,7 @@
                 <div id="speaker_box_img">
                     <div>
                         {% if speaker_img %}
-                          <img id="speaker_img" src="videos/{{ video_id }}/speaker.jpg">
+                          <img id="speaker_img" src="videos/{{ video_id }}/speaker.webp">
                         {% endif %}
                         <div id="speaker_info">
                             <div id="speaker_info_box">{{ speaker }}</div>
@@ -55,5 +57,21 @@
                     </div>
                 </div>
             </div>
+            <script>
+                $(document).ready(function() {
+                    webpHero.detectWebpSupport().then(function (support_webp){
+                        if (!support_webp) {
+                            console.log("no WebP support, polyfilling.");
+                            // un-hide ogvjs-poster so the polyfill can transform it
+                            $(".ogvjs-poster").css("visibility", "");
+                            // hide video-js poster (which uses background-image)
+                            $(".vjs-poster").css("display", "none");
+
+                            let webpMachine = new webpHero.WebpMachine();
+                            webpMachine.polyfillDocument();
+                        }
+                    });
+                });
+            </script>
         </body>
     </html>
