@@ -44,9 +44,14 @@
   <script src="assets/app.js"></script>
   <script>
     $(document).ready(function() {
-      let webpMachine = new webpHero.WebpMachine();
-      webpMachine.polyfillDocument();
-    });
+      webpHero.detectWebpSupport().then(function (support_webp){
+          if (!support_webp) {
+              console.log("no WebP support, polyfilling.");
+              let webpMachine = new webpHero.WebpMachine();
+              webpMachine.polyfillDocument();
+          }
+      });
+  });
   </script>
 </body>
 </html>
