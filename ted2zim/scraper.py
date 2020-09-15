@@ -428,23 +428,26 @@ class Ted2Zim:
         """ Returns download link / youtube video ID for a TED video """
 
         download_links = talk_info["downloads"]["nativeDownloads"]
-        if not download_links:
-            logger.error(
-                "No direct download links found for the video. Trying to fetch YouTube link"
-            )
-            external_downloads = talk_info["player_talks"][0]["external"]
-            if external_downloads["service"] == "YouTube":
-                try:
-                    return external_downloads["code"]
-                except KeyError:
-                    logger.error("No download link found for the video")
-                    return None
-        else:
-            try:
-                return download_links["medium"]
-            except KeyError:
-                logger.error("No link to download video in medium quality")
-                return None
+        if download_links:
+            for size in ("medium", "low", "high"):
+                if size in download_links:
+                    return download_links[size]
+            logger.error("No link to download video while we should have")
+            return None
+
+        talk_data = talk_info["player_talks"][0]
+        if talk_data.get("external", {}).get("service") == "YouTube" and talk_data[
+            "external"
+        ].get("code"):
+            logger.debug("Using Youtube link")
+            return talk_data["external"]["code"]
+
+        if talk_data.get("resources", {}).get("h264", [{"file": None}])[0]:
+            logger.debug("Using h264 resource link")
+            return talk_data["resources"]["h264"][0]["file"]
+
+        logger.error("No download link found for the video")
+        return None
 
     def update_videos_list(
         self,
