@@ -432,13 +432,17 @@ class Ted2Zim:
             logger.error(
                 "No direct download links found for the video. Trying to fetch YouTube link"
             )
-            external_downloads = talk_info["player_talks"][0]["external"]
-            if external_downloads["service"] == "YouTube":
-                try:
+            try:
+                external_downloads = talk_info["player_talks"][0]["external"]
+                if external_downloads["service"] == "YouTube":
                     return external_downloads["code"]
-                except KeyError:
-                    logger.error("No download link found for the video")
-                    return None
+            except KeyError:
+                logger.error("No youtube link found for the video")
+            try:
+                return talk_info["player_talks"][0]["resources"]["h264"][0]["file"]
+            except KeyError:
+                logger.error("No download link found for the video")
+                return None
         else:
             try:
                 return download_links["medium"]
