@@ -675,7 +675,7 @@ class Ted2Zim:
                 titles=video["title"],
                 descriptions=video["description"],
             )
-            html_path = self.build_dir.joinpath(f"{video_id}")
+            html_path = self.build_dir.joinpath(f"{video_id}/{titles})
             with open(html_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
