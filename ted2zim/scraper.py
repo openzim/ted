@@ -888,7 +888,7 @@ class Ted2Zim:
     def download_video_files_parallel(self):
         """ download videos and images parallely """
 
-        self.yt_downloader = YoutubeDownloader(threads=1 if self.threads == 1 else 2)
+        self.yt_downloader = YoutubeDownloader(threads=1)
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=self.threads
         ) as executor:
