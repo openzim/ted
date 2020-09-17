@@ -5,6 +5,8 @@
 import dateutil.parser
 import json
 import time
+import re
+import unidecode
 import pathlib
 import shutil
 import tempfile
@@ -660,6 +662,7 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
+                         
             video_id = str(video["id"])
 
             html = env.get_template("article.html").render(
@@ -675,7 +678,10 @@ class Ted2Zim:
                 titles=video["title"],
                 descriptions=video["description"],
             )
-            html_path = self.build_dir.joinpath(f"{titles})
+                         
+            text = unidecode.unidecode(titles).lower()
+            title_slug = re.sub(r'[\W_]+', '-', text)
+            html_path = self.build_dir.joinpath(f"{title_slug}")
             with open(html_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
