@@ -126,7 +126,7 @@ function refreshVideos(language, pageData) {
       var li = document.createElement('li');
       
       var a = document.createElement('a')
-      a.href =  video['id']+'.html?lang=' + lang;
+      a.href =  video['slug']+'?lang=' + lang;
       a.className = 'nostyle'
 
       var img = document.createElement('img');

@@ -14,6 +14,7 @@ import concurrent.futures
 
 import jinja2
 from bs4 import BeautifulSoup
+from slugify import slugify
 from zimscraperlib.download import YoutubeDownloader, BestWebm, BestMp4
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
@@ -643,7 +644,7 @@ class Ted2Zim:
                     video["description"] = [
                         {"lang": "default", "text": video["description"][index]["text"]}
                     ] + video["description"]
-                    break
+
             if not en_found:
                 video["title"] = [
                     {"lang": "default", "text": video["title"][0]["text"]}
@@ -651,6 +652,9 @@ class Ted2Zim:
                 video["description"] = [
                     {"lang": "default", "text": video["description"][0]["text"]}
                 ] + video["description"]
+
+            # update video slug
+            video["slug"] = slugify(video["title"][0]["text"], separator="-")
 
     def render_video_pages(self):
 
@@ -660,8 +664,6 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
-            video_id = str(video["id"])
-
             html = env.get_template("article.html").render(
                 speaker=video["speaker"],
                 languages=video["subtitles"],
@@ -671,11 +673,11 @@ class Ted2Zim:
                 profession=video["speaker_profession"],
                 video_format=self.video_format,
                 autoplay=self.autoplay,
-                video_id=video_id,
+                video_id=str(video["id"]),
                 titles=video["title"],
                 descriptions=video["description"],
             )
-            html_path = self.build_dir.joinpath(f"{video_id}.html")
+            html_path = self.build_dir.joinpath(video["slug"])
             with open(html_path, "w", encoding="utf-8") as html_page:
                 html_page.write(html)
 
@@ -696,7 +698,7 @@ class Ted2Zim:
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
         html = env.get_template("home.html").render(languages=languages)
-        home_page_path = self.build_dir.joinpath("index.html")
+        home_page_path = self.build_dir.joinpath("index")
         with open(home_page_path, "w", encoding="utf-8") as html_page:
             html_page.write(html)
 
@@ -727,6 +729,7 @@ class Ted2Zim:
                 "description": video["description"],
                 "title": video["title"],
                 "speaker": video["speaker"],
+                "slug": video["slug"],
             }
             video_list.append(json_data)
         assets_path = self.build_dir.joinpath("assets")
@@ -1051,7 +1054,7 @@ class Ted2Zim:
                 build_dir=self.build_dir,
                 fpath=self.output_dir.joinpath(self.fname),
                 name=self.name,
-                main_page="index.html",
+                main_page="index",
                 favicon="favicon.png",
                 title=self.title,
                 description=self.description,
