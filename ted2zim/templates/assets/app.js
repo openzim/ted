@@ -84,7 +84,7 @@ function refreshPagination() {
 	if (pageCount > 1) {
 	    var pageText = document.getElementById('pagination-text');
 	    var pageNumber = videoDB.getPageNumber();
-	    pageText.innerHTML = 'Page ' + pageNumber + '/' + pageCount;
+	    pageText.innerHTML += ' ' + pageNumber + '/' + pageCount;
 	    
 	    if (videoDB.getPageNumber() == 1) {
 		leftArrow.style.visibility = 'hidden';

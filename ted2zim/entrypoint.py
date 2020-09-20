@@ -28,6 +28,12 @@ def main():
     )
 
     parser.add_argument(
+        "--locale",
+        help="The locale to use in the UI (can be iso language code / locale)",
+        dest="locale_name",
+    )
+
+    parser.add_argument(
         "--subtitles-enough",
         help="Whether to include videos that have a subtitle in requested --languages if audio is in another language",
         default=False,
