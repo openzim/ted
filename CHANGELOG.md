@@ -5,6 +5,7 @@
 - add multithreading support and ability to download videos hosted on youtube
 - fixed usage on older browsers (without ES6 support)
 - limited YoutubeDownloader threads to 1
+- use slug instead of video ID to make urls meaningful
 
 # 2.0.5
 
