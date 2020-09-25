@@ -7,6 +7,8 @@
 - limited YoutubeDownloader threads to 1
 - use slug instead of video ID to make urls meaningful
 - fixed bug that required clicking the next page button twice
+- add i18n support
+- add translations for Hindi
 
 # 2.0.5
 

@@ -11,7 +11,6 @@ import shutil
 import tempfile
 import time
 import urllib.parse
-from gettext import gettext as _
 
 import dateutil.parser
 import jinja2
@@ -20,7 +19,7 @@ from slugify import slugify
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
-from zimscraperlib.i18n import get_language_details, setlocale
+from zimscraperlib.i18n import get_language_details, setlocale, _
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
