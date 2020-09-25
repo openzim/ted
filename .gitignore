@@ -26,9 +26,6 @@ __pycache__
 # Installer logs
 pip-log.txt
 
-# Translations
-*.mo
-
 # virtualenv
 venv
 
