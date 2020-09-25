@@ -1,4 +1,4 @@
-# 2.0.6.dev0
+# 2.0.6
 
 - [multi] added retry over failure to get playlist slug
 - use WebP images instead of JPEG for thumbnails and speaker images

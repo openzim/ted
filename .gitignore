@@ -38,3 +38,5 @@ ted2zim/templates/assets/jquery.min.js
 ted2zim/templates/assets/ogvjs/
 ted2zim/templates/assets/videojs-ogvjs.js
 ted2zim/templates/assets/videojs/
+ted2zim/templates/assets/polyfills.js
+ted2zim/templates/assets/webp-hero.bundle.js
