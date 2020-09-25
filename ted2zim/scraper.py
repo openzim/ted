@@ -2,43 +2,42 @@
 # -*- coding: utf-8 -*-
 # vim: ai ts=4 sts=4 et sw=4 nu
 
-import dateutil.parser
+import concurrent.futures
+import datetime
 import json
-import time
+import locale
 import pathlib
 import shutil
 import tempfile
-import datetime
+import time
 import urllib.parse
-import concurrent.futures
 
+import dateutil.parser
 import jinja2
 from bs4 import BeautifulSoup
 from slugify import slugify
-from zimscraperlib.download import YoutubeDownloader, BestWebm, BestMp4
-from zimscraperlib.image.presets import WebpMedium
-from zimscraperlib.image.transformation import resize_image
-from zimscraperlib.image.optimization import optimize_image
-from zimscraperlib.zim import make_zim_file
-from zimscraperlib.i18n import get_language_details
-from zimscraperlib.download import save_large_file
-from zimscraperlib.video.presets import VideoWebmLow, VideoMp4Low
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
+from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
+from zimscraperlib.i18n import get_language_details, setlocale, _
+from zimscraperlib.image.optimization import optimize_image
+from zimscraperlib.image.presets import WebpMedium
+from zimscraperlib.image.transformation import resize_image
+from zimscraperlib.video.presets import VideoMp4Low, VideoWebmLow
+from zimscraperlib.zim import make_zim_file
 
-from .utils import download_link, update_subtitles_list, WebVTT
 from .constants import (
+    ALL,
+    BASE_URL,
+    MATCHING,
+    NONE,
     ROOT_DIR,
     SCRAPER,
-    BASE_URL,
-    NONE,
-    MATCHING,
     TEDLANGS,
-    ALL,
     getLogger,
 )
 from .processing import post_process_video
-
+from .utils import WebVTT, download_link, update_subtitles_list
 
 logger = getLogger()
 
@@ -55,6 +54,7 @@ class Ted2Zim:
         no_zim,
         fname,
         languages,
+        locale_name,
         title,
         description,
         creator,
@@ -134,6 +134,18 @@ class Ted2Zim:
         )
         self.zim_lang = None
         self.already_visited = []
+
+        # set and record locale for translations
+        locale_details = get_language_details(locale_name)
+        if locale_details["querytype"] != "locale":
+            locale_name = locale_details["iso-639-1"]
+        try:
+            self.locale = setlocale(ROOT_DIR, locale_name)
+        except locale.Error:
+            logger.error(
+                f"No locale for {locale_name}. Use --locale to specify it. defaulting to en_US"
+            )
+            self.locale = setlocale(ROOT_DIR, "en")
 
     @property
     def templates_dir(self):
@@ -676,6 +688,7 @@ class Ted2Zim:
                 video_id=str(video["id"]),
                 titles=video["title"],
                 descriptions=video["description"],
+                back_to_list=_("Back to the list"),
             )
             html_path = self.build_dir.joinpath(video["slug"])
             with open(html_path, "w", encoding="utf-8") as html_page:
@@ -697,7 +710,13 @@ class Ted2Zim:
             for key, value in all_langs.items()
         ]
         languages = sorted(languages, key=lambda x: x["languageName"])
-        html = env.get_template("home.html").render(languages=languages)
+        html = env.get_template("home.html").render(
+            languages=languages,
+            page_title=_("TED Talks"),
+            language_filter_text=_("Filter by language"),
+            back_to_top=_("Back to the top"),
+            pagination_text=_("Page"),
+        )
         home_page_path = self.build_dir.joinpath("index")
         with open(home_page_path, "w", encoding="utf-8") as html_page:
             html_page.write(html)

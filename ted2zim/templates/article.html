@@ -21,7 +21,7 @@
     </head>
     <body>
         <div id="content">
-            <img id="backtolist" src="assets/img/TED_small.png" title="Back to the list" onclick="history.go(-1)" />
+            <img id="backtolist" src="assets/img/TED_small.png" title="{{ back_to_list }}" onclick="history.go(-1)" />
             <p id="speaker">{{ speaker }}</p>
             {% for title in titles %}
             <p class="title lang-{{ title.lang }}">{{ title.text }}</p>

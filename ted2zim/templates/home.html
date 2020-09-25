@@ -5,7 +5,7 @@
     <meta content="utf-8" http-equiv="encoding">
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TED Talks</title>
+    <title>{{page_title}}</title>
     <link id="favicon" rel="shortcut icon" href="favicon.png" type="image/png">
     <script src="assets/zim_prefix.js"></script>
     <link href="assets/home.css" rel="stylesheet" type="text/css">
@@ -18,7 +18,7 @@
       <img src="assets/img/TED.png" id="title-img"/>
       <select data-placeholder="Language" class="chosen-select" tabindex="2">
         <option value=""></option>
-        <option value="lang-all">Filter by language</option>
+        <option value="lang-all">{{ language_filter_text }}</option>
         {% for language in languages %}
           <option value="{{ language.languageCode }}">{{ language.languageName }}</option>
         {% endfor %}
@@ -29,11 +29,11 @@
     </div>
     <hr/>
     <div class="backtotop" onclick="$('html, body').animate({ scrollTop: 0 }, 'slow');">
-      <span style="margin: auto;">Back to the top</span>
+      <span style="margin: auto;">{{ back_to_top }}</span>
     </div>
     <div id="pagination" style="visibility: hidden; margin-bottom: 1em;">
       <div id="left-arrow">&#10096;</div>
-      <span id="pagination-text"></span>
+      <span id="pagination-text">{{ pagination_text }}</span>
       <div id="right-arrow">&#10097;</div>
     </div>
   </div>
