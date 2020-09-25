@@ -6,6 +6,7 @@
 - fixed usage on older browsers (without ES6 support)
 - limited YoutubeDownloader threads to 1
 - use slug instead of video ID to make urls meaningful
+- fixed bug that required clicking the next page button twice
 
 # 2.0.5
 

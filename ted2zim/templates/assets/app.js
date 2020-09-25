@@ -9,7 +9,7 @@ window.onload = function() {
     var data = videoDB.getPage(videoDB.getPageNumber());
     refreshVideos(undefined, data);
   });
-
+  videoDB.resetPage();
   refreshPagination();
   return false;
 };
