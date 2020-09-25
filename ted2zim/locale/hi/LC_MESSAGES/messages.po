@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-09-25 10:56+0530\n"
-"PO-Revision-Date: 2020-09-25 10:57+0530\n"
+"POT-Creation-Date: 2020-09-25 11:39+0530\n"
+"PO-Revision-Date: 2020-09-25 11:40+0530\n"
 "Language: hi\n"
 "Language-Team: hi <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -19,22 +19,22 @@ msgstr ""
 "Last-Translator: \n"
 "X-Generator: Poedit 2.4.1\n"
 
-#: ted2zim/scraper.py:689
+#: ted2zim/scraper.py:691
 msgid "Back to the list"
 msgstr "सूची में वापस जाएं"
 
-#: ted2zim/scraper.py:713
+#: ted2zim/scraper.py:715
 msgid "TED Talks"
 msgstr "TED बाते"
 
-#: ted2zim/scraper.py:714
+#: ted2zim/scraper.py:716
 msgid "Filter by language"
 msgstr "भाषा द्वारा फ़िल्टर करें"
 
-#: ted2zim/scraper.py:715
+#: ted2zim/scraper.py:717
 msgid "Back to the top"
 msgstr "वापस ऊपर जाएं"
 
-#: ted2zim/scraper.py:716
+#: ted2zim/scraper.py:718
 msgid "Page"
 msgstr "पृष्ठ"

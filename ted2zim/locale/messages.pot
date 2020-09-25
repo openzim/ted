@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-09-25 10:56+0530\n"
+"POT-Creation-Date: 2020-09-25 11:39+0530\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,23 +17,23 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: ted2zim/scraper.py:689
+#: ted2zim/scraper.py:691
 msgid "Back to the list"
 msgstr ""
 
-#: ted2zim/scraper.py:713
+#: ted2zim/scraper.py:715
 msgid "TED Talks"
 msgstr ""
 
-#: ted2zim/scraper.py:714
+#: ted2zim/scraper.py:716
 msgid "Filter by language"
 msgstr ""
 
-#: ted2zim/scraper.py:715
+#: ted2zim/scraper.py:717
 msgid "Back to the top"
 msgstr ""
 
-#: ted2zim/scraper.py:716
+#: ted2zim/scraper.py:718
 msgid "Page"
 msgstr ""
 
