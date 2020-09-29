@@ -1,6 +1,6 @@
 # 2.0.7.dev0
 
-- n/a
+- use `eng` as default locale
 
 # 2.0.6
 
