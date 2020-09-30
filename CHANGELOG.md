@@ -1,4 +1,4 @@
-# 2.0.7.dev0
+# 2.0.7
 
 - use `eng` as default locale
 
