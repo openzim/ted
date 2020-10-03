@@ -1,6 +1,6 @@
 # 2.0.8.dev0
 
-- n/a
+- fixed bug in video URL finding if ted json as an h264 entry with None value
 
 # 2.0.7
 
