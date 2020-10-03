@@ -455,7 +455,11 @@ class Ted2Zim:
             logger.debug("Using Youtube link")
             return talk_data["external"]["code"]
 
-        if talk_data.get("resources", {}).get("h264", [{"file": None}])[0]:
+        if (
+            isinstance(talk_data.get("resources", {}).get("h264"), list)
+            and len(talk_data["resources"]["h264"]) > 0
+            and talk_data["resources"]["h264"][0].get("file")
+        ):
             logger.debug("Using h264 resource link")
             return talk_data["resources"]["h264"][0]["file"]
 
