@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from slugify import slugify
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
-from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
+from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, stream_file
 from zimscraperlib.i18n import get_language_details, setlocale, _
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.image.presets import WebpMedium
@@ -770,7 +770,7 @@ class Ted2Zim:
         org_jpeg_path = pathlib.Path(
             tempfile.NamedTemporaryFile(delete=False, suffix=".jpg").name
         )
-        save_large_file(url, org_jpeg_path)
+        stream_file(url, fpath=org_jpeg_path)
         if resize is not None:
             resize_image(
                 org_jpeg_path,
@@ -885,7 +885,7 @@ class Ted2Zim:
                     )
                     self.yt_downloader.download(video_link, options)
                 else:
-                    save_large_file(video_link, org_video_file_path)
+                    stream_file(video_link, fpath=org_video_file_path)
             except Exception:
                 logger.error(f"Could not download {org_video_file_path}")
 
