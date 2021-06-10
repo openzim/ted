@@ -1,6 +1,6 @@
-# 2.0.9.dev0
+# 2.0.9
 
-- n/a
+- updated scraperlib
 
 # 2.0.8
 
