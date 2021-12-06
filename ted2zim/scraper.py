@@ -226,10 +226,11 @@ class Ted2Zim:
         """
 
         playlist_url = f"{self.playlists_base_url}/{playlist}"
+        logger.debug(f"extract_videos_from_playlist: {playlist_url}")
         soup = BeautifulSoup(download_link(playlist_url).text, features="html.parser")
-        video_elements = soup.find_all("a", attrs={"class": "hover/appear"})
-        self.playlist_title = soup.find("h1", attrs={"class": "f:4"}).string
-        self.playlist_description = soup.find("p", attrs={"class": "m-b:2"}).string
+        video_elements = soup.find_all("a", attrs={"class": "group"})
+        self.playlist_title = soup.find("h1").string
+        self.playlist_description = soup.find("p", attrs={"class": "text-base"}).string
 
         for element in video_elements:
             relative_path = element.get("href")
@@ -253,6 +254,7 @@ class Ted2Zim:
 
         page = 1
         while True:
+            logger.debug(f"generate_search_result_and_scrape: {topic_url}&page={page}")
             html = download_link(f"{topic_url}&page={page}").text
             nb_videos_extracted, nb_videos_on_page = self.extract_videos_on_topic_page(
                 html
@@ -619,6 +621,7 @@ class Ted2Zim:
             logger.error("Max retries exceeded. Skipping video")
             return False
 
+        logger.debug(f"extract_info_from_video_page: {url}")
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
         div = soup.find("div", attrs={"class": "talks-main"})
 
