@@ -46,6 +46,7 @@ rm -rf $ASSETS_PATH/ogvjs
 unzip -o ogvjs-1.6.1.zip
 mv ogvjs-1.6.1 $ASSETS_PATH/ogvjs
 rm -f ogvjs-1.6.1.zip
+rm -f $ASSETS_PATH/ogvjs/COPYING $ASSETS_PATH/ogvjs/*.txt $ASSETS_PATH/ogvjs/README.md
 
 echo "getting videojs-ogvjs.js"
 curl -L -O https://github.com/hartman/videojs-ogvjs/archive/v1.3.1.zip
