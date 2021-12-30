@@ -108,3 +108,21 @@ def get_temp_fpath(**kwargs):
         yield fpath
     finally:
         fpath.unlink()
+
+
+def get_main_title(titles, prefered_lang):
+    """ main title from list of titles dict based on language pref with fallback"""
+    missing = "n/a"
+    if not titles:
+        return missing
+
+    def get_for(lang):
+        filtered = [
+            title["text"]
+            for title in titles
+            if title["lang"] == lang
+        ]
+        if filtered:
+            return filtered[0]
+
+    return get_for(prefered_lang) or get_for("default") or get_for("en") or missing

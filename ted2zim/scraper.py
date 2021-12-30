@@ -37,7 +37,7 @@ from .constants import (
     getLogger,
 )
 from .processing import post_process_video
-from .utils import WebVTT, download_link, update_subtitles_list
+from .utils import WebVTT, download_link, update_subtitles_list, get_main_title
 
 logger = getLogger()
 
@@ -143,9 +143,12 @@ class Ted2Zim:
             self.locale = setlocale(ROOT_DIR, locale_name)
         except locale.Error:
             logger.error(
-                f"No locale for {locale_name}. Use --locale to specify it. defaulting to en_US"
+                f"No locale for {locale_name}. Use --locale to specify it. "
+                "defaulting to en_US"
             )
             self.locale = setlocale(ROOT_DIR, "en")
+        # locale's language code
+        self.locale_name = self.to_ted_langcodes(locale_name)
 
     @property
     def templates_dir(self):
@@ -683,6 +686,7 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
+            titles = video["title"]
             html = env.get_template("article.html").render(
                 speaker=video["speaker"],
                 languages=video["subtitles"],
@@ -693,7 +697,8 @@ class Ted2Zim:
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=str(video["id"]),
-                titles=video["title"],
+                title=get_main_title(titles, self.locale_name),
+                titles=titles,
                 descriptions=video["description"],
                 back_to_list=_("Back to the list"),
             )
