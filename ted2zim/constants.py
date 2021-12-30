@@ -32,10 +32,10 @@ class Global:
 
 
 def setDebug(debug):
-    """ toggle constants global DEBUG flag (used by getLogger) """
+    """toggle constants global DEBUG flag (used by getLogger)"""
     Global.debug = bool(debug)
 
 
 def getLogger():
-    """ configured logger respecting DEBUG flag """
+    """configured logger respecting DEBUG flag"""
     return lib_getLogger(NAME, level=logging.DEBUG if Global.debug else logging.INFO)

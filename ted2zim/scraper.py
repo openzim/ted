@@ -37,7 +37,7 @@ from .constants import (
     getLogger,
 )
 from .processing import post_process_video
-from .utils import WebVTT, download_link, update_subtitles_list
+from .utils import WebVTT, download_link, update_subtitles_list, get_main_title
 
 logger = getLogger()
 
@@ -143,9 +143,12 @@ class Ted2Zim:
             self.locale = setlocale(ROOT_DIR, locale_name)
         except locale.Error:
             logger.error(
-                f"No locale for {locale_name}. Use --locale to specify it. defaulting to en_US"
+                f"No locale for {locale_name}. Use --locale to specify it. "
+                "defaulting to en_US"
             )
             self.locale = setlocale(ROOT_DIR, "en")
+        # locale's language code
+        self.locale_name = self.to_ted_langcodes(locale_name)
 
     @property
     def templates_dir(self):
@@ -250,7 +253,7 @@ class Ted2Zim:
             raise ValueError("Wrong playlist ID supplied. No videos found")
 
     def generate_search_result_and_scrape(self, topic_url, total_videos_scraped):
-        """ generates a search result and returns the total number of videos scraped """
+        """generates a search result and returns the total number of videos scraped"""
 
         page = 1
         while True:
@@ -266,7 +269,7 @@ class Ted2Zim:
         return total_videos_scraped
 
     def extract_videos_from_topics(self, topic):
-        """ extracts metadata for required number of videos on different topics """
+        """extracts metadata for required number of videos on different topics"""
 
         logger.debug(f"Fetching video links for topic: {topic}")
         topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
@@ -324,7 +327,7 @@ class Ted2Zim:
                     self.description = f"A selection of {topic_str} videos from TED"
 
     def get_display_name(self, lang_code, lang_name):
-        """ Display name for language """
+        """Display name for language"""
 
         lang_info = get_language_details(lang_code, failsafe=True)
         if lang_code != "en" and lang_info:
@@ -350,7 +353,7 @@ class Ted2Zim:
         }
 
     def generate_subtitle_list(self, video_id, langs, page_lang, audio_lang):
-        """ List of all subtitle languages with link to their pages """
+        """List of all subtitle languages with link to their pages"""
 
         subtitles = []
         if self.subtitles_setting == ALL or (
@@ -385,7 +388,7 @@ class Ted2Zim:
         return update_subtitles_list(video_id, subtitles)
 
     def generate_urls_for_other_languages(self, url):
-        """ Possible URLs for other requested languages based on a video url """
+        """Possible URLs for other requested languages based on a video url"""
 
         urls = []
         page_lang, query = self.get_lang_code_from_url(url, with_full_query=True)
@@ -427,7 +430,7 @@ class Ted2Zim:
         return nb_extracted, nb_listed
 
     def get_lang_code_from_url(self, url, with_full_query=False):
-        """ gets the queried language code from a ted talk url """
+        """gets the queried language code from a ted talk url"""
 
         # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
         url_parts = list(urllib.parse.urlparse(url))
@@ -440,7 +443,7 @@ class Ted2Zim:
         return current_lang
 
     def extract_download_link(self, talk_info):
-        """ Returns download link / youtube video ID for a TED video """
+        """Returns download link / youtube video ID for a TED video"""
 
         download_links = talk_info["downloads"]["nativeDownloads"]
         if download_links:
@@ -605,7 +608,7 @@ class Ted2Zim:
         )
 
     def extract_info_from_video_page(self, url, retry_count=0):
-        """ extract all info from a TED video page url and update self.videos """
+        """extract all info from a TED video page url and update self.videos"""
 
         # Every TED video page has a <script>-tag with a Javascript
         # object with JSON in it. We will just stip away the object
@@ -650,7 +653,7 @@ class Ted2Zim:
         return self.extract_video_info_from_json(json_data)
 
     def add_default_language(self):
-        """ add metatada in default language (english or first avail) on all videos """
+        """add metatada in default language (english or first avail) on all videos"""
 
         for video in self.videos:
             en_found = False
@@ -683,6 +686,7 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
+            titles = video["title"]
             html = env.get_template("article.html").render(
                 speaker=video["speaker"],
                 languages=video["subtitles"],
@@ -693,7 +697,8 @@ class Ted2Zim:
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=str(video["id"]),
-                titles=video["title"],
+                title=get_main_title(titles, self.locale_name),
+                titles=titles,
                 descriptions=video["description"],
                 back_to_list=_("Back to the list"),
             )
@@ -742,7 +747,7 @@ class Ted2Zim:
         )
 
     def generate_datafile(self):
-        """ Generate data.js inside assets folder """
+        """Generate data.js inside assets folder"""
 
         video_list = []
         for video in self.videos:
@@ -768,7 +773,7 @@ class Ted2Zim:
     def download_jpeg_image_and_convert(
         self, url, fpath, preset_options={}, resize=None
     ):
-        """ downloads a JPEG image and converts and optimizes it into desired format detected from fpath """
+        """downloads a JPEG image and converts and optimizes it into desired format detected from fpath"""
 
         org_jpeg_path = pathlib.Path(
             tempfile.NamedTemporaryFile(delete=False, suffix=".jpg").name
@@ -789,7 +794,7 @@ class Ted2Zim:
     def download_speaker_image(
         self, video_id, video_title, video_speaker, speaker_path
     ):
-        """ downloads the speaker image """
+        """downloads the speaker image"""
 
         downloaded_from_cache = False
         preset = WebpMedium()
@@ -817,7 +822,7 @@ class Ted2Zim:
     def download_thumbnail(
         self, video_id, video_title, video_thumbnail, thumbnail_path
     ):
-        """ download the thumbnail """
+        """download the thumbnail"""
 
         downloaded_from_cache = False
         preset = WebpMedium()
@@ -843,7 +848,7 @@ class Ted2Zim:
                     self.upload_to_cache(s3_key, thumbnail_path, preset.VERSION)
 
     def download_video_files(self, video):
-        """ download all video files (video, thumbnail, speaker) """
+        """download all video files (video, thumbnail, speaker)"""
 
         # Download all the TED talk videos and the meta-data for it.
         # Save the videos in build_dir/{video id}/video.mp4.
@@ -915,7 +920,7 @@ class Ted2Zim:
                 self.upload_to_cache(s3_key, req_video_file_path, preset.VERSION)
 
     def download_video_files_parallel(self):
-        """ download videos and images parallely """
+        """download videos and images parallely"""
 
         self.yt_downloader = YoutubeDownloader(threads=1)
         with concurrent.futures.ThreadPoolExecutor(
@@ -929,7 +934,7 @@ class Ted2Zim:
         self.yt_downloader.shutdown()
 
     def download_subtitles(self, index, video):
-        """ download, converts and writes VTT subtitles for a video at a specific index in self.videos """
+        """download, converts and writes VTT subtitles for a video at a specific index in self.videos"""
 
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
@@ -961,7 +966,7 @@ class Ted2Zim:
         self.videos[index]["subtitles"] = valid_subs
 
     def download_subtitles_parallel(self):
-        """ download subtitles for all videos parallely """
+        """download subtitles for all videos parallely"""
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=self.threads
@@ -987,7 +992,7 @@ class Ted2Zim:
         return True
 
     def download_from_cache(self, key, object_path, encoder_version):
-        """ whether it downloaded from S3 cache """
+        """whether it downloaded from S3 cache"""
 
         if self.use_any_optimized_version:
             if not self.s3_storage.has_object(key, self.s3_storage.bucket_name):
@@ -1007,7 +1012,7 @@ class Ted2Zim:
         return True
 
     def upload_to_cache(self, key, object_path, encoder_version):
-        """ whether it uploaded from S3 cache """
+        """whether it uploaded from S3 cache"""
 
         try:
             self.s3_storage.upload_file(
@@ -1020,7 +1025,7 @@ class Ted2Zim:
         return True
 
     def remove_failed_topics_and_check_extraction(self, failed_topics):
-        """ removes failed topics from topics list and raises error if scraper cannot continue """
+        """removes failed topics from topics list and raises error if scraper cannot continue"""
 
         for topic in failed_topics:
             self.topics.remove(topic)

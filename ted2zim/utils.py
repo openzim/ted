@@ -12,12 +12,12 @@ import requests
 
 
 def has_argument(arg_name, all_args):
-    """ whether --arg_name is specified in all_args """
+    """whether --arg_name is specified in all_args"""
     return list(filter(lambda x: x.startswith(f"--{arg_name}"), all_args))
 
 
 def update_subtitles_list(video_id, language_list):
-    """ adds `link` to each language dict containing the subtitle url """
+    """adds `link` to each language dict containing the subtitle url"""
 
     for language in language_list:
         language[
@@ -39,13 +39,13 @@ def download_link(url):
 
 class WebVTT:
 
-    """ TED JSON subtitles to WebVTT """
+    """TED JSON subtitles to WebVTT"""
 
     def __init__(self, url):
         self.url = url
 
     def convert(self):
-        """ download and convert its URL to WebVTT text """
+        """download and convert its URL to WebVTT text"""
         req = download_link(self.url)
 
         if req.status_code == 404:
@@ -108,3 +108,21 @@ def get_temp_fpath(**kwargs):
         yield fpath
     finally:
         fpath.unlink()
+
+
+def get_main_title(titles, prefered_lang):
+    """ main title from list of titles dict based on language pref with fallback"""
+    missing = "n/a"
+    if not titles:
+        return missing
+
+    def get_for(lang):
+        filtered = [
+            title["text"]
+            for title in titles
+            if title["lang"] == lang
+        ]
+        if filtered:
+            return filtered[0]
+
+    return get_for(prefered_lang) or get_for("default") or get_for("en") or missing
