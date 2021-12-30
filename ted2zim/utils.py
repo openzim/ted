@@ -10,6 +10,8 @@ import contextlib
 
 import requests
 
+from .constants import BASE_URL
+
 
 def has_argument(arg_name, all_args):
     """whether --arg_name is specified in all_args"""
@@ -28,6 +30,8 @@ def update_subtitles_list(video_id, language_list):
 
 
 def download_link(url):
+    if url == f"{BASE_URL}playlists/57":
+        url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
     for attempt in range(1, 6):
         time.sleep(1)  # delay requests
         req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -111,17 +115,13 @@ def get_temp_fpath(**kwargs):
 
 
 def get_main_title(titles, prefered_lang):
-    """ main title from list of titles dict based on language pref with fallback"""
+    """main title from list of titles dict based on language pref with fallback"""
     missing = "n/a"
     if not titles:
         return missing
 
     def get_for(lang):
-        filtered = [
-            title["text"]
-            for title in titles
-            if title["lang"] == lang
-        ]
+        filtered = [title["text"] for title in titles if title["lang"] == lang]
         if filtered:
             return filtered[0]
 
