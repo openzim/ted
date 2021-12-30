@@ -48,7 +48,7 @@ class TedHandler(object):
 
     @property
     def ted2zim_exe(self):
-        """ ted2zim executable """
+        """ted2zim executable"""
 
         # handle either `python ted2zim` or `ted2zim`
         cmd = "ted2zim"
@@ -133,7 +133,7 @@ class TedHandler(object):
                 logger.info(f"successfully uploaded playlist list to cache at {key}")
 
     def get_list_of_all(self, mode):
-        """ returns a list of topics or playlists"""
+        """returns a list of topics or playlists"""
         # get all topics
         topics_list = json.loads(
             download_link("https://www.ted.com/topics/combo?models=Talks").text
@@ -236,7 +236,7 @@ class TedHandler(object):
             return self.handle_single_zim(mode="playlist")
 
     def run_indiv_zim_mode(self, item, mode):
-        """ run ted2zim for an individual topic/playlist """
+        """run ted2zim for an individual topic/playlist"""
 
         args = self.ted2zim_exe
 
@@ -287,7 +287,7 @@ class TedHandler(object):
         return process.returncode == 0, process
 
     def handle_single_zim(self, mode):
-        """ redirect request to standard ted2zim """
+        """redirect request to standard ted2zim"""
 
         args = self.ted2zim_exe
         if mode == "topic":
@@ -308,7 +308,7 @@ class TedHandler(object):
         return subprocess.run(args).returncode
 
     def fetch_metadata(self):
-        """ retrieves and loads metadata from --metadata-from """
+        """retrieves and loads metadata from --metadata-from"""
 
         if not self.metadata_from:
             return
