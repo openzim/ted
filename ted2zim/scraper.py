@@ -442,30 +442,18 @@ class Ted2Zim:
             return current_lang, query
         return current_lang
 
-    def extract_download_link(self, talk_info):
+    def extract_download_link(self, talk_data):
         """Returns download link / youtube video ID for a TED video"""
-
-        download_links = talk_info["downloads"]["nativeDownloads"]
-        if download_links:
-            for size in ("medium", "low", "high"):
-                if size in download_links:
-                    return download_links[size]
-            logger.error("No link to download video while we should have")
-            return None
-
-        talk_data = talk_info["player_talks"][0]
-        if talk_data.get("external", {}).get("service") == "YouTube" and talk_data[
-            "external"
-        ].get("code"):
-            logger.debug("Using Youtube link")
-            return talk_data["external"]["code"]
 
         if (
             isinstance(talk_data.get("resources", {}).get("h264"), list)
-            and len(talk_data["resources"]["h264"]) > 0
+            and len(talk_data["resources"]["h264"])
             and talk_data["resources"]["h264"][0].get("file")
         ):
-            logger.debug("Using h264 resource link")
+            logger.debug(
+                "Using h264 resource link for bitrate="
+                f"{talk_data['resources']['h264'][0].get('bitrate')}"
+            )
             return talk_data["resources"]["h264"][0]["file"]
 
         logger.error("No download link found for the video")
@@ -538,10 +526,15 @@ class Ted2Zim:
         return False
 
     def extract_video_info_from_json(self, json_data):
+        player_data = json.loads(json_data["playerData"])
         lang_code = json_data["language"]
-        lang_name = json_data["requested_language_english_name"]
-        talk_info = json_data["talks"][0]
-        native_talk_language = talk_info["player_talks"][0]["nativeLanguage"]
+        lang_name = [
+            lang["languageName"]
+            for lang in player_data["languages"]
+            if lang["languageCode"] == lang_code
+        ][-1]
+        # talk_info = json_data["talks"][0]
+        native_talk_language = player_data["nativeLanguage"]
         if (
             not self.subtitles_enough
             and self.source_languages
@@ -551,13 +544,13 @@ class Ted2Zim:
             return False
 
         # Extract the speaker of the TED talk
-        if len(talk_info["speakers"]) != 0:
-            speaker_info = talk_info["speakers"][0]
+        if len(json_data["speakers"]):
+            speaker_info = json_data["speakers"][0]
             speaker = " ".join(
                 [
-                    speaker_info.get("firstname"),
-                    speaker_info.get("middleinitial"),
-                    speaker_info.get("lastname"),
+                    speaker_info.get("firstName"),
+                    speaker_info.get("middleName"),
+                    speaker_info.get("lastName"),
                 ]
             )
         else:
@@ -566,27 +559,27 @@ class Ted2Zim:
                 "whotheyare": "None",
                 "photo_url": "",
             }
-            if "speaker_name" in talk_info:
-                speaker = talk_info["speaker_name"]
+            if "presenterDisplayName" in json_data:
+                speaker = json_data["presenterDisplayName"]
             else:
                 speaker = "None"
 
         # Extract the ted talk details from json
-        video_id = talk_info["id"]
+        video_id = json_data["id"]
         speaker_profession = speaker_info["description"]
-        speaker_bio = speaker_info["whotheyare"]
-        speaker_picture = speaker_info["photo_url"]
-        title = talk_info["title"]
-        description = talk_info["description"]
-        date = dateutil.parser.parse(talk_info["recorded_at"]).strftime("%d %B %Y")
-        length = int(talk_info["duration"]) // 60
-        thumbnail = talk_info["player_talks"][0]["thumb"]
-        video_link = self.extract_download_link(talk_info)
+        speaker_bio = speaker_info["whoTheyAre"]
+        speaker_picture = speaker_info["avatar"]
+        title = json_data["title"]
+        description = json_data["description"]
+        date = dateutil.parser.parse(json_data["recordedOn"]).strftime("%d %B %Y")
+        length = int(json_data["duration"]) // 60
+        thumbnail = player_data["thumb"]
+        video_link = self.extract_download_link(player_data)
         if not video_link:
             logger.error("No suitable download link found. Skipping video")
             return False
 
-        langs = talk_info["player_talks"][0]["languages"]
+        langs = player_data["languages"]
         subtitles = self.generate_subtitle_list(
             video_id, langs, lang_code, native_talk_language
         )
@@ -626,24 +619,11 @@ class Ted2Zim:
 
         logger.debug(f"extract_info_from_video_page: {url}")
         soup = BeautifulSoup(download_link(url).text, features="html.parser")
-        div = soup.find("div", attrs={"class": "talks-main"})
 
-        # TED is sometimes inconsistant in sending HTML content
-        # it sometimes sends the HTML without the required div containing the talks data
-        # so we retry after 5 seconds
-        if not div:
-            logger.debug(
-                "Potentially insufficient data returned by server. Retrying in 5 seconds..."
-            )
-            time.sleep(5)
-            return self.extract_info_from_video_page(url, retry_count=retry_count + 1)
+        json_data = json.loads(
+            soup.find("script", attrs={"id": "__NEXT_DATA__"}).string
+        )["props"]["pageProps"]["videoData"]
 
-        script_tags_within_div = div.find_all("script")
-        if len(script_tags_within_div) == 0:
-            logger.error("The required script tag containing video meta is not present")
-            return False
-        json_data = script_tags_within_div[-1].string
-        json_data = json.loads(json_data[18:-1])["__INITIAL_DATA__"]
         requested_lang_code = self.get_lang_code_from_url(url)
         if requested_lang_code and json_data["language"] != requested_lang_code:
             logger.error(

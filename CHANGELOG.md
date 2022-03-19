@@ -3,6 +3,8 @@
 - Special handling for playlist 57 (#127)
 - ZIM entries now have Titles (#126)
 - Updated for new playlists DOM (#124)
+- Updated for new video DOM (#129)
+
 
 # 2.0.9
 
