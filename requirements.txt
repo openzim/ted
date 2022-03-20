@@ -3,6 +3,8 @@ zimscraperlib>=1.3.6,<1.4
 requests>=2.23,<3.0
 beautifulsoup4==4.9.1
 Jinja2==2.11.3
+# jinja2 dependency (https://github.com/pallets/markupsafe/issues/284)
+markupsafe==2.0.1
 kiwixstorage>=0.2,<1.0
 pif==0.8.2
 python-slugify>=4.0.1,<4.1
