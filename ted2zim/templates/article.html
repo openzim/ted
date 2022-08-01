@@ -18,10 +18,11 @@
         <script src="assets/article.js"></script>
         <script src="assets/polyfills.js"></script>
         <script src="assets/webp-hero.bundle.js"></script>
+        <script src="assets/webp-trigger.js"></script>
     </head>
     <body>
         <div id="content">
-            <img id="backtolist" src="assets/img/TED_small.png" title="{{ back_to_list }}" onclick="history.go(-1)" />
+            <img id="backtolist" src="assets/img/TED_small.png" title="{{ back_to_list }}"/>
             <p id="speaker">{{ speaker }}</p>
             {% for title in titles %}
             <p class="title lang-{{ title.lang }}">{{ title.text }}</p>
@@ -57,21 +58,5 @@
                     </div>
                 </div>
             </div>
-            <script>
-                $(document).ready(function() {
-                    webpHero.detectWebpSupport().then(function (support_webp){
-                        if (!support_webp) {
-                            console.log("no WebP support, polyfilling.");
-                            // un-hide ogvjs-poster so the polyfill can transform it
-                            $(".ogvjs-poster").css("visibility", "");
-                            // hide video-js poster (which uses background-image)
-                            $(".vjs-poster").css("display", "none");
-
-                            let webpMachine = new webpHero.WebpMachine();
-                            webpMachine.polyfillDocument();
-                        }
-                    });
-                });
-            </script>
         </body>
     </html>

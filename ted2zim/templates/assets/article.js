@@ -14,3 +14,7 @@ window.onload = function() {
         $(".lang-" + lang).css("display", "block");
     }
 };
+
+$(document).ready(function() {
+    $("#backtolist").on("click", function() { history.go(-1) });
+});

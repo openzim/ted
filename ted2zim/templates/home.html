@@ -28,7 +28,7 @@
       <ul id="video-items" class="rig grid"></ul>
     </div>
     <hr/>
-    <div class="backtotop" onclick="$('html, body').animate({ scrollTop: 0 }, 'slow');">
+    <div class="backtotop">
       <span style="margin: auto;">{{ back_to_top }}</span>
     </div>
     <div id="pagination" style="visibility: hidden; margin-bottom: 1em;">
@@ -42,16 +42,6 @@
   <script src="assets/data.js"></script>
   <script src="assets/db.js"></script>
   <script src="assets/app.js"></script>
-  <script>
-    $(document).ready(function() {
-      webpHero.detectWebpSupport().then(function (support_webp){
-          if (!support_webp) {
-              console.log("no WebP support, polyfilling.");
-              let webpMachine = new webpHero.WebpMachine();
-              webpMachine.polyfillDocument();
-          }
-      });
-  });
-  </script>
+  <script src="assets/webp-trigger.js"></script>
 </body>
 </html>

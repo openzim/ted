@@ -147,3 +147,7 @@ function refreshVideos(language, pageData) {
       videoList.appendChild(li);
     }
 }
+
+$(document).ready(function() {
+  $(".backtotop").on("click", function() { $('html, body').animate({ scrollTop: 0 }, 'slow'); });
+});
