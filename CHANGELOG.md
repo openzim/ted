@@ -1,10 +1,19 @@
-# 2.0.11
+## Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (as of version 2.0.11).
+
+## [2.0.11] - 2022-08-01
+
+### Changed
 
 - Fixed new video DOM change
 - Fixed dependency issue (markupsafe)
 - Don't fail on missing whoTheyAre
 
-# 2.0.10
+## [2.0.10]
 
 - Special handling for playlist 57 (#127)
 - ZIM entries now have Titles (#126)
@@ -12,19 +21,19 @@
 - Updated for new video DOM (#129)
 
 
-# 2.0.9
+## [2.0.9]
 
 - updated scraperlib
 
-# 2.0.8
+## [2.0.8]
 
 - fixed bug in video URL finding if ted json as an h264 entry with None value
 
-# 2.0.7
+## [2.0.7]
 
 - use `eng` as default locale
 
-# 2.0.6
+## [2.0.6]
 
 - [multi] added retry over failure to get playlist slug
 - use WebP images instead of JPEG for thumbnails and speaker images
@@ -36,24 +45,24 @@
 - add i18n support
 - add translations for Hindi
 
-# 2.0.5
+## [2.0.5]
 
 - use pylibzim to create zim
 - add variable "{slug}" in ted2zim-multi which will be replaced by the playlist/topic slug (with dashes) automatically
 - fix layout on mobile devices
 
-# 2.0.4
+## [2.0.4]
 
 - ted2zim-multi forwards return-code from ted2zim process on failure
 - Fixed clashing argument between `--name` and `--name-format` in ted2zim-multi
 
-# 2.0.3
+## [2.0.3]
 
 - added ted2zim-multi for multi zim creation
 - added --tmp-dir to specify the path folder where the temporary build directory will be created
 - `{period}` can be passed in `--zim-file` and be replaced with date as YYYY-MM
 
-# 2.0.2
+## [2.0.2]
 
 - now handling incorrect TED website responses with retries
 - fixed crash on missing language details
@@ -62,12 +71,12 @@
 - removed --max-videos-per-topic option to decrease complexity
 - refactoring of code
 
-# 2.0.1
+## [2.0.1]
 
 - fixed missing files in package
 - Fixed docker recipe (zimwriterfs version)
 
-# 2.0.0
+## [2.0.0]
 
 - Rewritten the scraper in python3
 - New command to run `ted2zim`
