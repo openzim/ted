@@ -1,3 +1,9 @@
+# 2.0.11
+
+- Fixed new video DOM change
+- Fixed dependency issue (markupsafe)
+- Don't fail on missing whoTheyAre
+
 # 2.0.10
 
 - Special handling for playlist 57 (#127)

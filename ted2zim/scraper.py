@@ -545,12 +545,15 @@ class Ted2Zim:
 
         # Extract the speaker of the TED talk
         if len(json_data["speakers"]):
-            speaker_info = json_data["speakers"][0]
+            if "nodes" in json_data["speakers"]:
+                speaker_info = json_data["speakers"]["nodes"][0]
+            else:
+                speaker_info = json_data["speakers"][0]
             speaker = " ".join(
                 [
-                    speaker_info.get("firstName"),
-                    speaker_info.get("middleName"),
-                    speaker_info.get("lastName"),
+                    speaker_info.get("firstame", ""),
+                    speaker_info.get("middlename", ""),
+                    speaker_info.get("lastname", ""),
                 ]
             )
         else:
