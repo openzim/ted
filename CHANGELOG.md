@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed new video DOM change
 - Fixed dependency issue (markupsafe)
 - Don't fail on missing whoTheyAre
+- Updated scraperlib (1.6.2) to fix mime guessing bug
 
 ## [2.0.10]
 

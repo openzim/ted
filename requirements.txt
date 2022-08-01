@@ -1,7 +1,7 @@
 python-dateutil==2.8.1
-zimscraperlib>=1.3.6,<1.4
+zimscraperlib>=1.6.2,<1.7
 requests>=2.23,<3.0
-beautifulsoup4==4.9.1
+beautifulsoup4>=4.9.3,<4.10
 Jinja2==2.11.3
 # jinja2 dependency (https://github.com/pallets/markupsafe/issues/284)
 markupsafe==2.0.1
