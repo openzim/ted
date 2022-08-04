@@ -545,10 +545,16 @@ class Ted2Zim:
 
         # Extract the speaker of the TED talk
         if len(json_data["speakers"]):
-            if "nodes" in json_data["speakers"]:
-                speaker_info = json_data["speakers"]["nodes"][0]
-            else:
+            if isinstance(json_data["speakers"], dict):
+                speaker_info = (
+                    json_data["speakers"]["nodes"][0]
+                    if json_data["speakers"].get("nodes", [])
+                    else {}
+                )
+            elif isinstance(json_data["speakers"], list):
                 speaker_info = json_data["speakers"][0]
+            else:
+                raise IOError("Unexpected speaker JSON format: {}".format(json_data))
             speaker = " ".join(
                 [
                     speaker_info.get("firstame", ""),
