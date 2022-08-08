@@ -575,11 +575,11 @@ class Ted2Zim:
 
         # Extract the ted talk details from json
         video_id = json_data["id"]
-        speaker_profession = speaker_info["description"]
+        speaker_profession = speaker_info.get("description")
         speaker_bio = speaker_info.get("whoTheyAre", "-")
         speaker_picture = speaker_info.get("avatar", "-")
-        title = json_data["title"]
-        description = json_data["description"]
+        title = json_data.get("title", "n/a")
+        description = json_data.get("description", "n/a")
         date = dateutil.parser.parse(json_data["recordedOn"]).strftime("%d %B %Y")
         length = int(json_data["duration"]) // 60
         thumbnail = player_data["thumb"]
