@@ -528,11 +528,15 @@ class Ted2Zim:
     def extract_video_info_from_json(self, json_data):
         player_data = json.loads(json_data["playerData"])
         lang_code = json_data["language"]
-        lang_name = [
-            lang["languageName"]
-            for lang in player_data["languages"]
-            if lang["languageCode"] == lang_code
-        ][-1]
+        try:
+            lang_name = [
+                lang["languageName"]
+                for lang in player_data["languages"]
+                if lang["languageCode"] == lang_code
+            ][-1]
+        except Exception as exc:
+            logger.warning(f"player data has no entry for {lang_code}: {exc}")
+            lang_name = lang_code
         # talk_info = json_data["talks"][0]
         native_talk_language = player_data["nativeLanguage"]
         if (
