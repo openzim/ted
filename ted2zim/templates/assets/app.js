@@ -130,7 +130,7 @@ function refreshVideos(language, pageData) {
       a.className = 'nostyle'
 
       var img = document.createElement('img');
-      img.src = ZIM_IMG_NS+'videos/'+video['id']+'/thumbnail.webp';
+      img.src = 'videos/'+video['id']+'/thumbnail.webp';
 
       var author = document.createElement('p');
       author.id = 'author';

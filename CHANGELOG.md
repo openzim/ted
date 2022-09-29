@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Fixed crash on videos without speakers (#134)
+- Adapted for no-namespace ZIM (#139)
 
 ## [2.0.11] - 2022-08-01
 
