@@ -4,7 +4,7 @@
 An offliner to create ZIM :package: files from TED talks
 
 [![PyPI](https://img.shields.io/pypi/v/ted2zim?style=for-the-badge)](https://pypi.org/project/ted2zim/)
-[![Docker](https://img.shields.io/docker/build/openzim/ted?style=for-the-badge)](https://hub.docker.com/r/openzim/ted)
+[![Docker](https://img.shields.io/docker/v/openzim/ted?label=docker&sort=semver&style=for-the-badge)](https://hub.docker.com/r/openzim/ted)
 [![Codefactor Grade](https://img.shields.io/codefactor/grade/github/openzim/ted/main?label=codefactor&style=for-the-badge)](https://www.codefactor.io/repository/github/openzim/ted)
 [![License](https://img.shields.io/github/license/openzim/ted?color=blueviolet&style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 
