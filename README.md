@@ -5,7 +5,7 @@ An offliner to create ZIM :package: files from TED talks
 
 [![PyPI](https://img.shields.io/pypi/v/ted2zim?style=for-the-badge)](https://pypi.org/project/ted2zim/)
 [![Docker](https://img.shields.io/docker/build/openzim/ted?style=for-the-badge)](https://hub.docker.com/r/openzim/ted)
-[![Codefactor Grade](https://img.shields.io/codefactor/grade/github/openzim/ted/master?label=codefactor&style=for-the-badge)](https://www.codefactor.io/repository/github/openzim/ted)
+[![Codefactor Grade](https://img.shields.io/codefactor/grade/github/openzim/ted/main?label=codefactor&style=for-the-badge)](https://www.codefactor.io/repository/github/openzim/ted)
 [![License](https://img.shields.io/github/license/openzim/ted?color=blueviolet&style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. One can eaisly find all the TED videos [here](https://ted.com/talks).
