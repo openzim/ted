@@ -41,11 +41,11 @@ echo "getting jquery.min.js"
 curl -L -o $ASSETS_PATH/jquery.min.js https://code.jquery.com/jquery-3.5.1.min.js
 
 echo "getting ogv.js"
-curl -L -O https://github.com/brion/ogv.js/releases/download/1.6.1/ogvjs-1.6.1.zip
+curl -L -O https://github.com/brion/ogv.js/releases/download/1.8.9/ogvjs-1.8.9.zip
 rm -rf $ASSETS_PATH/ogvjs
-unzip -o ogvjs-1.6.1.zip
-mv ogvjs-1.6.1 $ASSETS_PATH/ogvjs
-rm -f ogvjs-1.6.1.zip
+unzip -o ogvjs-1.8.9.zip
+mv ogvjs-1.8.9 $ASSETS_PATH/ogvjs
+rm -f ogvjs-1.8.9.zip
 rm -f $ASSETS_PATH/ogvjs/COPYING $ASSETS_PATH/ogvjs/*.txt $ASSETS_PATH/ogvjs/README.md
 
 echo "getting videojs-ogvjs.js"
