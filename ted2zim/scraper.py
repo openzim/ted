@@ -581,7 +581,7 @@ class Ted2Zim:
         video_id = json_data["id"]
         speaker_profession = speaker_info.get("description")
         speaker_bio = speaker_info.get("whoTheyAre", "-")
-        speaker_picture = speaker_info.get("avatar", "-")
+        speaker_picture = speaker_info.get("photoUrl", "-")
         title = json_data.get("title", "n/a")
         description = json_data.get("description", "n/a")
         date = dateutil.parser.parse(json_data["recordedOn"]).strftime("%d %B %Y")
