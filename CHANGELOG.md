@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated ogv.js to 1.8.9
+- Fixed missing speaker photo (#144)
 
 ## [2.0.12] - 2022-10-03
 
