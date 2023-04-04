@@ -35,10 +35,17 @@ def download_link(url):
     for attempt in range(1, 6):
         time.sleep(1)  # delay requests
         req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-        if req.status_code != 429:
-            return req
-        time.sleep(30 * attempt)  # wait upon failure
-    raise ConnectionRefusedError(f"Failed to download {url} after {attempt} attempts")
+        try:
+            req.raise_for_status()
+        except Exception as exc:
+            if req.status_code == 404:
+                raise exc
+            time.sleep(30 * attempt)  # wait upon failure
+            continue
+        return req
+    raise ConnectionRefusedError(
+        f"Failed to download {url} after {attempt} attempts (HTTP {req.status_code})"
+    )
 
 
 class WebVTT:

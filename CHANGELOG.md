@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- download_link now retries all errors but 404
 - Updated ogv.js to 1.8.9
 - Fixed missing speaker photo (#144)
 
