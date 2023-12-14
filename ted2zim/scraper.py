@@ -39,7 +39,7 @@ from .constants import (
     getLogger,
 )
 from .processing import post_process_video
-from .utils import WebVTT, download_link, update_subtitles_list, get_main_title
+from .utils import WebVTT, request_url, update_subtitles_list, get_main_title
 
 logger = getLogger()
 
@@ -232,7 +232,7 @@ class Ted2Zim:
 
         playlist_url = f"{self.playlists_base_url}/{playlist}"
         logger.debug(f"extract_videos_from_playlist: {playlist_url}")
-        soup = BeautifulSoup(download_link(playlist_url).text, features="html.parser")
+        soup = BeautifulSoup(request_url(playlist_url).text, features="html.parser")
         video_elements = soup.find_all("a", attrs={"class": "group"})
         self.playlist_title = soup.find("h1").string
         self.playlist_description = soup.find("p", attrs={"class": "text-base"}).string
@@ -271,42 +271,26 @@ class Ted2Zim:
     
 
     def query_search_engine(self, topic, page):
-        for attempt in range(1, 6):
-            time.sleep(1)  # delay requests
-            logger.debug(f"Fetching page {page} of topic {topic}")
-            req = requests.post(
-                SEARCH_URL,
-                headers={"User-Agent": "Mozilla/5.0"},
-                json=[
-                    {
-                        "indexName": "relevance",
-                        "params": {
-                            "attributeForDistinct": "objectID",
-                            "distinct": 1,
-                            "facetFilters": [[f"tags:{topic}"]],
-                            "facets": ["subtitle_languages", "tags"],
-                            "highlightPostTag": "__/ais-highlight__",
-                            "highlightPreTag": "__ais-highlight__",
-                            "hitsPerPage": 24,
-                            "maxValuesPerFacet": 500,
-                            "page": page,
-                            "query": "",
-                            "tagFilters": "",
-                        },
-                    },
-                ],
-            )
-            try:
-                req.raise_for_status()
-            except Exception as exc:
-                if req.status_code == 404:
-                    raise exc
-                time.sleep(30 * attempt)  # wait upon failure
-                continue
-            return req
-        raise ConnectionRefusedError(
-            f"Failed get search results page {page} of topic {topic} after {attempt} attempts (HTTP {req.status_code})"
-        )
+        logger.debug(f"Fetching page {page} of topic {topic}")
+        data = [
+            {
+                "indexName": "relevance",
+                "params": {
+                    "attributeForDistinct": "objectID",
+                    "distinct": 1,
+                    "facetFilters": [[f"tags:{topic}"]],
+                    "facets": ["subtitle_languages", "tags"],
+                    "highlightPostTag": "__/ais-highlight__",
+                    "highlightPreTag": "__ais-highlight__",
+                    "hitsPerPage": 24,
+                    "maxValuesPerFacet": 500,
+                    "page": page,
+                    "query": "",
+                    "tagFilters": "",
+                },
+            },
+        ]
+        return request_url(SEARCH_URL, data)
 
     def extract_videos_from_topics(self, topic):
         """extracts metadata for required number of videos on different topics"""
@@ -649,7 +633,7 @@ class Ted2Zim:
             return False
 
         logger.debug(f"extract_info_from_video_page: {url}")
-        soup = BeautifulSoup(download_link(url).text, features="html.parser")
+        soup = BeautifulSoup(request_url(url).text, features="html.parser")
 
         json_data = json.loads(
             soup.find("script", attrs={"id": "__NEXT_DATA__"}).string

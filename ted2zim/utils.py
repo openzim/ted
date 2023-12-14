@@ -29,12 +29,15 @@ def update_subtitles_list(video_id, language_list):
     return language_list
 
 
-def download_link(url):
+def request_url(url, json_data=None):
     if url == f"{BASE_URL}playlists/57":
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
     for attempt in range(1, 6):
         time.sleep(1)  # delay requests
-        req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        if json_data:
+            req = requests.post(url, headers={"User-Agent": "Mozilla/5.0"}, json=json_data)
+        else:
+            req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         try:
             req.raise_for_status()
         except Exception as exc:
@@ -43,9 +46,14 @@ def download_link(url):
             time.sleep(30 * attempt)  # wait upon failure
             continue
         return req
-    raise ConnectionRefusedError(
-        f"Failed to download {url} after {attempt} attempts (HTTP {req.status_code})"
-    )
+    if json_data:
+        raise ConnectionRefusedError(
+            f"Failed to query {url} after {attempt} attempts (HTTP {req.status_code}); sent data was: {json.dumps(json_data)}"
+        )
+    else:
+        raise ConnectionRefusedError(
+            f"Failed to download {url} after {attempt} attempts (HTTP {req.status_code})"
+        )
 
 
 class WebVTT:
@@ -57,7 +65,7 @@ class WebVTT:
 
     def convert(self):
         """download and convert its URL to WebVTT text"""
-        req = download_link(self.url)
+        req = request_url(self.url)
 
         if req.status_code == 404:
             return None
