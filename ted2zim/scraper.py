@@ -7,6 +7,7 @@ import datetime
 import json
 import locale
 import pathlib
+import requests
 import shutil
 import tempfile
 import time
@@ -29,6 +30,7 @@ from zimscraperlib.zim import make_zim_file
 from .constants import (
     ALL,
     BASE_URL,
+    SEARCH_URL,
     MATCHING,
     NONE,
     ROOT_DIR,
@@ -97,7 +99,7 @@ class Ted2Zim:
         self.topics = (
             []
             if not topics
-            else [c.strip().replace(" ", "+") for c in topics.split(",")]
+            else topics.split(",")
         )
         self.autoplay = autoplay
         self.playlist = playlist
@@ -168,7 +170,7 @@ class Ted2Zim:
 
     @property
     def talks_base_url(self):
-        return BASE_URL + "talks"
+        return BASE_URL + "talks/"
 
     @property
     def playlists_base_url(self):
@@ -246,47 +248,71 @@ class Ted2Zim:
                     )
                     for lang_url in other_lang_urls:
                         self.extract_info_from_video_page(lang_url)
-                    self.already_visited.append(urllib.parse.urlparse(url)[2])
+                    self.already_visited.append(urllib.parse.urlparse(url).path)
             logger.debug(f"Seen {relative_path}")
         logger.debug(f"Total videos found on playlist: {len(video_elements)}")
         if not video_elements:
             raise ValueError("Wrong playlist ID supplied. No videos found")
 
-    def generate_search_result_and_scrape(self, topic_url, total_videos_scraped):
-        """generates a search result and returns the total number of videos scraped"""
+    def generate_search_results(self, topic):
+        """generates a search results and returns the total number of videos scraped"""
 
-        page = 1
+        total_videos_scraped = 0
+        page = 0
         while True:
-            logger.debug(f"generate_search_result_and_scrape: {topic_url}&page={page}")
-            html = download_link(f"{topic_url}&page={page}").text
-            nb_videos_extracted, nb_videos_on_page = self.extract_videos_on_topic_page(
-                html
-            )
+            result = self.query_search_engine(topic, page)
+            result_json = result.json()
+            nb_videos_extracted, nb_videos_on_page = self.extract_videos_in_search_results(result_json)
             if nb_videos_on_page == 0:
                 break
             total_videos_scraped += nb_videos_extracted
             page += 1
         return total_videos_scraped
+    
+
+    def query_search_engine(self, topic, page):
+        for attempt in range(1, 6):
+            time.sleep(1)  # delay requests
+            logger.debug(f"Fetching page {page} of topic {topic}")
+            req = requests.post(
+                SEARCH_URL,
+                headers={"User-Agent": "Mozilla/5.0"},
+                json=[
+                    {
+                        "indexName": "relevance",
+                        "params": {
+                            "attributeForDistinct": "objectID",
+                            "distinct": 1,
+                            "facetFilters": [[f"tags:{topic}"]],
+                            "facets": ["subtitle_languages", "tags"],
+                            "highlightPostTag": "__/ais-highlight__",
+                            "highlightPreTag": "__ais-highlight__",
+                            "hitsPerPage": 24,
+                            "maxValuesPerFacet": 500,
+                            "page": page,
+                            "query": "",
+                            "tagFilters": "",
+                        },
+                    },
+                ],
+            )
+            try:
+                req.raise_for_status()
+            except Exception as exc:
+                if req.status_code == 404:
+                    raise exc
+                time.sleep(30 * attempt)  # wait upon failure
+                continue
+            return req
+        raise ConnectionRefusedError(
+            f"Failed get search results page {page} of topic {topic} after {attempt} attempts (HTTP {req.status_code})"
+        )
 
     def extract_videos_from_topics(self, topic):
         """extracts metadata for required number of videos on different topics"""
 
         logger.debug(f"Fetching video links for topic: {topic}")
-        topic_url = f"{self.talks_base_url}?topics%5B%5D={topic}"
-        total_videos_scraped = 0
-
-        if self.source_languages:
-            for lang in self.source_languages:
-                topic_url = topic_url + f"&language={lang}"
-                total_videos_scraped = self.generate_search_result_and_scrape(
-                    topic_url, total_videos_scraped
-                )
-
-        else:
-            total_videos_scraped = self.generate_search_result_and_scrape(
-                topic_url, total_videos_scraped
-            )
-
+        total_videos_scraped = self.generate_search_results(topic)
         logger.info(f"Total video links found in {topic}: {total_videos_scraped}")
         if total_videos_scraped == 0:
             return False
@@ -402,31 +428,16 @@ class Ted2Zim:
                 urls.append(urllib.parse.urlunparse(url_parts))
         return urls
 
-    def extract_videos_on_topic_page(self, page_html):
-
-        # all videos are embedded in a <div> with the class name 'row'.
-        # we are searching for the div inside this div, that has an <a>-tag
-        # with the class name 'media__image', because this is the relative
-        # link to the representative TED talk. It turns this relative link to
-        # an absolute link and calls extract_video_info for them
-        soup = BeautifulSoup(page_html, features="html.parser")
-        video_links = soup.select("div.row div.media__image a")
+    def extract_videos_in_search_results(self, result_json):
+        hits = result_json["results"][0]["hits"]
         nb_extracted = 0
-        nb_listed = len(video_links)
+        nb_listed = len(hits)
         logger.debug(f"{nb_listed} video(s) found on current page")
-        for video_link in video_links:
-            url = urllib.parse.urljoin(self.talks_base_url, video_link["href"])
+        for hit in hits:
+            url = urllib.parse.urljoin(self.talks_base_url, hit["slug"])
             if self.extract_info_from_video_page(url):
                 nb_extracted += 1
-                if self.source_languages and len(self.source_languages) > 1:
-                    other_lang_urls = self.generate_urls_for_other_languages(url)
-                    logger.debug(
-                        f"Searching info for video in other {len(other_lang_urls)} language(s)"
-                    )
-                    for lang_url in other_lang_urls:
-                        self.extract_info_from_video_page(lang_url)
-                    self.already_visited.append(urllib.parse.urlparse(url)[2])
-            logger.debug(f"Seen {video_link['href']}")
+            logger.debug(f"Seen {hit['slug']}")
         return nb_extracted, nb_listed
 
     def get_lang_code_from_url(self, url, with_full_query=False):
@@ -537,15 +548,22 @@ class Ted2Zim:
         except Exception as exc:
             logger.warning(f"player data has no entry for {lang_code}: {exc}")
             lang_name = lang_code
-        # talk_info = json_data["talks"][0]
+        if (self.topics) :
+            # we need to filter videos since this has not been done before for topics with
+            # the "new" search page (2023)
+            if lang_code not in self.source_languages:
+                # video language is not among the selected ones, we have to check subtitles
+                # if they are enough
+                if (not self.subtitles_enough):
+                    logger.debug(f"Ignoring video in non-selected language {lang_code}")
+                    return False
+                else:
+                    matching_languages = [lang for lang in player_data["languages"] if lang["languageCode"] in self.source_languages]
+                    if len(matching_languages) == 0:
+                        logger.debug(f"Ignoring video without a selected language in audio or subtitles")
+                        return False
+                    
         native_talk_language = player_data["nativeLanguage"]
-        if (
-            not self.subtitles_enough
-            and self.source_languages
-            and native_talk_language != lang_code
-            and self.topics
-        ):
-            return False
 
         # Extract the speaker of the TED talk
         if len(json_data["speakers"]):
@@ -622,7 +640,7 @@ class Ted2Zim:
         # returns True if successfully scraped new video
 
         # don't scrape if URL already visited
-        if urllib.parse.urlparse(url)[2] in self.already_visited:
+        if urllib.parse.urlparse(url).path in self.already_visited:
             return False
 
         # don't scrape if maximum retry count is reached
