@@ -30,6 +30,13 @@ def update_subtitles_list(video_id, language_list):
 
 
 def request_url(url, json_data=None):
+    """performs an HTTP request and returns the response, either GET or POST
+    
+    - json_data is used as POST body when passed, otherwise a GET request is done
+    - request is retried 5 times, with a 30*attemp_no secs pause between retries
+    - a pause of 1 sec is done before every request (including first one)
+    """
+
     if url == f"{BASE_URL}playlists/57":
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
     for attempt in range(1, 6):
