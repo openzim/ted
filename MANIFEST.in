@@ -1,4 +1,0 @@
-include *.md
-include get_js_deps.sh
-include requirements.txt
-recursive-include ted2zim *

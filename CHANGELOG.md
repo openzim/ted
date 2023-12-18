@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Changed
+- significant refactoring to adopt openZIM Python conventions
 - fixed search by topic to use new search API instead of broken web page scraping (#149)
 - download_link is renamed request_url and can also perform POST requests (in addition to previous GET requests)
 
