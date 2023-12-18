@@ -17,7 +17,7 @@ from zimscraperlib.logging import nicer_args_join
 from kiwixstorage import KiwixStorage
 
 from ..constants import NAME, getLogger
-from ..utils import download_link, get_temp_fpath
+from ..utils import request_url, get_temp_fpath
 
 logger = getLogger()
 
@@ -83,7 +83,7 @@ class TedHandler(object):
         for topic in topics_list:
             logger.debug(f"Getting playlists related to {topic}")
             playlist_sub_list = json.loads(
-                download_link(
+                request_url(
                     f"https://www.ted.com/playlists/browse.json?topics={topic['value'].replace(' ', '+')}"
                 ).text
             )
@@ -136,7 +136,7 @@ class TedHandler(object):
         """returns a list of topics or playlists"""
         # get all topics
         topics_list = json.loads(
-            download_link("https://www.ted.com/topics/combo?models=Talks").text
+            request_url("https://www.ted.com/topics/combo?models=Talks").text
         )
         if mode == "topic":
             return topics_list

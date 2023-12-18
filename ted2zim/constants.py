@@ -17,6 +17,8 @@ SCRAPER = f"{NAME} {VERSION}"
 
 BASE_URL = "https://ted.com/"
 
+SEARCH_URL = "https://zenith-prod-alt.ted.com/api/search"
+
 MATCHING = "matching"
 ALL = "all"
 NONE = "none"
