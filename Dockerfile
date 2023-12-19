@@ -1,10 +1,10 @@
-FROM python:3.8-slim-bookworm
+FROM python:3.11-slim-bookworm
 LABEL org.opencontainers.image.source https://github.com/openzim/ted
 
 # Install necessary packages
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      locales-all wget unzip ffmpeg curl \
+      locales-all wget unzip ffmpeg curl libmagic1 \
  && rm -rf /var/lib/apt/lists/* \
  && python -m pip install --no-cache-dir -U \
       pip

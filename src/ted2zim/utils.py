@@ -139,13 +139,15 @@ class WebVTT:
 
 @contextlib.contextmanager
 def get_temp_fpath(**kwargs):
+    fpath = None
     try:
         fh = tempfile.NamedTemporaryFile(delete=False, **kwargs)
         fpath = pathlib.Path(fh.name)
         fh.close()
         yield fpath
     finally:
-        fpath.unlink()
+        if fpath:
+            fpath.unlink()
 
 
 def get_main_title(titles, prefered_lang):

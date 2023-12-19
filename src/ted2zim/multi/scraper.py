@@ -291,6 +291,7 @@ class TedHandler:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
+            check=False,
         )
         return process.returncode == 0, process
 
@@ -313,7 +314,7 @@ class TedHandler:
         args += self.extra_args
         if self.debug:
             args += ["--debug"]
-        return subprocess.run(args).returncode
+        return subprocess.run(args, check=False).returncode
 
     def fetch_metadata(self):
         """retrieves and loads metadata from --metadata-from"""

@@ -6,13 +6,13 @@ build-backend = "hatchling.build"
 name = "ted2zim"
 authors = [{ name = "Kiwix", email = "dev@kiwix.org" }]
 keywords = ["kiwix", "zim", "ted", "openzim", "offline"]
-requires-python = ">=3.8,<3.9"
+requires-python = ">=3.11,<3.12"
 description = "Make ZIM file from TED Talks"
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
 classifiers = [
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.11",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 dependencies = [
@@ -33,7 +33,7 @@ lint = ["black==23.12.0", "ruff==0.1.8"]
 check = ["pyright==1.1.341"]
 test = ["pytest==7.4.3", "coverage==7.3.3"]
 dev = [
-  "pre-commit==3.5.0",
+  "pre-commit==3.6.0",
   "debugpy==1.8.0",
   "ted2zim[scripts]",
   "ted2zim[lint]",
@@ -98,10 +98,10 @@ all = "inv checkall --args '{args}'"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py311']
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py311"
 line-length = 88
 src = ["src"]
 select = [
@@ -222,5 +222,5 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 include = ["src", "tests", "tasks.py"]
 exclude = [".env/**", ".venv/**"]
 extraPaths = ["src"]
-pythonVersion = "3.8"
+pythonVersion = "3.11"
 typeCheckingMode = "basic"
