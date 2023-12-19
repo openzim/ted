@@ -20,8 +20,11 @@ RUN pip install --no-cache-dir /src
 COPY src /src/src
 COPY *.md /src/
 
-# Install + cleanup
-RUN pip install --no-cache-dir /src \
+# Install + remove argparse + cleanup
+# argparse is a pif dependency but it is an old version ; we do not need it in recent
+# Python versions (it even break ted2zim-multi since allow_abbrev is not supported)
+RUN pip install --no-cache-dir /src  \
+ && pip uninstall -y argparse \
  && rm -rf /src
 
 RUN mkdir -p /output
