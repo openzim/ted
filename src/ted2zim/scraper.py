@@ -175,18 +175,17 @@ class Ted2Zim:
             lang_code_list.append(lang_info["iso-639-1"])
 
         # supplied query was not iso-639-1
+        elif lang_info["iso-639-1"]:
+            lang_code_list.append(lang_info["iso-639-1"])
+            # check for extra language codes to include
+            if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
+                for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
+                    lang_code_list.append(code)
+        elif lang_info["iso-639-3"]:
+            lang_code_list.append(lang_info["iso-639-3"])
         else:
-            if lang_info["iso-639-1"]:
-                lang_code_list.append(lang_info["iso-639-1"])
-                # check for extra language codes to include
-                if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
-                    for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
-                        lang_code_list.append(code)
-            elif lang_info["iso-639-3"]:
-                lang_code_list.append(lang_info["iso-639-3"])
-            else:
-                supplied_lang = lang_info["query"]
-                logger.error(f"Language {supplied_lang} is not supported by TED")
+            supplied_lang = lang_info["query"]
+            logger.error(f"Language {supplied_lang} is not supported by TED")
 
     def to_ted_langcodes(self, languages):
         """Converts languages queries into TED language codes
@@ -785,8 +784,8 @@ class Ted2Zim:
 
         downloaded_from_cache = False
         preset = WebpMedium()
+        s3_key = f"speaker_image/{video_id}" if self.s3_storage else None
         if self.s3_storage:
-            s3_key = f"speaker_image/{video_id}"
             downloaded_from_cache = self.download_from_cache(
                 s3_key, speaker_path, preset.VERSION
             )
@@ -803,7 +802,7 @@ class Ted2Zim:
             except Exception:
                 logger.error(f"Could not download speaker image for {video_title}")
             else:
-                if self.s3_storage and video_speaker:
+                if s3_key and video_speaker:
                     self.upload_to_cache(s3_key, speaker_path, preset.VERSION)
 
     def download_thumbnail(
@@ -813,8 +812,8 @@ class Ted2Zim:
 
         downloaded_from_cache = False
         preset = WebpMedium()
+        s3_key = f"thumbnail/{video_id}" if self.s3_storage else None
         if self.s3_storage:
-            s3_key = f"thumbnail/{video_id}"
             downloaded_from_cache = self.download_from_cache(
                 s3_key, thumbnail_path, preset.VERSION
             )
@@ -842,6 +841,9 @@ class Ted2Zim:
         # Save the thumbnail for the video in build_dir/{video id}/thumbnail.jpg.
         # Save the image of the speaker in build_dir/{video id}/speaker.jpg.
 
+        if not self.yt_downloader:
+            raise Exception("yt_downloader is not setup")
+
         # set up variables
         video_id = str(video["id"])
         # Take the english version of title or else whatever language it's available in
@@ -865,8 +867,12 @@ class Ted2Zim:
         # download video
         downloaded_from_cache = False
         logger.debug(f"Downloading {video_title}")
+        s3_key = (
+            f"{self.video_format}/{self.video_quality}/{video_id}"
+            if self.s3_storage
+            else None
+        )
         if self.s3_storage:
-            s3_key = f"{self.video_format}/{self.video_quality}/{video_id}"
             downloaded_from_cache = self.download_from_cache(
                 s3_key, req_video_file_path, preset.VERSION
             )
@@ -982,14 +988,16 @@ class Ted2Zim:
     def download_from_cache(self, key, object_path, encoder_version):
         """whether it downloaded from S3 cache"""
 
+        if not self.s3_storage:
+            raise Exception("s3_storage is not set")
+
         if self.use_any_optimized_version:
             if not self.s3_storage.has_object(key, self.s3_storage.bucket_name):
                 return False
-        else:
-            if not self.s3_storage.has_object_matching_meta(
-                key, tag="encoder_version", value=f"v{encoder_version}"
-            ):
-                return False
+        elif not self.s3_storage.has_object_matching_meta(
+            key, tag="encoder_version", value=f"v{encoder_version}"
+        ):
+            return False
         object_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             self.s3_storage.download_file(key, object_path)

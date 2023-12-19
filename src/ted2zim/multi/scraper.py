@@ -64,9 +64,12 @@ class TedHandler:
     def get_playlist_slug(item):
         partial_url = f"https://www.ted.com/playlists/{item}/"
         for attempt in range(5):
-            resp = requests.get(partial_url, allow_redirects=True)
-            if resp.status_code == 200:
-                # we get the slug from the final url after the partial url gets redirected
+            resp = requests.get(
+                partial_url, allow_redirects=True, timeout=REQUESTS_TIMEOUT
+            )
+            if resp.status_code == HTTPStatus.OK:
+                # we get the slug from the final url after the partial url gets
+                # redirected
                 return slugify(
                     urllib.parse.unquote(resp.url.replace(partial_url, "")),
                     separator="-",
@@ -322,7 +325,9 @@ class TedHandler:
         # load JSON from source (URL or file)
         try:
             if str(self.metadata_from).startswith("http"):
-                self.metadata = requests.get(str(self.metadata_from)).json()
+                self.metadata = requests.get(
+                    str(self.metadata_from), timeout=REQUESTS_TIMEOUT
+                ).json()
             else:
                 if not self.metadata_from.exists():
                     raise OSError(

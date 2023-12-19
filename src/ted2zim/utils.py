@@ -36,28 +36,43 @@ def request_url(url, json_data=None):
 
     if url == f"{BASE_URL}playlists/57":
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
-    for attempt in range(1, 6):
+    max_attempts = 5
+    attempt = 1
+    while True:
         time.sleep(1)  # delay requests
         if json_data:
-            req = requests.post(url, headers={"User-Agent": "Mozilla/5.0"}, json=json_data)
+            req = requests.post(
+                url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                json=json_data,
+                timeout=REQUESTS_TIMEOUT,
+            )
         else:
-            req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            req = requests.get(
+                url, headers={"User-Agent": "Mozilla/5.0"}, timeout=REQUESTS_TIMEOUT
+            )
         try:
             req.raise_for_status()
+            return req
         except Exception as exc:
-            if req.status_code == 404:
+            if req.status_code == HTTPStatus.NOT_FOUND:
                 raise exc
             time.sleep(30 * attempt)  # wait upon failure
+
+        if attempt < max_attempts:
+            attempt += 1
             continue
-        return req
-    if json_data:
-        raise ConnectionRefusedError(
-            f"Failed to query {url} after {attempt} attempts (HTTP {req.status_code}); sent data was: {json.dumps(json_data)}"
-        )
-    else:
-        raise ConnectionRefusedError(
-            f"Failed to download {url} after {attempt} attempts (HTTP {req.status_code})"
-        )
+
+        if json_data:
+            raise ConnectionRefusedError(
+                f"Failed to query {url} after {attempt} attempts (HTTP "
+                f"{req.status_code}); sent data was: {json.dumps(json_data)}"
+            )
+        else:
+            raise ConnectionRefusedError(
+                f"Failed to download {url} after {attempt} attempts "
+                f"(HTTP {req.status_code})"
+            )
 
 
 class WebVTT:
@@ -71,7 +86,7 @@ class WebVTT:
         """download and convert its URL to WebVTT text"""
         req = request_url(self.url)
 
-        if req.status_code == 404:
+        if req.status_code == HTTPStatus.NOT_FOUND:
             return None
         try:
             source_subtitles = req.json()
