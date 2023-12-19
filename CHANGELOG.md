@@ -8,9 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Changed
-- significant refactoring to adopt openZIM Python conventions
 - fixed search by topic to use new search API instead of broken web page scraping (#149)
 - download_link is renamed request_url and can also perform POST requests (in addition to previous GET requests)
+- upgrade to Python 3.11 instead of 3.8
+- upgrade to zimscraperlib 2.1 + upgrade all other dependencies
+- significant refactoring to adopt openZIM Python conventions
+- activate stale bot + add convenient pull requests template
 
 ## [2.0.13] - 2023-04-24
 
