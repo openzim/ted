@@ -1,33 +1,30 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
-
-import sys
-import time
+import datetime
 import json
 import pathlib
-import urllib
-import datetime
 import subprocess
+import sys
+import time
+import urllib.parse
+from http import HTTPStatus
 
 import requests
+from kiwixstorage import KiwixStorage
 from slugify import slugify
 from zimscraperlib.logging import nicer_args_join
-from kiwixstorage import KiwixStorage
 
-from ..constants import NAME, getLogger
-from ..utils import request_url, get_temp_fpath
+from ted2zim.constants import NAME, REQUESTS_TIMEOUT, get_logger
+from ted2zim.utils import get_temp_fpath, request_url
 
-logger = getLogger()
+logger = get_logger()
 
 
-class TedHandler(object):
+class TedHandler:
     def __init__(
         self,
         options,
         extra_args,
     ):
+        self.debug = False
         # save options as properties
         for key, value in options.items():
             if key not in ["topics", "playlists"]:
@@ -84,7 +81,8 @@ class TedHandler(object):
             logger.debug(f"Getting playlists related to {topic}")
             playlist_sub_list = json.loads(
                 request_url(
-                    f"https://www.ted.com/playlists/browse.json?topics={topic['value'].replace(' ', '+')}"
+                    "https://www.ted.com/playlists/browse.json?topics="
+                    f"{topic['value'].replace(' ', '+')}"
                 ).text
             )
             for record in playlist_sub_list["records"]:
@@ -101,18 +99,21 @@ class TedHandler(object):
                 meta = s3_storage.get_object_stat(key).meta
                 if datetime.datetime.fromisoformat(
                     meta.get("retrieved_on")
-                ) > datetime.datetime.now() - datetime.timedelta(days=7):
+                ) > datetime.datetime.now() - datetime.timedelta(  # noqa: DTZ005
+                    days=7
+                ):
                     s3_storage.download_file(key, fpath)
                 else:
                     logger.debug(
-                        "playlists_list.json in optimization cache is too old to be used"
+                        "playlists_list.json in optimization cache is too old to be "
+                        "used"
                     )
                     return False
             except Exception as exc:
                 logger.error(f"{key} failed to download from cache: {exc}")
                 return False
             logger.info(f"downloaded playlist list from cache at {key}")
-            with open(fpath, "r") as fp:
+            with open(fpath) as fp:
                 json_data = json.load(fp)
 
             return json_data
@@ -125,7 +126,9 @@ class TedHandler(object):
                 s3_storage.upload_file(
                     fpath,
                     key,
-                    meta={"retrieved_on": datetime.datetime.now().isoformat()},
+                    meta={
+                        "retrieved_on": datetime.datetime.now().isoformat()  # noqa: DTZ005
+                    },
                 )
             except Exception as exc:
                 logger.error(f"{key} failed to upload to cache: {exc}")
@@ -193,7 +196,8 @@ class TedHandler(object):
 
     def preprocess_inputs(self, mode):
         """Prepare the playlist and topic list if all is passed.
-        Also automatically set self.indiv_zims if not already set and multiple playlists"""
+        Also automatically set self.indiv_zims if not already set and multiple playlists
+        """
         if mode == "topic":
             if self.topics == ["all"]:
                 self.topics = [
@@ -205,7 +209,8 @@ class TedHandler(object):
                     str(playlist["id"])
                     for playlist in self.get_list_of_all(mode="playlist")
                 ]
-            # automatically set self.indiv_zims if not already set and multiple playlists
+            # automatically set self.indiv_zims if not already set and multiple
+            # playlists
             if len(self.playlists) > 1 and not self.indiv_zims:
                 self.indiv_zims = True
         else:
@@ -282,7 +287,7 @@ class TedHandler(object):
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=True,
+            text=True,
         )
         return process.returncode == 0, process
 
@@ -320,18 +325,19 @@ class TedHandler(object):
                 self.metadata = requests.get(str(self.metadata_from)).json()
             else:
                 if not self.metadata_from.exists():
-                    raise IOError(
+                    raise OSError(
                         f"--metadata-from file could not be found: {self.metadata_from}"
                     )
-                with open(self.metadata_from, "r") as fh:
+                with open(self.metadata_from) as fh:
                     self.metadata = json.load(fh)
         except Exception as exc:
             logger.debug(exc)
             raise ValueError(
                 f"--metadata-from could not be loaded as JSON: {self.metadata_from}"
-            )
+            ) from None
 
-        # ensure the basic format is respected: dict of playlist id/ topic name to dict of meta
+        # ensure the basic format is respected: dict of playlist id/ topic name to dict
+        # of meta
         if not isinstance(self.metadata, dict) or len(self.metadata) != sum(
             [
                 1

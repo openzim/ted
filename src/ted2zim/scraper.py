@@ -1,13 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
 import concurrent.futures
 import datetime
 import json
 import locale
 import pathlib
-import requests
 import shutil
 import tempfile
 import time
@@ -16,32 +11,32 @@ import urllib.parse
 import dateutil.parser
 import jinja2
 from bs4 import BeautifulSoup
-from slugify import slugify
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
+from slugify import slugify
 from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
-from zimscraperlib.i18n import get_language_details, setlocale, _
+from zimscraperlib.i18n import _, get_language_details, setlocale
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
 from zimscraperlib.video.presets import VideoMp4Low, VideoWebmLow
 from zimscraperlib.zim import make_zim_file
 
-from .constants import (
+from ted2zim.constants import (
     ALL,
     BASE_URL,
-    SEARCH_URL,
     MATCHING,
     NONE,
     ROOT_DIR,
     SCRAPER,
+    SEARCH_URL,
     TEDLANGS,
-    getLogger,
+    get_logger,
 )
-from .processing import post_process_video
-from .utils import WebVTT, request_url, update_subtitles_list, get_main_title
+from ted2zim.processing import post_process_video
+from ted2zim.utils import WebVTT, get_main_title, request_url, update_subtitles_list
 
-logger = getLogger()
+logger = get_logger()
 
 
 class Ted2Zim:
@@ -72,7 +67,6 @@ class Ted2Zim:
         tmp_dir,
         threads,
     ):
-
         # video-encoding info
         self.video_format = video_format
         self.low_quality = low_quality
@@ -80,9 +74,9 @@ class Ted2Zim:
         # zim params
         self.fname = fname
         self.languages = (
-            [] if languages is None else [l.strip() for l in languages.split(",")]
+            [] if languages is None else [lang.strip() for lang in languages.split(",")]
         )
-        self.tags = [] if tags is None else [t.strip() for t in tags.split(",")]
+        self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
         self.title = title
         self.description = description
         self.creator = creator
@@ -96,19 +90,13 @@ class Ted2Zim:
         self.build_dir = pathlib.Path(tempfile.mkdtemp(dir=tmp_dir))
 
         # scraper options
-        self.topics = (
-            []
-            if not topics
-            else topics.split(",")
-        )
+        self.topics = [] if not topics else topics.split(",")
         self.autoplay = autoplay
         self.playlist = playlist
         self.subtitles_enough = subtitles_enough
         self.subtitles_setting = (
             subtitles_setting
-            if subtitles_setting == ALL
-            or subtitles_setting == MATCHING
-            or subtitles_setting == NONE
+            if subtitles_setting in (ALL, MATCHING, NONE)
             else self.to_ted_langcodes(
                 [lang.strip() for lang in subtitles_setting.split(",")]
             )
@@ -234,8 +222,10 @@ class Ted2Zim:
         logger.debug(f"extract_videos_from_playlist: {playlist_url}")
         soup = BeautifulSoup(request_url(playlist_url).text, features="html.parser")
         video_elements = soup.find_all("a", attrs={"class": "group"})
-        self.playlist_title = soup.find("h1").string
-        self.playlist_description = soup.find("p", attrs={"class": "text-base"}).string
+        self.playlist_title = soup.find("h1").string  # pyright: ignore
+        self.playlist_description = soup.find(
+            "p", attrs={"class": "text-base"}
+        ).string  # pyright: ignore
 
         for element in video_elements:
             relative_path = element.get("href")
@@ -244,7 +234,8 @@ class Ted2Zim:
                 if self.source_languages and len(self.source_languages) > 1:
                     other_lang_urls = self.generate_urls_for_other_languages(url)
                     logger.debug(
-                        f"Searching info for the video in other {len(other_lang_urls)} language(s)"
+                        f"Searching info for the video in other {len(other_lang_urls)} "
+                        "language(s)"
                     )
                     for lang_url in other_lang_urls:
                         self.extract_info_from_video_page(lang_url)
@@ -262,13 +253,15 @@ class Ted2Zim:
         while True:
             result = self.query_search_engine(topic, page)
             result_json = result.json()
-            nb_videos_extracted, nb_videos_on_page = self.extract_videos_in_search_results(result_json)
+            (
+                nb_videos_extracted,
+                nb_videos_on_page,
+            ) = self.extract_videos_in_search_results(result_json)
             if nb_videos_on_page == 0:
                 break
             total_videos_scraped += nb_videos_extracted
             page += 1
         return total_videos_scraped
-    
 
     def query_search_engine(self, topic, page):
         logger.debug(f"Fetching page {page} of topic {topic}")
@@ -303,45 +296,39 @@ class Ted2Zim:
         return True
 
     def update_zim_metadata(self):
-
         if not self.languages:
             self.zim_lang = "eng"
+        elif len(self.source_languages) > 1:
+            self.zim_lang = "mul"
         else:
-            if len(self.source_languages) > 1:
-                self.zim_lang = "mul"
+            lang_info = get_language_details(self.source_languages[0], failsafe=True)
+            if lang_info:
+                self.zim_lang = lang_info["iso-639-3"]
             else:
-                lang_info = get_language_details(
-                    self.source_languages[0], failsafe=True
-                )
-                if lang_info:
-                    self.zim_lang = lang_info["iso-639-3"]
-                else:
-                    self.zim_lang = "eng"
+                self.zim_lang = "eng"
 
         if self.playlist:
             if not self.title:
-                self.title = self.playlist_title.strip()
+                self.title = self.playlist_title.strip()  # pyright: ignore
             if not self.description:
-                self.description = self.playlist_description.strip()
+                self.description = self.playlist_description.strip()  # pyright: ignore
+        elif len(self.topics) > 1:
+            if not self.title:
+                self.title = "TED Collection"
+            if not self.description:
+                self.description = "A selection of TED videos from several topics"
         else:
-            if len(self.topics) > 1:
-                if not self.title:
-                    self.title = "TED Collection"
-                if not self.description:
-                    self.description = "A selection of TED videos from several topics"
-            else:
-                topic_str = self.topics[0].replace("+", " ")
-                if not self.title:
-                    self.title = f"{topic_str.capitalize()} from TED"
-                if not self.description:
-                    self.description = f"A selection of {topic_str} videos from TED"
+            topic_str = self.topics[0].replace("+", " ")
+            if not self.title:
+                self.title = f"{topic_str.capitalize()} from TED"
+            if not self.description:
+                self.description = f"A selection of {topic_str} videos from TED"
 
     def get_display_name(self, lang_code, lang_name):
         """Display name for language"""
 
         lang_info = get_language_details(lang_code, failsafe=True)
         if lang_code != "en" and lang_info:
-
             return lang_info["native"] + " - " + lang_name
         return lang_name
 
@@ -401,7 +388,9 @@ class Ted2Zim:
         """Possible URLs for other requested languages based on a video url"""
 
         urls = []
-        page_lang, query = self.get_lang_code_from_url(url, with_full_query=True)
+        page_lang, query = self.get_lang_code_from_url(
+            url, with_full_query=True
+        )  # pyright: ignore[reportGeneralTypeIssues]
         url_parts = list(urllib.parse.urlparse(url))
 
         # update the language query field value with other languages and form URLs
@@ -424,7 +413,7 @@ class Ted2Zim:
             logger.debug(f"Seen {hit['slug']}")
         return nb_extracted, nb_listed
 
-    def get_lang_code_from_url(self, url, with_full_query=False):
+    def get_lang_code_from_url(self, url, *, with_full_query=False):
         """gets the queried language code from a ted talk url"""
 
         # sample - https://www.ted.com/talks/alex_rosenthal_the_gauntlet_think_like_a_coder_ep_8?language=ja
@@ -516,7 +505,7 @@ class Ted2Zim:
                             "languageName": self.get_display_name(lang_code, lang_name),
                         }
                     )
-                if self.subtitles_setting == MATCHING or self.subtitles_setting == NONE:
+                if self.subtitles_setting in (MATCHING, NONE):
                     self.videos[index]["subtitles"] += subtitles
         return False
 
@@ -532,21 +521,28 @@ class Ted2Zim:
         except Exception as exc:
             logger.warning(f"player data has no entry for {lang_code}: {exc}")
             lang_name = lang_code
-        if (self.topics) :
-            # we need to filter videos since this has not been done before for topics with
-            # the "new" search page (2023)
+        if self.topics:
+            # we need to filter videos since this has not been done before for topics
+            # with the "new" search page (2023)
             if lang_code not in self.source_languages:
-                # video language is not among the selected ones, we have to check subtitles
-                # if they are enough
-                if (not self.subtitles_enough):
+                # video language is not among the selected ones, we have to check
+                # subtitles if they are enough
+                if not self.subtitles_enough:
                     logger.debug(f"Ignoring video in non-selected language {lang_code}")
                     return False
                 else:
-                    matching_languages = [lang for lang in player_data["languages"] if lang["languageCode"] in self.source_languages]
+                    matching_languages = [
+                        lang
+                        for lang in player_data["languages"]
+                        if lang["languageCode"] in self.source_languages
+                    ]
                     if len(matching_languages) == 0:
-                        logger.debug(f"Ignoring video without a selected language in audio or subtitles")
+                        logger.debug(
+                            "Ignoring video without a selected language in audio or "
+                            "subtitles"
+                        )
                         return False
-                    
+
         native_talk_language = player_data["nativeLanguage"]
 
         # Extract the speaker of the TED talk
@@ -560,7 +556,7 @@ class Ted2Zim:
             elif isinstance(json_data["speakers"], list):
                 speaker_info = json_data["speakers"][0]
             else:
-                raise IOError("Unexpected speaker JSON format: {}".format(json_data))
+                raise OSError(f"Unexpected speaker JSON format: {json_data}")
             speaker = " ".join(
                 [
                     speaker_info.get("firstame", ""),
@@ -628,7 +624,7 @@ class Ted2Zim:
             return False
 
         # don't scrape if maximum retry count is reached
-        if retry_count > 5:
+        if retry_count > 5:  # noqa: PLR2004
             logger.error("Max retries exceeded. Skipping video")
             return False
 
@@ -636,7 +632,7 @@ class Ted2Zim:
         soup = BeautifulSoup(request_url(url).text, features="html.parser")
 
         json_data = json.loads(
-            soup.find("script", attrs={"id": "__NEXT_DATA__"}).string
+            soup.find("script", attrs={"id": "__NEXT_DATA__"}).string  # pyright: ignore
         )["props"]["pageProps"]["videoData"]
 
         requested_lang_code = self.get_lang_code_from_url(url)
@@ -674,7 +670,6 @@ class Ted2Zim:
             video["slug"] = slugify(video["title"][0]["text"], separator="-")
 
     def render_video_pages(self):
-
         # Render static html pages from the scraped video data and
         # save the pages in build_dir/<video-id>/index.html
         env = jinja2.Environment(
@@ -699,10 +694,9 @@ class Ted2Zim:
             )
             html_path = self.build_dir.joinpath(video["slug"])
             with open(html_path, "w", encoding="utf-8") as html_page:
-                html_page.write(html)
+                html_page.write(html)  # pyright: ignore[reportGeneralTypeIssues]
 
     def render_home_page(self):
-
         # Render the homepage
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
@@ -726,10 +720,9 @@ class Ted2Zim:
         )
         home_page_path = self.build_dir.joinpath("index")
         with open(home_page_path, "w", encoding="utf-8") as html_page:
-            html_page.write(html)
+            html_page.write(html)  # pyright: ignore[reportGeneralTypeIssues]
 
     def copy_files_to_build_directory(self):
-
         # Copy files from template_dir to build_dir
         assets_dir = self.templates_dir.joinpath("assets")
         if assets_dir.exists():
@@ -750,7 +743,7 @@ class Ted2Zim:
                 lang["languageCode"] for lang in video["languages"]
             ]
             json_data = {
-                "languages": [lang_code for lang_code in set(lang_codes)],
+                "languages": list(set(lang_codes)),
                 "id": video["id"],
                 "description": video["description"],
                 "title": video["title"],
@@ -765,10 +758,9 @@ class Ted2Zim:
         with open(assets_path.joinpath("data.js"), "w") as data_file:
             data_file.write("json_data = " + json.dumps(video_list, indent=4))
 
-    def download_jpeg_image_and_convert(
-        self, url, fpath, preset_options={}, resize=None
-    ):
-        """downloads a JPEG image and converts and optimizes it into desired format detected from fpath"""
+    def download_jpeg_image_and_convert(self, url, fpath, preset_options, resize=None):
+        """downloads a JPEG image and converts and optimizes it into desired format
+        detected from fpath"""
 
         org_jpeg_path = pathlib.Path(
             tempfile.NamedTemporaryFile(delete=False, suffix=".jpg").name
@@ -929,7 +921,8 @@ class Ted2Zim:
         self.yt_downloader.shutdown()
 
     def download_subtitles(self, index, video):
-        """download, converts and writes VTT subtitles for a video at a specific index in self.videos"""
+        """download, converts and writes VTT subtitles for a video at a specific index
+        in self.videos"""
 
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
@@ -941,7 +934,7 @@ class Ted2Zim:
         if not subs_dir.exists():
             subs_dir.mkdir(parents=True)
         else:
-            logger.debug(f"Subs dir exists already")
+            logger.debug("Subs dir exists already")
 
         # download subtitles
         logger.debug(f"Downloading subtitles for {video['title'][0]['text']}")
@@ -1010,7 +1003,7 @@ class Ted2Zim:
         """whether it uploaded from S3 cache"""
 
         try:
-            self.s3_storage.upload_file(
+            self.s3_storage.upload_file(  # pyright: ignore[reportOptionalMemberAccess]
                 object_path, key, meta={"encoder_version": f"v{encoder_version}"}
             )
         except Exception as exc:
@@ -1020,14 +1013,16 @@ class Ted2Zim:
         return True
 
     def remove_failed_topics_and_check_extraction(self, failed_topics):
-        """removes failed topics from topics list and raises error if scraper cannot continue"""
+        """removes failed topics from topics list and raises error if scraper cannot
+        continue"""
 
         for topic in failed_topics:
             self.topics.remove(topic)
         if not self.topics:
             if self.source_languages:
                 raise ValueError(
-                    "No videos found for any topic in the language(s) requested. Check topic(s) and/or language code supplied to --languages"
+                    "No videos found for any topic in the language(s) requested. Check "
+                    "topic(s) and/or language code supplied to --languages"
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
 
@@ -1035,7 +1030,7 @@ class Ted2Zim:
         logger.info(
             f"Starting scraper with:\n"
             f"  langs: {', '.join(self.source_languages)}\n"
-            f"  subtitles : {', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}\n"
+            f"  subtitles : { ', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}\n"  # noqa: E501
             f"  video format : {self.video_format}"
         )
 
@@ -1043,7 +1038,8 @@ class Ted2Zim:
             raise ValueError("Unable to connect to Optimization Cache. Check its URL.")
         if self.s3_storage:
             logger.info(
-                f"Using cache: {self.s3_storage.url.netloc} with bucket: {self.s3_storage.bucket_name}"
+                f"Using cache: {self.s3_storage.url.netloc} with bucket: "
+                f"{self.s3_storage.bucket_name}"
             )
 
         # playlist mode requested
@@ -1072,7 +1068,9 @@ class Ted2Zim:
         if not self.no_zim:
             self.fname = (
                 self.fname or f"{self.name.replace(' ', '-')}_{{period}}.zim"
-            ).format(period=datetime.datetime.now().strftime("%Y-%m"))
+            ).format(
+                period=datetime.datetime.now().strftime("%Y-%m")  # noqa: DTZ005
+            )
             logger.info("building ZIM file")
             if not self.output_dir.exists():
                 self.output_dir.mkdir(parents=True)
@@ -1084,10 +1082,10 @@ class Ted2Zim:
                 favicon="favicon.png",
                 title=self.title,
                 description=self.description,
-                language=self.zim_lang,
+                language=self.zim_lang,  # pyright: ignore[reportGeneralTypeIssues]
                 creator=self.creator,
                 publisher=self.publisher,
-                tags=self.tags + ["_category:ted", "ted", "_videos:yes"],
+                tags=[*self.tags, "_category:ted", "ted", "_videos:yes"],
                 scraper=SCRAPER,
             )
             if not self.keep_build_dir:

@@ -1,16 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
-import time
+import contextlib
 import json
 import pathlib
 import tempfile
-import contextlib
+import time
+from http import HTTPStatus
 
 import requests
 
-from .constants import BASE_URL
+from ted2zim.constants import BASE_URL, REQUESTS_TIMEOUT
 
 
 def has_argument(arg_name, all_args):
@@ -31,7 +28,7 @@ def update_subtitles_list(video_id, language_list):
 
 def request_url(url, json_data=None):
     """performs an HTTP request and returns the response, either GET or POST
-    
+
     - json_data is used as POST body when passed, otherwise a GET request is done
     - request is retried 5 times, with a 30*attemp_no secs pause between retries
     - a pause of 1 sec is done before every request (including first one)
@@ -111,14 +108,14 @@ class WebVTT:
         document = "WEBVTT\n\n"
         if "captions" in json_subtitles:
             for subtitle in json_subtitles["captions"]:
-                startTime = int(subtitle["startTime"]) + offset
+                start_time = int(subtitle["startTime"]) + offset
                 duration = int(subtitle["duration"])
                 content = subtitle["content"].strip()
 
                 document += (
-                    WebVTT.miliseconds_to_human(startTime)
+                    WebVTT.miliseconds_to_human(start_time)
                     + " --> "
-                    + WebVTT.miliseconds_to_human(startTime + duration)
+                    + WebVTT.miliseconds_to_human(start_time + duration)
                     + "\n"
                 )
                 document += content + "\n\n"
