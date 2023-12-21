@@ -49,8 +49,8 @@ Homepage = "https://github.com/openzim/ted"
 Donate = "https://www.kiwix.org/en/support-us/"
 
 [project.scripts]
-ted2zim = "ted2zim.__main__:main"
-ted2zim-multi = "ted2zim.multi.__main__:main"
+ted2zim = "ted2zim.entrypoint:main"
+ted2zim-multi = "ted2zim.multi.entrypoint:main"
 
 [tool.hatch.version]
 path = "src/ted2zim/__about__.py"
