@@ -36,8 +36,7 @@ def request_url(url, json_data=None):
 
     if url == f"{BASE_URL}playlists/57":
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
-    max_attempts = 5
-    attempt = 1
+    max_attempts, attempt = 5, 1
     while True:
         time.sleep(1)  # delay requests
         if json_data:

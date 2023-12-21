@@ -17,7 +17,8 @@ classifiers = [
 ]
 dependencies = [
   "python-dateutil==2.8.2",
-  "zimscraperlib==2.1.0", # cannot use 3.x for now, see 
+  # cannot use 3.x for now, see https://github.com/openzim/ted/issues/152
+  "zimscraperlib==2.1.0",
   "requests==2.31.0",
   "beautifulsoup4==4.9.3",
   "Jinja2==3.1.2",

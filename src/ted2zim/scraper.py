@@ -758,8 +758,11 @@ class Ted2Zim:
             data_file.write("json_data = " + json.dumps(video_list, indent=4))
 
     def download_jpeg_image_and_convert(self, url, fpath, preset_options, resize=None):
-        """downloads a JPEG image and converts and optimizes it into desired format
-        detected from fpath"""
+        """downloads a JPEG image and convert to proper format
+
+        Image is automatically converted and optimized into desired format detected from
+        fpath
+        """
 
         org_jpeg_path = pathlib.Path(
             tempfile.NamedTemporaryFile(delete=False, suffix=".jpg").name
@@ -927,8 +930,10 @@ class Ted2Zim:
         self.yt_downloader.shutdown()
 
     def download_subtitles(self, index, video):
-        """download, converts and writes VTT subtitles for a video at a specific index
-        in self.videos"""
+        """download, converts and writes VTT subtitles
+
+        Subtitles a written for a given video at a specific index in self.videos
+        """
 
         # Download the subtitle files, generate a WebVTT file
         # and save the subtitles in
@@ -1021,8 +1026,7 @@ class Ted2Zim:
         return True
 
     def remove_failed_topics_and_check_extraction(self, failed_topics):
-        """removes failed topics from topics list and raises error if scraper cannot
-        continue"""
+        """removes failed topics from topics list and check scraper can continue"""
 
         for topic in failed_topics:
             self.topics.remove(topic)
