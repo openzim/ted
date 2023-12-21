@@ -102,9 +102,7 @@ class TedHandler:
                 meta = s3_storage.get_object_stat(key).meta
                 if datetime.datetime.fromisoformat(
                     meta.get("retrieved_on")
-                ) > datetime.datetime.now() - datetime.timedelta(  # noqa: DTZ005
-                    days=7
-                ):
+                ) > datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=7):
                     s3_storage.download_file(key, fpath)
                 else:
                     logger.debug(
@@ -130,7 +128,7 @@ class TedHandler:
                     fpath,
                     key,
                     meta={
-                        "retrieved_on": datetime.datetime.now().isoformat()  # noqa: DTZ005
+                        "retrieved_on": datetime.datetime.now(datetime.UTC).isoformat()
                     },
                 )
             except Exception as exc:
