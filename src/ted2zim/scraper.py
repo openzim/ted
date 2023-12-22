@@ -1042,7 +1042,7 @@ class Ted2Zim:
         logger.info(
             f"Starting scraper with:\n"
             f"  langs: {', '.join(self.source_languages)}\n"
-            f"  subtitles : { ', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}\n"  # noqa: E501
+            f"  subtitles : {', '.join(self.subtitles_setting) if isinstance(self.subtitles_setting, list) else self.subtitles_setting}\n"  # noqa: E501
             f"  video format : {self.video_format}"
         )
 

@@ -3,13 +3,12 @@ import pathlib
 
 from zimscraperlib.logging import getLogger as lib_getLogger
 
+from ted2zim.__about__ import __version__
+
 ROOT_DIR = pathlib.Path(__file__).parent
 NAME = ROOT_DIR.name
 
-with open(ROOT_DIR.joinpath("VERSION")) as fh:
-    VERSION = fh.read().strip()
-
-SCRAPER = f"{NAME} {VERSION}"
+SCRAPER = f"{NAME} {__version__}"
 
 BASE_URL = "https://ted.com/"
 
