@@ -1,10 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
 import argparse
 
-from .constants import NAME, SCRAPER, MATCHING, ALL, NONE, getLogger, setDebug
+from ted2zim.constants import ALL, MATCHING, NAME, NONE, SCRAPER, get_logger, set_debug
 
 
 def main():
@@ -36,14 +32,17 @@ def main():
 
     parser.add_argument(
         "--subtitles-enough",
-        help="Whether to include videos that have a subtitle in requested --languages if audio is in another language",
+        help="Whether to include videos that have a subtitle in requested --languages "
+        "if audio is in another language",
         default=False,
         action="store_true",
     )
 
     parser.add_argument(
         "--subtitles",
-        help=f"Language setting for subtitles. {ALL}: include all available subtitles, {MATCHING} (default): only subtitles matching --languages, {NONE}: include no subtitle. Also accepts comma-seperated list of language codes",
+        help=f"Language setting for subtitles. {ALL}: include all available subtitles, "
+        f"{MATCHING} (default): only subtitles matching --languages, {NONE}: include no"
+        " subtitle. Also accepts comma-seperated list of language codes",
         default=MATCHING,
         dest="subtitles_setting",
     )
@@ -65,7 +64,8 @@ def main():
 
     parser.add_argument(
         "--autoplay",
-        help="Enable autoplay on video articles. Behavior differs on platforms/browsers.",
+        help="Enable autoplay on video articles. Behavior differs on "
+        "platforms/browsers.",
         action="store_true",
         default=False,
     )
@@ -94,7 +94,8 @@ def main():
 
     parser.add_argument(
         "--tags",
-        help="List of comma-separated Tags for the ZIM file. category:ted, ted, and _videos:yes added automatically",
+        help="List of comma-separated Tags for the ZIM file. category:ted, ted, and "
+        "_videos:yes added automatically",
     )
 
     parser.add_argument(
@@ -119,7 +120,8 @@ def main():
 
     parser.add_argument(
         "--tmp-dir",
-        help="Path to create temp folder in. Used for building ZIM file. Receives all data (storage space)",
+        help="Path to create temp folder in. Used for building ZIM file. Receives all "
+        "data (storage space)",
     )
 
     parser.add_argument(
@@ -162,10 +164,10 @@ def main():
     )
 
     args = parser.parse_args()
-    setDebug(args.debug)
-    logger = getLogger()
+    set_debug(args.debug)
+    logger = get_logger()
 
-    from .scraper import Ted2Zim
+    from ted2zim.scraper import Ted2Zim
 
     try:
         if args.topics and args.playlist:
@@ -173,7 +175,8 @@ def main():
         elif args.topics:
             if args.subtitles_enough and not args.languages:
                 parser.error(
-                    "--subtitles-enough is only meant to be used if --languages is present"
+                    "--subtitles-enough is only meant to be used if --languages is "
+                    "present"
                 )
         elif args.playlist:
             if args.subtitles_enough:
@@ -192,7 +195,7 @@ def main():
         logger.error(f"FAILED. An error occurred: {exc}")
         if args.debug:
             logger.exception(exc)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

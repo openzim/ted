@@ -1,25 +1,24 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
-import logging
 import argparse
+import logging
 
-from ..constants import NAME, SCRAPER, getLogger, setDebug
-from ..utils import has_argument
+from ted2zim.constants import NAME, SCRAPER, get_logger, set_debug
+from ted2zim.utils import has_argument
 
 
 def main():
     parser = argparse.ArgumentParser(
         prog=f"{NAME}-multi",
         description="Scraper to create ZIM file(s) from TED topic(s) or playlist(s)",
-        epilog="All titles, descriptions and names can use the variables {identity} to get playlist ID or topic name (with dashes) in each case, or {slug} to get the slug (with dashes)",
+        epilog="All titles, descriptions and names can use the variables {identity} to "
+        "get playlist ID or topic name (with dashes) in each case, or {slug} to get "
+        "the slug (with dashes)",
         allow_abbrev=False,
     )
 
     parser.add_argument(
         "--topics",
-        help="Comma seperated list of topics to scrape. Should be same as on ted.com/talks. Pass all to scrape all",
+        help="Comma seperated list of topics to scrape. Should be same as on "
+        "ted.com/talks. Pass all to scrape all",
     )
 
     parser.add_argument(
@@ -29,19 +28,22 @@ def main():
 
     parser.add_argument(
         "--indiv-zims",
-        help="Make individual ZIMs for topics. Multiple ZIMs are always created for multiple playlists",
+        help="Make individual ZIMs for topics. Multiple ZIMs are always created for "
+        "multiple playlists",
         action="store_true",
         dest="indiv_zims",
     )
 
     parser.add_argument(
         "--name-format",
-        help="Format for building individual --name argument. Required in individual ZIMs mode.",
+        help="Format for building individual --name argument. Required in individual "
+        "ZIMs mode.",
     )
 
     parser.add_argument(
         "--zim-file-format",
-        help="Format for building individual --zim-file argument. Uses --name-format otherwise",
+        help="Format for building individual --zim-file argument. Uses --name-format "
+        "otherwise",
     )
 
     parser.add_argument(
@@ -56,7 +58,8 @@ def main():
 
     parser.add_argument(
         "--metadata-from",
-        help="File path or URL to a JSON file holding custom metadata for individual playlists/topics. Format in README",
+        help="File path or URL to a JSON file holding custom metadata for individual "
+        "playlists/topics. Format in README",
     )
 
     parser.add_argument(
@@ -84,18 +87,19 @@ def main():
     for arg in ("name", "title", "description", "zim-file"):
         if args.indiv_zims and has_argument(arg, extra_args):
             parser.error(
-                f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set format."
+                f"Can't use --{arg} in individual ZIMs mode. Use --{arg}-format to set "
+                "format."
             )
 
     # name-format mandatory if indiv-zims
     if args.indiv_zims and not args.name_format:
         parser.error("--name-format is mandatory in individual ZIMs mode")
 
-    setDebug(args.debug)
-    logger = getLogger()
+    set_debug(args.debug)
+    logger = get_logger()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
-    from .scraper import TedHandler
+    from ted2zim.multi.scraper import TedHandler
 
     try:
         handler = TedHandler(dict(args._get_kwargs()), extra_args=extra_args)
@@ -104,7 +108,7 @@ def main():
         logger.error(f"FAILED. An error occurred: {exc}")
         if args.debug:
             logger.exception(exc)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

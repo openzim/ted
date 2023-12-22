@@ -3,10 +3,11 @@
 ##### Get the best :bulb: TED videos offline :arrow_down:
 An offliner to create ZIM :package: files from TED talks
 
-[![PyPI](https://img.shields.io/pypi/v/ted2zim)](https://pypi.org/project/ted2zim/)
-[![Docker](https://ghcr-badge.deta.dev/openzim/ted/latest_tag?label=docker)](https://ghcr.io/openzim/ted)
-[![Codefactor Grade](https://img.shields.io/codefactor/grade/github/openzim/ted/main?label=codefactor)](https://www.codefactor.io/repository/github/openzim/ted)
-[![License](https://img.shields.io/github/license/openzim/ted?color=blueviolet)](https://www.gnu.org/licenses/gpl-3.0)
+[![CodeFactor](https://www.codefactor.io/repository/github/openzim/ted/badge)](https://www.codefactor.io/repository/github/openzim/ted)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![codecov](https://codecov.io/gh/openzim/ted/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/ted)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/ted2zim.svg)](https://pypi.org/project/ted2zim/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ted2zim.svg)](https://pypi.org/project/ted2zim)
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. One can eaisly find all the TED videos [here](https://ted.com/talks).
 
@@ -19,14 +20,20 @@ This project is aimed at creating a sustainable solution to make TED accessible 
 Make sure that you have `python3`, `unzip`, `ffmpeg`, `wget` and `curl` installed on your system before running the scraper (otherwise you'll get a warning to install them).
 
 #### Setup the package
-One can eaisly install the PyPI version but let's setup the source version. Firstly, clone this repository and install the package as given below.
+One can easily install the PyPI version but let's setup the source version. 
+
+First, clone this repository.
+
+If you do not already have it on your system, install hatch to build the software and manage virtual environments (you might be interested by our detailed [Developer Setup](https://github.com/openzim/_python-bootstrap/wiki/Developer-Setup) as well).
 
 ```bash
-pip3 install -r requirements.txt
+pip3 install hatch
 ```
 
+Start a hatch shell: this will install software including dependencies in an isolated virtual environment.
+
 ```bash
-python3 setup.py install
+hatch shell
 ```
 
 That's it. You can now run `ted2zim` from your terminal
@@ -45,7 +52,7 @@ Example usage
 ted2zim --topics="augmented reality" --debug --name="augumented_reality" --format=mp4 --title="Augmented Reality" --description="TED videos in AR category" --creator="TED" --publisher="openzim" --output="output" --keep --low-quality
 ```
 
-This project can also be run with docker. Use the provided [Dockerfile](Dockerfile) to run it with docker. See steps [here](https://docs.docker.com/get-started/part2/).
+This project can also be run with docker. Use the provided [Dockerfile](Dockerfile) or [pre-build images](https://github.com/orgs/openzim/packages/container/package/ted) to run it with Docker. See steps [here](https://docs.docker.com/get-started/part2/).
 
 ## Features :robot:
 You can create ZIMs for multiple topics (should be same as given [here](https://ted.com/talks)), choose between different video formats (webm/mp4), different compression rates, and even use an S3 based cache.

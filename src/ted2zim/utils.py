@@ -1,16 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim: ai ts=4 sts=4 et sw=4 nu
-
-import time
+import contextlib
 import json
 import pathlib
 import tempfile
-import contextlib
+import time
+from http import HTTPStatus
 
 import requests
 
-from .constants import BASE_URL
+from ted2zim.constants import BASE_URL, REQUESTS_TIMEOUT
 
 
 def has_argument(arg_name, all_args):
@@ -31,7 +28,7 @@ def update_subtitles_list(video_id, language_list):
 
 def request_url(url, json_data=None):
     """performs an HTTP request and returns the response, either GET or POST
-    
+
     - json_data is used as POST body when passed, otherwise a GET request is done
     - request is retried 5 times, with a 30*attemp_no secs pause between retries
     - a pause of 1 sec is done before every request (including first one)
@@ -39,28 +36,42 @@ def request_url(url, json_data=None):
 
     if url == f"{BASE_URL}playlists/57":
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
-    for attempt in range(1, 6):
+    max_attempts, attempt = 5, 1
+    while True:
         time.sleep(1)  # delay requests
         if json_data:
-            req = requests.post(url, headers={"User-Agent": "Mozilla/5.0"}, json=json_data)
+            req = requests.post(
+                url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                json=json_data,
+                timeout=REQUESTS_TIMEOUT,
+            )
         else:
-            req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            req = requests.get(
+                url, headers={"User-Agent": "Mozilla/5.0"}, timeout=REQUESTS_TIMEOUT
+            )
         try:
             req.raise_for_status()
+            return req
         except Exception as exc:
-            if req.status_code == 404:
+            if req.status_code == HTTPStatus.NOT_FOUND:
                 raise exc
             time.sleep(30 * attempt)  # wait upon failure
+
+        if attempt < max_attempts:
+            attempt += 1
             continue
-        return req
-    if json_data:
-        raise ConnectionRefusedError(
-            f"Failed to query {url} after {attempt} attempts (HTTP {req.status_code}); sent data was: {json.dumps(json_data)}"
-        )
-    else:
-        raise ConnectionRefusedError(
-            f"Failed to download {url} after {attempt} attempts (HTTP {req.status_code})"
-        )
+
+        if json_data:
+            raise ConnectionRefusedError(
+                f"Failed to query {url} after {attempt} attempts (HTTP "
+                f"{req.status_code}); sent data was: {json.dumps(json_data)}"
+            )
+        else:
+            raise ConnectionRefusedError(
+                f"Failed to download {url} after {attempt} attempts "
+                f"(HTTP {req.status_code})"
+            )
 
 
 class WebVTT:
@@ -74,7 +85,7 @@ class WebVTT:
         """download and convert its URL to WebVTT text"""
         req = request_url(self.url)
 
-        if req.status_code == 404:
+        if req.status_code == HTTPStatus.NOT_FOUND:
             return None
         try:
             source_subtitles = req.json()
@@ -111,14 +122,14 @@ class WebVTT:
         document = "WEBVTT\n\n"
         if "captions" in json_subtitles:
             for subtitle in json_subtitles["captions"]:
-                startTime = int(subtitle["startTime"]) + offset
+                start_time = int(subtitle["startTime"]) + offset
                 duration = int(subtitle["duration"])
                 content = subtitle["content"].strip()
 
                 document += (
-                    WebVTT.miliseconds_to_human(startTime)
+                    WebVTT.miliseconds_to_human(start_time)
                     + " --> "
-                    + WebVTT.miliseconds_to_human(startTime + duration)
+                    + WebVTT.miliseconds_to_human(start_time + duration)
                     + "\n"
                 )
                 document += content + "\n\n"
@@ -127,13 +138,15 @@ class WebVTT:
 
 @contextlib.contextmanager
 def get_temp_fpath(**kwargs):
+    fpath = None
     try:
         fh = tempfile.NamedTemporaryFile(delete=False, **kwargs)
         fpath = pathlib.Path(fh.name)
         fh.close()
         yield fpath
     finally:
-        fpath.unlink()
+        if fpath:
+            fpath.unlink()
 
 
 def get_main_title(titles, prefered_lang):
