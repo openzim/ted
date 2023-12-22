@@ -3,7 +3,7 @@
 [//]: # (Briefly explain the reason behind this change.)
 
 <!--
-Issue: [Title](link) or #123 for Github issues.
+Mention fixed issues that will be closed automatically with some "Fix #xxx"
 -->
 
 ## Changes
