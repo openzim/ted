@@ -5,9 +5,10 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (as of version 2.0.11).
 
-## Unreleased
+## [2.1.0] - 2024-01-08
 
 ### Changed
+
 - fixed search by topic to use new search API instead of broken web page scraping (#149)
 - download_link is renamed request_url and can also perform POST requests (in addition to previous GET requests)
 - upgrade to Python 3.11 from 3.8
