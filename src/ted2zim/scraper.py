@@ -581,7 +581,11 @@ class Ted2Zim:
         speaker_picture = speaker_info.get("photoUrl", "-")
         title = json_data.get("title", "n/a")
         description = json_data.get("description", "n/a")
-        date = dateutil.parser.parse(json_data["recordedOn"]).strftime("%d %B %Y")
+        date = (
+            dateutil.parser.parse(json_data["recordedOn"]).strftime("%d %B %Y")
+            if json_data.get("recordedOn")
+            else "Unknown"
+        )
         length = int(json_data["duration"]) // 60
         thumbnail = player_data["thumb"]
         video_link = self.extract_download_link(player_data)
