@@ -628,19 +628,29 @@ class Ted2Zim:
             return False
 
         logger.debug(f"extract_info_from_video_page: {url}")
-        soup = BeautifulSoup(request_url(url).text, features="html.parser")
+        html_content = request_url(url).text
+        try:
+            soup = BeautifulSoup(html_content, features="html.parser")
 
-        json_data = json.loads(
-            soup.find("script", attrs={"id": "__NEXT_DATA__"}).string  # pyright: ignore
-        )["props"]["pageProps"]["videoData"]
+            json_data = json.loads(
+                soup.find(
+                    "script", attrs={"id": "__NEXT_DATA__"}
+                ).string  # pyright: ignore
+            )["props"]["pageProps"]["videoData"]
 
-        requested_lang_code = self.get_lang_code_from_url(url)
-        if requested_lang_code and json_data["language"] != requested_lang_code:
+            requested_lang_code = self.get_lang_code_from_url(url)
+            if requested_lang_code and json_data["language"] != requested_lang_code:
+                logger.error(
+                    f"Video has not yet been translated into {requested_lang_code}"
+                )
+                return False
+            return self.extract_video_info_from_json(json_data)
+        except Exception:
             logger.error(
-                f"Video has not yet been translated into {requested_lang_code}"
+                f"Problem occured while parsing {url}. HTML content was:\n"
+                f"{html_content}"
             )
-            return False
-        return self.extract_video_info_from_json(json_data)
+            raise
 
     def add_default_language(self):
         """add metatada in default language (english or first avail) on all videos"""
