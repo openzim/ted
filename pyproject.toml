@@ -25,6 +25,7 @@ dependencies = [
   "kiwixstorage==0.8.3",
   "pif==0.8.2",
   "python-slugify==8.0.1",
+  "yt-dlp", # yt-dlp should be updated as frequently as possible
 ]
 dynamic = ["version"]
 
