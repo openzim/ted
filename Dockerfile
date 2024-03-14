@@ -9,6 +9,10 @@ RUN apt-get update \
  && python -m pip install --no-cache-dir -U \
       pip
 
+# Custom entrypoint
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
+
 # Copy pyproject.toml and its dependencies
 COPY pyproject.toml README.md hatch_build.py get_js_deps.sh /src/
 COPY src/ted2zim/__about__.py /src/src/ted2zim/__about__.py

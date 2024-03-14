@@ -10,6 +10,7 @@ import urllib.parse
 
 import dateutil.parser
 import jinja2
+import yt_dlp
 from bs4 import BeautifulSoup
 from kiwixstorage import KiwixStorage
 from pif import get_public_ip
@@ -427,7 +428,6 @@ class Ted2Zim:
 
     def extract_download_link(self, talk_data):
         """Returns download link / youtube video ID for a TED video"""
-
         if (
             isinstance(talk_data.get("resources", {}).get("h264"), list)
             and len(talk_data["resources"]["h264"])
@@ -437,10 +437,21 @@ class Ted2Zim:
                 "Using h264 resource link for bitrate="
                 f"{talk_data['resources']['h264'][0].get('bitrate')}"
             )
-            return talk_data["resources"]["h264"][0]["file"]
+            download_link = talk_data["resources"]["h264"][0]["file"]
+        else:
+            download_link = None
 
-        logger.error("No download link found for the video")
-        return None
+        if (
+            talk_data.get("external", {}).get("service")
+            and talk_data["external"]["service"] == "YouTube"
+            and talk_data["external"].get("code")
+        ):
+            logger.debug(f"Found Youtube ID {talk_data['external']['code']}")
+            youtube_id = talk_data["external"]["code"]
+        else:
+            youtube_id = None
+
+        return download_link, youtube_id
 
     def update_videos_list(
         self,
@@ -456,6 +467,7 @@ class Ted2Zim:
         date,
         thumbnail,
         video_link,
+        youtube_id,
         length,
         subtitles,
     ):
@@ -479,6 +491,7 @@ class Ted2Zim:
                     "date": date,
                     "thumbnail": thumbnail,
                     "video_link": video_link,
+                    "youtube_id": youtube_id,
                     "length": length,
                     "subtitles": subtitles,
                 }
@@ -490,6 +503,8 @@ class Ted2Zim:
         # based on --subtitles=matching
         logger.debug(f"Video {video_id} already present in video list")
         for index, video in enumerate(self.videos):
+            if video.get("failed", False):
+                continue
             if video.get("id", None) == video_id:
                 if {"lang": lang_code, "text": title} not in video["title"]:
                     self.videos[index]["title"].append(
@@ -588,9 +603,11 @@ class Ted2Zim:
         )
         length = int(json_data["duration"]) // 60
         thumbnail = player_data["thumb"]
-        video_link = self.extract_download_link(player_data)
-        if not video_link:
-            logger.error("No suitable download link found. Skipping video")
+        video_link, youtube_id = self.extract_download_link(player_data)
+        if not video_link and not youtube_id:
+            logger.error(
+                "No suitable download link or Youtube ID found. Skipping video"
+            )
             return False
 
         langs = player_data["languages"]
@@ -610,6 +627,7 @@ class Ted2Zim:
             date=date,
             thumbnail=thumbnail,
             video_link=video_link,
+            youtube_id=youtube_id,
             length=length,
             subtitles=subtitles,
         )
@@ -660,6 +678,8 @@ class Ted2Zim:
         """add metatada in default language (english or first avail) on all videos"""
 
         for video in self.videos:
+            if video.get("failed", False):
+                continue
             en_found = False
             for index, lang in enumerate(video["languages"]):
                 if lang["languageCode"] == "en":
@@ -689,6 +709,8 @@ class Ted2Zim:
             loader=jinja2.FileSystemLoader(str(self.templates_dir)), autoescape=True
         )
         for video in self.videos:
+            if video.get("failed", False):
+                continue
             titles = video["title"]
             html = env.get_template("article.html").render(
                 speaker=video["speaker"],
@@ -717,6 +739,7 @@ class Ted2Zim:
         all_langs = {
             language["languageCode"]: language["languageName"]
             for video in self.videos
+            if not video.get("failed", False)
             for language in video["subtitles"] + video["languages"]
         }
         languages = [
@@ -752,6 +775,8 @@ class Ted2Zim:
 
         video_list = []
         for video in self.videos:
+            if video.get("failed", False):
+                continue
             lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [
                 lang["languageCode"] for lang in video["languages"]
             ]
@@ -866,6 +891,7 @@ class Ted2Zim:
         # Take the english version of title or else whatever language it's available in
         video_title = video["title"][0]["text"]
         video_link = video["video_link"]
+        youtube_id = video["youtube_id"]
         video_speaker = video["speaker_picture"]
         video_thumbnail = video["thumbnail"]
         video_dir = self.videos_dir.joinpath(video_id)
@@ -894,18 +920,40 @@ class Ted2Zim:
                 s3_key, req_video_file_path, preset.VERSION
             )
         if not downloaded_from_cache:
-            try:
-                if "https://" not in video_link:
+            downloaded = False
+            # First try to download from video link
+            if video_link:
+                try:
+                    save_large_file(video_link, org_video_file_path)
+                    downloaded = True
+                except Exception as exc:
+                    logger.error(
+                        f"Could not download from {video_link} for "
+                        f"{org_video_file_path}",
+                    )
+                    logger.debug("", exc_info=exc)
+            # Second try to download from youtube ID (used both when no video link AND
+            # when video link download failed - we experience sometimes 403 errors on
+            # video link, see #167)
+            if youtube_id:
+                try:
                     options = (
                         BestWebm if self.video_format == "webm" else BestMp4
                     ).get_options(
                         target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
                     )
-                    self.yt_downloader.download(video_link, options)
-                else:
-                    save_large_file(video_link, org_video_file_path)
-            except Exception:
-                logger.error(f"Could not download {org_video_file_path}")
+                    with yt_dlp.YoutubeDL(options) as ydl:
+                        ydl.download([youtube_id])
+                    downloaded = True
+                except Exception as exc:
+                    logger.error(
+                        f"Could not download from {youtube_id} for "
+                        f"{org_video_file_path}",
+                    )
+                    logger.debug("", exc_info=exc)
+            if not downloaded:
+                video["failed"] = True
+                return
 
         # download speaker and thumbnail images
         self.download_speaker_image(video_id, video_title, video_speaker, speaker_path)
@@ -923,7 +971,9 @@ class Ted2Zim:
                 )
         except Exception as e:
             logger.error(f"Failed to post process video {video_id}")
-            logger.debug(e)
+            logger.debug("", exc_info=e)
+            video["failed"] = True
+            return
         else:
             # upload to cache only if recompress was successful
             if self.s3_storage and not downloaded_from_cache:
@@ -939,6 +989,7 @@ class Ted2Zim:
             fs = [
                 executor.submit(self.download_video_files, video)
                 for video in self.videos
+                if not video.get("failed", False)
             ]
             concurrent.futures.wait(fs, return_when=concurrent.futures.ALL_COMPLETED)
         self.yt_downloader.shutdown()
@@ -987,6 +1038,7 @@ class Ted2Zim:
             fs = [
                 executor.submit(self.download_subtitles, index, video)
                 for index, video in enumerate(self.videos)
+                if not video.get("failed", False)
             ]
             concurrent.futures.wait(fs, return_when=concurrent.futures.ALL_COMPLETED)
 
@@ -1089,6 +1141,15 @@ class Ted2Zim:
         self.render_video_pages()
         self.copy_files_to_build_directory()
         self.generate_datafile()
+
+        # display final stats and abort processing if no videos are left
+        nb_success = sum(
+            0 if video.get("failed", False) else 1 for video in self.videos
+        )
+        nb_failed = sum(1 if video.get("failed", False) else 0 for video in self.videos)
+        logger.debug(f"Stats: {nb_success} videos ok, {nb_failed} videos failed")
+        if nb_success == 0:
+            raise Exception("No successfull video, aborting ZIM creation")
 
         # zim creation and cleanup
         if not self.no_zim:
