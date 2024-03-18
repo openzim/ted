@@ -25,6 +25,7 @@ class TedHandler:
         extra_args,
     ):
         self.debug = False
+        self.disable_metadata_checks = False
         # save options as properties
         for key, value in options.items():
             if key not in ["topics", "playlists"]:
@@ -283,6 +284,9 @@ class TedHandler:
         if self.debug:
             args += ["--debug"]
 
+        if self.disable_metadata_checks:
+            args += ["--disable-metadatachecks"]
+
         logger.debug(nicer_args_join(args))
         process = subprocess.run(
             args,
@@ -312,6 +316,8 @@ class TedHandler:
         args += self.extra_args
         if self.debug:
             args += ["--debug"]
+        if self.disable_metadata_checks:
+            args += ["--disable-metadatachecks"]
         return subprocess.run(args, check=False).returncode
 
     def fetch_metadata(self):

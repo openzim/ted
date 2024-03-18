@@ -67,6 +67,7 @@ class Ted2Zim:
         subtitles_setting,
         tmp_dir,
         threads,
+        disable_metadata_checks,
     ):
         # video-encoding info
         self.video_format = video_format
@@ -83,6 +84,7 @@ class Ted2Zim:
         self.creator = creator
         self.publisher = publisher
         self.name = name
+        self.disable_metadata_checks = disable_metadata_checks
 
         # directory setup
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
@@ -1174,6 +1176,7 @@ class Ted2Zim:
                 publisher=self.publisher,
                 tags=[*self.tags, "_category:ted", "ted", "_videos:yes"],
                 scraper=SCRAPER,
+                disable_metadata_checks=self.disable_metadata_checks,
             )
             if not self.keep_build_dir:
                 logger.info("removing temp folder")

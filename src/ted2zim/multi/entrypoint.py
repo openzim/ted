@@ -73,6 +73,13 @@ def main():
         version=SCRAPER,
     )
 
+    parser.add_argument(
+        "--disable-metadata-checks",
+        help="Disable validity checks of metadata according to openZIM conventions",
+        action="store_true",
+        default=False,
+    )
+
     args, extra_args = parser.parse_known_args()
 
     # prevent launching without any topic(s)/playlist(s)

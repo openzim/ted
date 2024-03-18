@@ -163,6 +163,13 @@ def main():
         version=SCRAPER,
     )
 
+    parser.add_argument(
+        "--disable-metadata-checks",
+        help="Disable validity checks of metadata according to openZIM conventions",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
     set_debug(args.debug)
     logger = get_logger()
