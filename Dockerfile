@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-bookworm
 LABEL org.opencontainers.image.source https://github.com/openzim/ted
 
 # Install necessary packages
@@ -14,7 +14,7 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 
 # Copy pyproject.toml and its dependencies
-COPY pyproject.toml README.md hatch_build.py get_js_deps.sh /src/
+COPY pyproject.toml openzim.toml README.md /src/
 COPY src/ted2zim/__about__.py /src/src/ted2zim/__about__.py
 
 # Install Python dependencies

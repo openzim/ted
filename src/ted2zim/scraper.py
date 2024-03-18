@@ -1166,10 +1166,10 @@ class Ted2Zim:
                 fpath=self.output_dir.joinpath(self.fname),
                 name=self.name,
                 main_page="index",
-                favicon="favicon.png",
+                illustration="favicon.png",
                 title=self.title,
                 description=self.description,
-                language=self.zim_lang,  # pyright: ignore[reportGeneralTypeIssues]
+                language=self.zim_lang,  # pyright: ignore[reportArgumentType]
                 creator=self.creator,
                 publisher=self.publisher,
                 tags=[*self.tags, "_category:ted", "ted", "_videos:yes"],

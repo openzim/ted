@@ -1,53 +1,58 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-openzim==0.2.0"]
 build-backend = "hatchling.build"
 
 [project]
 name = "ted2zim"
-authors = [{ name = "Kiwix", email = "dev@kiwix.org" }]
-keywords = ["kiwix", "zim", "ted", "openzim", "offline"]
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.12,<3.13"
 description = "Make ZIM file from TED Talks"
 readme = "README.md"
-license = { text = "GPL-3.0-or-later" }
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
-  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-]
 dependencies = [
-  "python-dateutil==2.8.2",
-  # cannot use 3.x for now, see https://github.com/openzim/ted/issues/152
-  "zimscraperlib==2.1.0",
+  "python-dateutil==2.9.0.post0",
+  "zimscraperlib==3.3.2",
   "requests==2.31.0",
-  "beautifulsoup4==4.9.3",
-  "Jinja2==3.1.2",
+  "beautifulsoup4==4.12.3",
+  "Jinja2==3.1.3",
   "kiwixstorage==0.8.3",
   "pif==0.8.2",
-  "python-slugify==8.0.1",
+  "python-slugify==8.0.4",
   "yt-dlp", # yt-dlp should be updated as frequently as possible
 ]
-dynamic = ["version"]
+dynamic = ["authors", "classifiers", "keywords", "license", "version", "urls"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.metadata.hooks.openzim-metadata]
+kind = "scraper"
+additional-keywords = ["ted"]
+
+[tool.hatch.build.hooks.openzim-build]
+dependencies = [ "zimscraperlib==3.3.2"] # required for fix_ogv_dist
 
 [project.optional-dependencies]
-scripts = ["invoke==2.2.0"]
-lint = ["black==23.12.0", "ruff==0.1.8"]
-check = ["pyright==1.1.341"]
-test = ["pytest==7.4.3", "coverage==7.3.3"]
+scripts = [
+  "invoke==2.2.0",
+]
+lint = [
+  "black==24.3.0",
+  "ruff==0.3.3",
+]
+check = [
+  "pyright==1.1.354",
+]
+test = [
+  "pytest==8.1.1",
+  "coverage==7.4.4",
+]
 dev = [
-  "pre-commit==3.6.0",
-  "debugpy==1.8.0",
+  "pre-commit==3.6.2",
+  "debugpy==1.8.1",
   "ted2zim[scripts]",
   "ted2zim[lint]",
   "ted2zim[test]",
   "ted2zim[check]",
-  # hatchling is a dev dependency only needed for hook development on developer machine
-  "hatchling==1.18.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/openzim/ted"
-Donate = "https://www.kiwix.org/en/support-us/"
 
 [project.scripts]
 ted2zim = "ted2zim.entrypoint:main"
@@ -59,11 +64,11 @@ path = "src/ted2zim/__about__.py"
 [tool.hatch.build]
 exclude = ["/.github"]
 
-[tool.hatch.build.hooks.custom]
-path = "hatch_build.py"
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/ted2zim"]
+artifacts = [
+  "src/ted2zim/templates/assets/**",
+]
 
 [tool.hatch.envs.default]
 features = ["dev"]
@@ -80,6 +85,7 @@ html = "inv coverage --html --args '{args}'"
 
 [tool.hatch.envs.lint]
 template = "lint"
+python = "py312"
 skip-install = false
 features = ["scripts", "lint"]
 
@@ -100,12 +106,14 @@ all = "inv checkall --args '{args}'"
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py312']
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 src = ["src"]
+
+[tool.ruff.lint]
 select = [
   "A", # flake8-builtins
   # "ANN",  # flake8-annotations
@@ -188,17 +196,17 @@ unfixable = [
   "F401",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["ted2zim"]
 
-[tool.ruff.flake8-bugbear]
+[tool.ruff.lint.flake8-bugbear]
 # add exceptions to B008 for fastapi.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 
@@ -224,5 +232,6 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 include = ["src", "tests", "tasks.py"]
 exclude = [".env/**", ".venv/**"]
 extraPaths = ["src"]
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 typeCheckingMode = "basic"
+disableBytesTypePromotions = true
