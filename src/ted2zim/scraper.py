@@ -55,6 +55,7 @@ class Ted2Zim:
         locale_name,
         title,
         description,
+        long_description,
         creator,
         publisher,
         tags,
@@ -81,6 +82,7 @@ class Ted2Zim:
         self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
         self.title = title
         self.description = description
+        self.long_description = long_description
         self.creator = creator
         self.publisher = publisher
         self.name = name
@@ -1173,6 +1175,7 @@ class Ted2Zim:
                 title=self.title,
                 description=self.description,
                 language=self.zim_lang,  # pyright: ignore[reportArgumentType]
+                long_description=self.long_description,  # pyright: ignore[reportArgumentType]
                 creator=self.creator,
                 publisher=self.publisher,
                 tags=[*self.tags, "_category:ted", "ted", "_videos:yes"],
