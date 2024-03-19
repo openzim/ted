@@ -934,6 +934,7 @@ class Ted2Zim:
                         f"{org_video_file_path}",
                     )
                     logger.debug("", exc_info=exc)
+                    org_video_file_path.unlink(missing_ok=True)
             # Second try to download from youtube ID (used both when no video link AND
             # when video link download failed - we experience sometimes 403 errors on
             # video link, see #167)
