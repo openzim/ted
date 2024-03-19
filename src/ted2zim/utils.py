@@ -19,9 +19,9 @@ def update_subtitles_list(video_id, language_list):
     """adds `link` to each language dict containing the subtitle url"""
 
     for language in language_list:
-        language[
-            "link"
-        ] = f"https://www.ted.com/talks/subtitles/id/{video_id}/lang/{language['languageCode']}"
+        language["link"] = (
+            f"https://www.ted.com/talks/subtitles/id/{video_id}/lang/{language['languageCode']}"
+        )
 
     return language_list
 
@@ -75,7 +75,6 @@ def request_url(url, json_data=None):
 
 
 class WebVTT:
-
     """TED JSON subtitles to WebVTT"""
 
     def __init__(self, url):
