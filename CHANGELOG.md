@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- New `long_description` CLI argument to set the ZIM long description
+- New `disable_metadata_check` CLI argument to disable the metadata checks which are automated since zimscraperlib 3.x
+
 ### Changed
 
 - Changed default publisher metadata from 'Kiwix' to 'openZIM'
+- Validate ZIM metadata as early as possible
+- Migrate to zimscraperlib 3.3.2 (including **new VideoLowWebm encoder preset version 2**)
+- Upgrade Python dependencies, including migration to Python 3.12
+
+## Fixed
+
+- Fix language metadata computation (list, but not yet fully properly ordered)
+- Fix computation of automatic description and long description
 
 ## [2.1.0] - 2024-01-08
 
