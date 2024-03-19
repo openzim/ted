@@ -375,8 +375,9 @@ src/ted2zim/templates/assets/videojs-ogvjs.js
 src/ted2zim/templates/assets/polyfills.js
 src/ted2zim/templates/assets/webp-hero.bundle.js
 
-# output dir
+# output and tmp dir
 output
+tmp
 
 # ignore all vscode, this is not standard configuration in this place
 .vscode
