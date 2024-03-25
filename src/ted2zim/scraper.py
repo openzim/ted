@@ -20,8 +20,16 @@ from zimscraperlib.i18n import _, get_language_details, setlocale
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
+from zimscraperlib.inputs import compute_descriptions
 from zimscraperlib.video.presets import VideoMp4Low, VideoWebmLow
 from zimscraperlib.zim import make_zim_file
+from zimscraperlib.zim.metadata import (
+    validate_description,
+    validate_language,
+    validate_longdescription,
+    validate_tags,
+    validate_title,
+)
 
 from ted2zim.constants import (
     ALL,
@@ -55,6 +63,7 @@ class Ted2Zim:
         locale_name,
         title,
         description,
+        long_description,
         creator,
         publisher,
         tags,
@@ -67,6 +76,7 @@ class Ted2Zim:
         subtitles_setting,
         tmp_dir,
         threads,
+        disable_metadata_checks,
     ):
         # video-encoding info
         self.video_format = video_format
@@ -77,12 +87,64 @@ class Ted2Zim:
         self.languages = (
             [] if languages is None else [lang.strip() for lang in languages.split(",")]
         )
+
+        def get_iso_639_3_language(lang: str) -> str | None:
+            """Helper function to safely get ISO-639-3 code from input language"""
+            lang_info = get_language_details(lang, failsafe=True)
+            if lang_info:
+                return lang_info["iso-639-3"]
+            else:
+                logger.warning(
+                    f"Failed to get iso-639-3 language info for {lang}. "
+                    "This value will be missing in ZIM Language metadata."
+                )
+                return None
+
+        def sort_languages_hack(languages: set[str]) -> list[str]:
+            """This is a temporary hack to sort languages by importance in the ZIM
+
+            For now, if eng is among the list, we assume it is the most important
+            language. Otherwise list is kept as-is
+            """
+            return list(languages).sort(
+                key=lambda x: -1 if x == "eng" else 0
+            )  # pyright: ignore[reportReturnType]
+
+        if not self.languages:
+            self.zim_languages = "eng"
+        else:
+            self.zim_languages = ",".join(
+                sort_languages_hack(
+                    {
+                        lang
+                        for lang in [
+                            get_iso_639_3_language(lang) for lang in self.languages
+                        ]
+                        if lang
+                    }
+                )
+            )
         self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
+        self.tags = [*self.tags, "_category:ted", "ted", "_videos:yes"]
         self.title = title
         self.description = description
+        self.long_description = long_description
         self.creator = creator
         self.publisher = publisher
         self.name = name
+        self.disable_metadata_checks = disable_metadata_checks
+
+        if not self.disable_metadata_checks:
+            # Validate ZIM metadata early so that we do not waste time doing operations
+            # for a scraper which will fail anyway in the end
+            validate_language("Language", self.zim_languages)
+            validate_tags("Tags", self.tags)
+            if self.title:
+                validate_title("Title", self.title)
+            if self.description:
+                validate_description("Description", self.description)
+            if self.long_description:
+                validate_longdescription("LongDescription", self.long_description)
 
         # directory setup
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
@@ -123,7 +185,6 @@ class Ted2Zim:
         self.source_languages = (
             [] if not self.languages else self.to_ted_langcodes(self.languages)
         )
-        self.zim_lang = None
         self.already_visited = []
 
         # set and record locale for translations
@@ -296,33 +357,29 @@ class Ted2Zim:
         return True
 
     def update_zim_metadata(self):
-        if not self.languages:
-            self.zim_lang = "eng"
-        elif len(self.source_languages) > 1:
-            self.zim_lang = "mul"
-        else:
-            lang_info = get_language_details(self.source_languages[0], failsafe=True)
-            if lang_info:
-                self.zim_lang = lang_info["iso-639-3"]
-            else:
-                self.zim_lang = "eng"
-
         if self.playlist:
             if not self.title:
                 self.title = self.playlist_title.strip()  # pyright: ignore
-            if not self.description:
-                self.description = self.playlist_description.strip()  # pyright: ignore
+            default_description = self.playlist_description.strip()  # pyright: ignore
         elif len(self.topics) > 1:
             if not self.title:
                 self.title = "TED Collection"
-            if not self.description:
-                self.description = "A selection of TED videos from several topics"
+            default_description = "A selection of TED videos from several topics"
         else:
             topic_str = self.topics[0].replace("+", " ")
             if not self.title:
                 self.title = f"{topic_str.capitalize()} from TED"
-            if not self.description:
-                self.description = f"A selection of {topic_str} videos from TED"
+            default_description = f"A selection of {topic_str} videos from TED"
+
+        # update description and long_description if not already set by user input,
+        # based on default_description potentially retrieved from playlist / topics
+        # compute_descriptions always returns valid description and long description
+        # when based on default_description
+        self.description, self.long_description = compute_descriptions(
+            default_description=default_description,
+            user_description=self.description,
+            user_long_description=self.long_description,
+        )
 
     def get_display_name(self, lang_code, lang_name):
         """Display name for language"""
@@ -932,6 +989,7 @@ class Ted2Zim:
                         f"{org_video_file_path}",
                     )
                     logger.debug("", exc_info=exc)
+                    org_video_file_path.unlink(missing_ok=True)
             # Second try to download from youtube ID (used both when no video link AND
             # when video link download failed - we experience sometimes 403 errors on
             # video link, see #167)
@@ -1166,14 +1224,16 @@ class Ted2Zim:
                 fpath=self.output_dir.joinpath(self.fname),
                 name=self.name,
                 main_page="index",
-                favicon="favicon.png",
+                illustration="favicon.png",
                 title=self.title,
                 description=self.description,
-                language=self.zim_lang,  # pyright: ignore[reportGeneralTypeIssues]
+                language=self.zim_languages,  # pyright: ignore[reportArgumentType]
+                long_description=self.long_description,  # pyright: ignore[reportArgumentType]
                 creator=self.creator,
                 publisher=self.publisher,
-                tags=[*self.tags, "_category:ted", "ted", "_videos:yes"],
+                tags=self.tags,
                 scraper=SCRAPER,
+                disable_metadata_checks=self.disable_metadata_checks,
             )
             if not self.keep_build_dir:
                 logger.info("removing temp folder")

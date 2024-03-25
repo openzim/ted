@@ -23,7 +23,7 @@ def main():
 
     parser.add_argument(
         "--playlists",
-        help="Comma seperated list of playlist IDs to scrape. Pass all to scrape all",
+        help="Comma separated list of playlist IDs to scrape. Pass all to scrape all",
     )
 
     parser.add_argument(
@@ -71,6 +71,13 @@ def main():
         help="Display scraper version and exit",
         action="version",
         version=SCRAPER,
+    )
+
+    parser.add_argument(
+        "--disable-metadata-checks",
+        help="Disable validity checks of metadata according to openZIM conventions",
+        action="store_true",
+        default=False,
     )
 
     args, extra_args = parser.parse_known_args()

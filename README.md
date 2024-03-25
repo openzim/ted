@@ -13,6 +13,9 @@ TED (Technology, Entertainment, Design) is a global set of conferences under the
 
 This project is aimed at creating a sustainable solution to make TED accessible offline by creating ZIM files providing these videos in a similar manner like online.
 
+`ted2zim` adheres to openZIM's [Contribution Guidelines](https://github.com/openzim/overview/wiki/Contributing).
+
+`ted2zim` has implemented openZIM's [Python bootstrap, conventions and policies](https://github.com/openzim/_python-bootstrap/docs/Policy.md) **v1.0.0**.
 
 ## Getting started :rocket:
 
@@ -20,7 +23,7 @@ This project is aimed at creating a sustainable solution to make TED accessible 
 Make sure that you have `python3`, `unzip`, `ffmpeg`, `wget` and `curl` installed on your system before running the scraper (otherwise you'll get a warning to install them).
 
 #### Setup the package
-One can easily install the PyPI version but let's setup the source version. 
+One can easily install the PyPI version but let's setup the source version.
 
 First, clone this repository.
 

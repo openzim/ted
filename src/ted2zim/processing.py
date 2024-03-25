@@ -33,6 +33,15 @@ def post_process_video(video_dir, video_id, preset, video_format, low_quality):
 
     dst_path = src_path.parent.joinpath(f"video.{video_format}")
     logger.debug(f"Converting video {video_id}")
-    reencode(
-        src_path, dst_path, preset.to_ffmpeg_args(), delete_src=True, failsafe=False
-    )
+    success, process = reencode(
+        src_path,
+        dst_path,
+        preset.to_ffmpeg_args(),
+        delete_src=True,
+        with_process=True,
+        failsafe=True,
+    )  # pyright: ignore[reportGeneralTypeIssues]
+    if not success:
+        if process:
+            logger.error(process.stdout)
+        raise Exception(f"Exception while re-encoding {src_path} for {video_id}")

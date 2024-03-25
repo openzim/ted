@@ -86,6 +86,11 @@ def main():
         help="Custom description for your ZIM. Based on selection otherwise.",
     )
 
+    parser.add_argument(
+        "--long-description",
+        help="Custom long description for your ZIM.",
+    )
+
     parser.add_argument("--creator", help="Name of content creator", default="TED")
 
     parser.add_argument(
@@ -161,6 +166,13 @@ def main():
         help="Display scraper version and exit",
         action="version",
         version=SCRAPER,
+    )
+
+    parser.add_argument(
+        "--disable-metadata-checks",
+        help="Disable validity checks of metadata according to openZIM conventions",
+        action="store_true",
+        default=False,
     )
 
     args = parser.parse_args()
