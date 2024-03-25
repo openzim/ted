@@ -106,11 +106,11 @@ class Ted2Zim:
             For now, if eng is among the list, we assume it is the most important
             language. Otherwise list is kept as-is
             """
-            if "eng" in languages:
-                return ["eng", *[lang for lang in languages if lang != "eng"]]
-            return list(languages)
+            return list(languages).sort(
+                key=lambda x: -1 if x == "eng" else 0
+            )  # pyright: ignore[reportReturnType]
 
-        if len(self.languages) == 0:
+        if not self.languages:
             self.zim_languages = "eng"
         else:
             self.zim_languages = ",".join(
