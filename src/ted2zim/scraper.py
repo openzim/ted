@@ -106,24 +106,20 @@ class Ted2Zim:
             For now, if eng is among the list, we assume it is the most important
             language. Otherwise list is kept as-is
             """
-            return list(languages).sort(
-                key=lambda x: -1 if x == "eng" else 0
-            )  # pyright: ignore[reportReturnType]
+            return sorted(languages, key=lambda x: -1 if x == "eng" else 0)
 
         if not self.languages:
             self.zim_languages = "eng"
         else:
-            self.zim_languages = ",".join(
-                sort_languages_hack(
-                    {
-                        lang
-                        for lang in [
-                            get_iso_639_3_language(lang) for lang in self.languages
-                        ]
-                        if lang
-                    }
-                )
-            )
+            languages_set = {
+                lang
+                for lang in [get_iso_639_3_language(lang) for lang in self.languages]
+                if lang
+            }
+            if not languages_set:
+                self.zim_languages = "eng"
+            else:
+                self.zim_languages = ",".join(sort_languages_hack(languages_set))
         self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
         self.tags = [*self.tags, "_category:ted", "ted", "_videos:yes"]
         self.title = title
@@ -508,28 +504,64 @@ class Ted2Zim:
             # we need to filter videos since this has not been done
             # before for topics with the "new" search page (2023)
             if self.source_languages:
-                if lang_code not in self.source_languages:
-                    # video language is not among the selected ones,
-                    # we have to check subtitles if they are enough
-                    if not self.subtitles_enough:
+                # If the first video which was fetched is in source_languages
+                # save it and increment the counter if it is firts time of saving
+                if (
+                    lang_code in self.source_languages
+                    and self.update_videos_list_from_info(json_data)
+                ):
+                    nb_extracted += 1
+
+                # Based on the data obtained from the first video, determine
+                # the other urls which can be fetched and the ones which can't
+                # be fetched
+                all_lang_codes = {
+                    language["languageCode"] for language in player_data["languages"]
+                }
+                # Valid language codes whose urls can be generated
+                valid_language_codes = {
+                    code
+                    for code in self.source_languages
+                    if code in all_lang_codes and code != lang_code
+                }
+
+                # Language codes supplied by user but are not available
+                invalid_lang_codes = set(self.source_languages).difference(
+                    valid_language_codes
+                )
+                if lang_code in invalid_lang_codes:
+                    invalid_lang_codes.remove(lang_code)
+
+                # If there are any valid language codes which can be fetched, fetch them
+                # and save
+                if valid_language_codes:
+                    other_lang_urls = self.generate_urls_for_other_languages(
+                        url, valid_language_codes
+                    )
+                    for lang_url in other_lang_urls:
+                        data = self.extract_info_from_video_page(lang_url)
+                        if data is not None and self.update_videos_list_from_info(data):
+                            nb_extracted += 1
+
+                # At this point, we can check if subtitles can be generated for the
+                # invalid_lang_codes if the subtitles_enough flag was supplied because
+                # if a video can be fetched in a language, then there is no need to
+                # try and fetch it in a different language with different subtitle.
+                if not self.subtitles_enough:
+                    logger.debug(f"Ignoring video in non-selected language {lang_code}")
+                    continue
+                else:
+                    matching_languages = [
+                        lang
+                        for lang in player_data["languages"]
+                        if lang["languageCode"] in self.source_languages
+                    ]
+                    if len(matching_languages) == 0:
                         logger.debug(
-                            f"Ignoring video in non-selected language {lang_code}"
+                            "Ignoring video without a selected language in "
+                            "audio or subtitles"
                         )
                         continue
-                    else:
-                        matching_languages = [
-                            lang
-                            for lang in player_data["languages"]
-                            if lang["languageCode"] in self.source_languages
-                        ]
-                        if len(matching_languages) == 0:
-                            logger.debug(
-                                "Ignoring video without a selected language in "
-                                "audio or subtitles"
-                            )
-                            continue
-                if self.update_videos_list_from_info(json_data):
-                    nb_extracted += 1
             else:
                 # Since we are searching for all languages, first update the
                 # videos list with the data we just scraped.
