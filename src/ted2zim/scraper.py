@@ -108,18 +108,21 @@ class Ted2Zim:
             """
             return sorted(languages, key=lambda x: -1 if x == "eng" else 0)
 
-        if not self.languages:
+        self.zim_languages = ",".join(
+            sort_languages_hack(
+                {
+                    lang
+                    for lang in [
+                        get_iso_639_3_language(lang) for lang in self.languages
+                    ]
+                    if lang
+                }
+            )
+        )
+
+        if not self.zim_languages:
             self.zim_languages = "eng"
-        else:
-            languages_set = {
-                lang
-                for lang in [get_iso_639_3_language(lang) for lang in self.languages]
-                if lang
-            }
-            if not languages_set:
-                self.zim_languages = "eng"
-            else:
-                self.zim_languages = ",".join(sort_languages_hack(languages_set))
+
         self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
         self.tags = [*self.tags, "_category:ted", "ted", "_videos:yes"]
         self.title = title
