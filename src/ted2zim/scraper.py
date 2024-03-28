@@ -305,8 +305,10 @@ class Ted2Zim:
                         code for code in self.source_languages if code != lang_code
                     ]
                 else:
-                    # No languages were specified. We use the the languages returned
-                    # from the json_data of this video to generate other language urls.
+                    # No languages were specified. Save the first video
+                    self.update_videos_list_from_info(json_data)
+                    # We use the the languages returned from the first
+                    # video to generate other language urls.
                     other_languages = [
                         language["languageCode"]
                         for language in player_data["languages"]
@@ -672,9 +674,6 @@ class Ted2Zim:
                     "youtube_id": youtube_id,
                     "length": length,
                     "subtitles": subtitles,
-                    "subtitles_set": {
-                        subtitle["languageCode"] for subtitle in subtitles
-                    },
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
@@ -700,20 +699,9 @@ class Ted2Zim:
                             "languageName": self.get_display_name(lang_code, lang_name),
                         }
                     )
-                if self.subtitles_setting in (MATCHING, NONE):
-                    # Only add subtitles which have not been added to avoid
-                    # duplicates
-                    new_subtitles = [
-                        subtitle
-                        for subtitle in subtitles
-                        if subtitle["languageCode"]
-                        not in self.videos[index]["subtitles_set"]
-                    ]
-                    self.videos[index]["subtitles"] += new_subtitles
-                    for subtitle in new_subtitles:
-                        self.videos[index]["subtitles_set"].add(
-                            subtitle["languageCode"]
-                        )
+
+                if self.subtitles_setting in (MATCHING, NONE) and len(subtitles) == 1:
+                    self.videos[index]["subtitles"] += subtitles
         return False
 
     def get_lang_code_and_name(self, json_data):
