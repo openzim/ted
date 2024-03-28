@@ -292,26 +292,26 @@ class Ted2Zim:
             url = urllib.parse.urljoin(self.talks_base_url, relative_path)
             json_data = self.extract_info_from_video_page(url)
 
-            if json_data is not None and self.update_videos_list_from_info(json_data):
+            if json_data is not None:
+                player_data = json_data["playerData"]
                 lang_code = json_data["language"]
                 if self.source_languages:
+                    # If the first video which was fetched is in source_languages,
+                    # save it.
+                    if lang_code in self.source_languages:
+                        self.update_videos_list_from_info(json_data)
                     # Determine the next languages to fetch from source_languages
-                    other_languages = []
-                    for language_code in self.source_languages:
-                        # Do not include the language that was just scraped
-                        if language_code == lang_code:
-                            continue
-                        other_languages.append(language_code)
+                    other_languages = [
+                        code for code in self.source_languages if code != lang_code
+                    ]
                 else:
                     # No languages were specified. We use the the languages returned
                     # from the json_data of this video to generate other language urls.
-                    other_languages = []
-                    for language in json_data["playerData"]["languages"]:
-                        # Do not include the language of the video that
-                        # was just scraped
-                        if language["languageCode"] == lang_code:
-                            continue
-                        other_languages.append(language["languageCode"])
+                    other_languages = [
+                        language["languageCode"]
+                        for language in player_data["languages"]
+                        if language["languageCode"] != lang_code
+                    ]
 
                 if not other_languages:
                     # No need to generate urls for other languages as the list
@@ -325,7 +325,7 @@ class Ted2Zim:
 
                 logger.debug(
                     f"Searching info for the video in other {len(other_lang_urls)} "
-                    "language(s)"
+                    "other language(s)"
                 )
                 for lang_url in other_lang_urls:
                     data = self.extract_info_from_video_page(lang_url)
@@ -507,64 +507,58 @@ class Ted2Zim:
             # we need to filter videos since this has not been done
             # before for topics with the "new" search page (2023)
             if self.source_languages:
-                # If the first video which was fetched is in source_languages
-                # save it and increment the counter if it is firts time of saving
+                # If the first video which was fetched is in self.source_languages
+                # save it and increment the counter.
                 if (
                     lang_code in self.source_languages
                     and self.update_videos_list_from_info(json_data)
                 ):
                     nb_extracted += 1
 
-                # Based on the data obtained from the first video, determine
-                # the other urls which can be fetched and the ones which can't
-                # be fetched
-                all_lang_codes = {
-                    language["languageCode"] for language in player_data["languages"]
-                }
-                # Valid language codes whose urls can be generated
-                valid_language_codes = {
-                    code
-                    for code in self.source_languages
-                    if code in all_lang_codes and code != lang_code
-                }
-
-                # Language codes supplied by user but are not available
-                invalid_lang_codes = set(self.source_languages).difference(
-                    valid_language_codes
-                )
-                if lang_code in invalid_lang_codes:
-                    invalid_lang_codes.remove(lang_code)
+                # Determine the next languages to fetch from source_languages
+                other_languages = [
+                    code for code in self.source_languages if code != lang_code
+                ]
 
                 # If there are any valid language codes which can be fetched, fetch them
-                # and save
-                if valid_language_codes:
+                # and save accordingly
+                if other_languages:
                     other_lang_urls = self.generate_urls_for_other_languages(
-                        url, valid_language_codes
+                        url, other_languages
+                    )
+                    logger.debug(
+                        f"Searching info for the video in {len(other_lang_urls)} "
+                        "other language(s)"
                     )
                     for lang_url in other_lang_urls:
                         data = self.extract_info_from_video_page(lang_url)
                         if data is not None and self.update_videos_list_from_info(data):
+                            # It is possible that this is the first time we
+                            # are saving this video as the first video might
+                            # not necessarily be in the source_languages.
+                            # We increment the counter relying on the fact that
+                            # update_videos_list returns True only if this
+                            # is the first time we are saving the video.
                             nb_extracted += 1
 
-                # At this point, we can check if subtitles can be generated for the
-                # invalid_lang_codes if the subtitles_enough flag was supplied because
-                # if a video can be fetched in a language, then there is no need to
-                # try and fetch it in a different language with different subtitle.
-                if not self.subtitles_enough:
-                    logger.debug(f"Ignoring video in non-selected language {lang_code}")
-                    continue
-                else:
-                    matching_languages = [
-                        lang
-                        for lang in player_data["languages"]
-                        if lang["languageCode"] in self.source_languages
-                    ]
-                    if len(matching_languages) == 0:
+                if lang_code not in self.source_languages:
+                    # Video language fetched is not among the selected ones, we have to
+                    # check subtitles if they are enough
+                    if not self.subtitles_enough:
                         logger.debug(
-                            "Ignoring video without a selected language in "
-                            "audio or subtitles"
+                            f"Ignoring video in non-selected language {lang_code}"
                         )
-                        continue
+                    else:
+                        matching_languages = [
+                            lang
+                            for lang in player_data["languages"]
+                            if lang["languageCode"] in self.source_languages
+                        ]
+                        if len(matching_languages) == 0:
+                            logger.debug(
+                                "Ignoring video without a selected language"
+                                "in audio or subtitles"
+                            )
             else:
                 # Since we are searching for all languages, first update the
                 # videos list with the data we just scraped.
@@ -574,34 +568,24 @@ class Ted2Zim:
                 # We use the the languages returned from the json_data of
                 # this video to generate other language urls
                 other_languages = []
-                for language in json_data["playerData"]["languages"]:
+                for language in player_data["languages"]:
                     #  Do not include the language of the video that was just scraped
                     if language["languageCode"] == lang_code:
                         continue
                     other_languages.append(language["languageCode"])
 
-                if not other_languages:
-                    # No need to generate urls for other languages as the list
-                    # is empty
-                    self.already_visited.add(urllib.parse.urlparse(url).path)
-                    continue
-
-                other_lang_urls = self.generate_urls_for_other_languages(
-                    url, other_languages
-                )
-                logger.debug(
-                    f"Searching info for the video in other {len(other_lang_urls)} "
-                    "language(s)"
-                )
-                for lang_url in other_lang_urls:
-                    data = self.extract_info_from_video_page(lang_url)
-                    if data is not None and self.update_videos_list_from_info(data):
-                        # Despite that we are making a call to update
-                        # the videos list, only the first unique video_id
-                        # causes nb_extracted to be incremented. Other
-                        # calls simply update the metadata of the
-                        # video.
-                        nb_extracted += 1
+                if other_languages:
+                    other_lang_urls = self.generate_urls_for_other_languages(
+                        url, other_languages
+                    )
+                    logger.debug(
+                        f"Searching info for the video in {len(other_lang_urls)} "
+                        "other language(s)"
+                    )
+                    for lang_url in other_lang_urls:
+                        data = self.extract_info_from_video_page(lang_url)
+                        if data is not None:
+                            self.update_videos_list_from_info(data)
 
             logger.debug(f"Seen {hit['slug']}")
             self.already_visited.add(urllib.parse.urlparse(url).path)
