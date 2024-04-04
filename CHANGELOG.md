@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New `long_description` CLI argument to set the ZIM long description
 - New `disable_metadata_check` CLI argument to disable the metadata checks which are automated since zimscraperlib 3.x
+- When `--languages` CLI arugment is not passed, no filtering by language is done (#171)
 
 ### Changed
 
