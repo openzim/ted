@@ -1349,7 +1349,7 @@ class Ted2Zim:
                 publisher=self.publisher,
                 tags=self.tags,
                 scraper=SCRAPER,
-                disable_metadata_checks=self.disable_metadata_checks,
+                disable_metadata_checks=self.disable_metadata_checks, # type: ignore
             )
             if not self.keep_build_dir:
                 logger.info("removing temp folder")
