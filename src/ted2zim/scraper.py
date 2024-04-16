@@ -650,9 +650,23 @@ class Ted2Zim:
         youtube_id,
         length,
         subtitles,
+        metadata_link,
     ):
         # append to self.videos and return if not present
         if not [video for video in self.videos if video.get("id", None) == video_id]:
+
+            # Fetch metadata and compute subtitles offset (sum up all domains durations
+            # up till the primary domain) - we do it only once per video since this
+            # information is same for all languages
+            subtitles_offset = 0
+            if metadata_link:
+                metadatas = request_url(metadata_link).json()
+                if "domains" in metadatas:
+                    for domain in metadatas["domains"]:
+                        if domain["primaryDomain"]:
+                            break
+                        subtitles_offset += int(domain["duration"] * 1000)
+
             self.videos.append(
                 {
                     "id": video_id,
@@ -674,6 +688,7 @@ class Ted2Zim:
                     "youtube_id": youtube_id,
                     "length": length,
                     "subtitles": subtitles,
+                    "subtitles_offset": subtitles_offset,
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
@@ -776,6 +791,7 @@ class Ted2Zim:
             return False
 
         langs = player_data["languages"]
+        metadata_link = player_data["resources"]["hls"]["metadata"]
         subtitles = self.generate_subtitle_list(
             video_id, langs, lang_code, native_talk_language
         )
@@ -795,6 +811,7 @@ class Ted2Zim:
             youtube_id=youtube_id,
             length=length,
             subtitles=subtitles,
+            metadata_link=metadata_link,
         )
 
     def extract_info_from_video_page(
@@ -1188,10 +1205,14 @@ class Ted2Zim:
 
         # download subtitles
         logger.debug(f"Downloading subtitles for {video['title'][0]['text']}")
+        if video["subtitles_offset"]:
+            logger.debug(f"Subtitles will be offset by {video['subtitles_offset']} ms")
         valid_subs = []
         for subtitle in video["subtitles"]:
             time.sleep(0.5)  # throttling
-            vtt_subtitle = WebVTT(subtitle["link"]).convert()
+            vtt_subtitle = WebVTT(subtitle["link"]).convert(
+                offset=video["subtitles_offset"]
+            )
             if not vtt_subtitle:
                 logger.error(
                     f"Subtitle file for {subtitle['languageCode']} could not be created"
