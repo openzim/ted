@@ -1109,7 +1109,7 @@ class Ted2Zim:
             # Second try to download from youtube ID (used both when no video link AND
             # when video link download failed - we experience sometimes 403 errors on
             # video link, see #167)
-            if youtube_id:
+            if not downloaded and youtube_id:
                 try:
                     options = (
                         BestWebm if self.video_format == "webm" else BestMp4
