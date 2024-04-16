@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import time
 import urllib.parse
+from itertools import groupby
 
 import dateutil.parser
 import jinja2
@@ -16,7 +17,7 @@ from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 from slugify import slugify
 from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
-from zimscraperlib.i18n import _, get_language_details, setlocale
+from zimscraperlib.i18n import _, setlocale
 from zimscraperlib.image.optimization import optimize_image
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
@@ -31,6 +32,7 @@ from zimscraperlib.zim.metadata import (
     validate_title,
 )
 
+from ted2zim import languages as tedlang
 from ted2zim.constants import (
     ALL,
     BASE_URL,
@@ -39,7 +41,6 @@ from ted2zim.constants import (
     ROOT_DIR,
     SCRAPER,
     SEARCH_URL,
-    TEDLANGS,
     get_logger,
 )
 from ted2zim.processing import post_process_video
@@ -88,41 +89,6 @@ class Ted2Zim:
             [] if languages is None else [lang.strip() for lang in languages.split(",")]
         )
 
-        def get_iso_639_3_language(lang: str) -> str | None:
-            """Helper function to safely get ISO-639-3 code from input language"""
-            lang_info = get_language_details(lang, failsafe=True)
-            if lang_info:
-                return lang_info["iso-639-3"]
-            else:
-                logger.warning(
-                    f"Failed to get iso-639-3 language info for {lang}. "
-                    "This value will be missing in ZIM Language metadata."
-                )
-                return None
-
-        def sort_languages_hack(languages: set[str]) -> list[str]:
-            """This is a temporary hack to sort languages by importance in the ZIM
-
-            For now, if eng is among the list, we assume it is the most important
-            language. Otherwise list is kept as-is
-            """
-            return sorted(languages, key=lambda x: -1 if x == "eng" else 0)
-
-        self.zim_languages = ",".join(
-            sort_languages_hack(
-                {
-                    lang
-                    for lang in [
-                        get_iso_639_3_language(lang) for lang in self.languages
-                    ]
-                    if lang
-                }
-            )
-        )
-
-        if not self.zim_languages:
-            self.zim_languages = "eng"
-
         self.tags = [] if tags is None else [tag.strip() for tag in tags.split(",")]
         self.tags = [*self.tags, "_category:ted", "ted", "_videos:yes"]
         self.title = title
@@ -135,8 +101,9 @@ class Ted2Zim:
 
         if not self.disable_metadata_checks:
             # Validate ZIM metadata early so that we do not waste time doing operations
-            # for a scraper which will fail anyway in the end
-            validate_language("Language", self.zim_languages)
+            # for a scraper which will fail anyway in the end ; language is not
+            # validated here since it is dynamically built based on languages found in
+            # videos that will be added to the ZIM
             validate_tags("Tags", self.tags)
             if self.title:
                 validate_title("Title", self.title)
@@ -159,7 +126,7 @@ class Ted2Zim:
         self.subtitles_setting = (
             subtitles_setting
             if subtitles_setting in (ALL, MATCHING, NONE)
-            else self.to_ted_langcodes(
+            else tedlang.to_ted_langcodes(
                 [lang.strip() for lang in subtitles_setting.split(",")]
             )
         )
@@ -182,12 +149,12 @@ class Ted2Zim:
         self.playlist_title = None
         self.playlist_description = None
         self.source_languages = (
-            [] if not self.languages else self.to_ted_langcodes(self.languages)
+            [] if not self.languages else tedlang.to_ted_langcodes(self.languages)
         )
         self.already_visited = set()
 
         # set and record locale for translations
-        locale_details = get_language_details(locale_name)
+        locale_details = tedlang.get_language_details(locale_name)
         if locale_details["querytype"] != "locale":
             locale_name = locale_details["iso-639-1"]
         try:
@@ -199,7 +166,7 @@ class Ted2Zim:
             )
             self.locale = setlocale(ROOT_DIR, "en")
         # locale's language code
-        self.locale_name = self.to_ted_langcodes(locale_name)
+        self.locale_name = tedlang.to_ted_langcodes(locale_name)
 
     @property
     def templates_dir(self):
@@ -224,53 +191,6 @@ class Ted2Zim:
     @property
     def playlists_base_url(self):
         return BASE_URL + "playlists"
-
-    def append_part1_or_part3(self, lang_code_list, lang_info):
-        """Fills missing ISO languages codes for all in list
-
-        lang_code_list: list og lang codes
-        lang_info: see zimscraperlib.i18n"""
-
-        # ignore extra language mappings if supplied query was an iso-639-1 code
-        if "part1" in lang_info["iso_types"]:
-            lang_code_list.append(lang_info["iso-639-1"])
-
-        # supplied query was not iso-639-1
-        elif lang_info["iso-639-1"]:
-            lang_code_list.append(lang_info["iso-639-1"])
-            # check for extra language codes to include
-            if lang_info["iso-639-1"] in TEDLANGS["mappings"]:
-                for code in TEDLANGS["mappings"][lang_info["iso-639-1"]]:
-                    lang_code_list.append(code)
-        elif lang_info["iso-639-3"]:
-            lang_code_list.append(lang_info["iso-639-3"])
-        else:
-            supplied_lang = lang_info["query"]
-            logger.error(f"Language {supplied_lang} is not supported by TED")
-
-    def to_ted_langcodes(self, languages):
-        """Converts languages queries into TED language codes
-
-        Examples:
-            ["English", "fr", "hin"] => ["en", "fr", "hi"]
-            ["chi", "fake"] => ["zh", "zh-cn", "zh-tw"]
-        """
-
-        lang_code_list = []
-        for lang in languages:
-            lang_info = get_language_details(lang, failsafe=True)
-            if lang_info:
-                if lang_info["querytype"] == "purecode":
-                    self.append_part1_or_part3(lang_code_list, lang_info)
-                elif lang_info["querytype"] == "locale":
-                    query = lang_info["query"].replace("_", "-")
-                    if query in TEDLANGS["locales"]:
-                        lang_code_list.append(query)
-                    else:
-                        self.append_part1_or_part3(lang_code_list, lang_info)
-                else:
-                    self.append_part1_or_part3(lang_code_list, lang_info)
-        return list(set(lang_code_list))
 
     def extract_videos_from_playlist(self, playlist):
         """extracts metadata for all videos in the given playlist
@@ -415,13 +335,65 @@ class Ted2Zim:
             user_long_description=self.long_description,
         )
 
-    def get_display_name(self, lang_code, lang_name):
-        """Display name for language"""
+        # Compute ZIM language (first call, approximation since few videos might
+        # fail to download and finally not be added to the ZIM ; this however helps to
+        # ensure that ZIM metadata is OK)
+        self.compute_zim_languages()
 
-        lang_info = get_language_details(lang_code, failsafe=True)
-        if lang_code != "en" and lang_info:
-            return lang_info["native"] + " - " + lang_name
-        return lang_name
+    def compute_zim_languages(self):
+        """Compute the ZIM language metadata based on expected videos"""
+
+        # count the number of videos per audio language
+        audio_lang_counts = {
+            k: len(list(g))
+            for k, g in groupby(
+                [video["native_talk_language"] for video in self.videos]
+            )
+        }
+
+        # count the number of videos per subtitle language
+        subtitle_lang_counts = {
+            k: len(list(g))
+            for k, g in groupby(
+                [
+                    subtitle["languageCode"]
+                    for video in self.videos
+                    for subtitle in video["subtitles"]
+                ]
+            )
+        }
+
+        # Attribute 10 "points" score to language in video audio and 1 "point" score
+        # to language in video subtitle
+        scored_languages = {
+            k: 10 * audio_lang_counts.get(k, 0) + subtitle_lang_counts.get(k, 0)
+            for k in list(audio_lang_counts.keys()) + list(subtitle_lang_counts.keys())
+        }
+
+        sorted_ted_languages = [
+            item[0]
+            for item in sorted(scored_languages.items(), key=lambda item: -item[1])
+        ]
+
+        # compute the mappings from TED to ISO639-3 code and set ZIM language
+        # (mapping is usefull to keep list in same order)
+        mapping = tedlang.ted_to_iso639_3_langcodes(sorted_ted_languages)
+        self.zim_languages = ",".join(
+            [mapping[code] for code in sorted_ted_languages if mapping[code]]
+        )
+
+        # Display a clear warning on languages which have been ignored due to missing
+        # ISO639-3 codes
+        ignored_ted_codes = [code for code in sorted_ted_languages if not mapping[code]]
+        if len(ignored_ted_codes):
+            logger.warning(
+                "Some languages have not been added to ZIM metadata due to missing "
+                f"ISO639-3 code: {ignored_ted_codes}"
+            )
+
+        if not self.disable_metadata_checks:
+            # Validate ZIM languages
+            validate_language("Language", self.zim_languages)
 
     def get_subtitle_dict(self, lang):
         """dict of language name and code from a larger dict lang
@@ -434,7 +406,7 @@ class Ted2Zim:
         """
 
         return {
-            "languageName": self.get_display_name(
+            "languageName": tedlang.get_display_name(
                 lang["languageCode"], lang["languageName"]
             ),
             "languageCode": lang["languageCode"],
@@ -651,6 +623,7 @@ class Ted2Zim:
         length,
         subtitles,
         metadata_link,
+        native_talk_language,
     ):
         # append to self.videos and return if not present
         if not [video for video in self.videos if video.get("id", None) == video_id]:
@@ -673,7 +646,9 @@ class Ted2Zim:
                     "languages": [
                         {
                             "languageCode": lang_code,
-                            "languageName": self.get_display_name(lang_code, lang_name),
+                            "languageName": tedlang.get_display_name(
+                                lang_code, lang_name
+                            ),
                         }
                     ],
                     "title": [{"lang": lang_code, "text": title}],
@@ -689,6 +664,7 @@ class Ted2Zim:
                     "length": length,
                     "subtitles": subtitles,
                     "subtitles_offset": subtitles_offset,
+                    "native_talk_language": native_talk_language,
                 }
             )
             logger.debug(f"Successfully inserted video {video_id} into video list")
@@ -711,7 +687,9 @@ class Ted2Zim:
                     self.videos[index]["languages"].append(
                         {
                             "languageCode": lang_code,
-                            "languageName": self.get_display_name(lang_code, lang_name),
+                            "languageName": tedlang.get_display_name(
+                                lang_code, lang_name
+                            ),
                         }
                     )
 
@@ -812,6 +790,7 @@ class Ted2Zim:
             length=length,
             subtitles=subtitles,
             metadata_link=metadata_link,
+            native_talk_language=native_talk_language,
         )
 
     def extract_info_from_video_page(
@@ -1334,6 +1313,7 @@ class Ted2Zim:
         self.download_subtitles_parallel()
         self.render_home_page()
         self.render_video_pages()
+        self.compute_zim_languages()  # Compute ZIM language (second/final call)
         self.copy_files_to_build_directory()
         self.generate_datafile()
 
