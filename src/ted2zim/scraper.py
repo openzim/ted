@@ -166,7 +166,7 @@ class Ted2Zim:
             )
             self.locale = setlocale(ROOT_DIR, "en")
         # locale's language code
-        self.locale_name = tedlang.to_ted_langcodes(locale_name)
+        self.locale_ted_codes = tedlang.to_ted_langcodes(locale_name)
 
     @property
     def templates_dir(self):
@@ -891,7 +891,7 @@ class Ted2Zim:
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=str(video["id"]),
-                title=get_main_title(titles, self.locale_name),
+                title=get_main_title(titles, self.locale_ted_codes),
                 titles=titles,
                 descriptions=video["description"],
                 back_to_list=_("Back to the list"),
