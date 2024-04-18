@@ -22,8 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 
-- Fix language metadata computation (list, but not yet fully properly ordered)
+- Fix language metadata computation (#172)
 - Fix computation of automatic description and long description
+- Fix subtitles time offset (#177)
+- Fix rare bug in display of videos title and description on video page
+- Fix support for Youtube fallback when download video from TED CDN is not working (#164 + #182)
+- Do not include videos which failed to be fetched / processed in the final list of videos on main page (#167, #169)
+- Fix video not working on Safari iOS / iPad (#145)
 
 ## [2.1.0] - 2024-01-08
 
