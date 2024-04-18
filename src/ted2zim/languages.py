@@ -20,7 +20,7 @@ def get_display_name(lang_code, lang_name):
 def append_part1_or_part3(lang_code_list, lang_info):
     """Fills missing ISO languages codes for all in list
 
-    lang_code_list: list og lang codes
+    lang_code_list: list of lang codes
     lang_info: see zimscraperlib.i18n"""
 
     # ignore extra language mappings if supplied query was an iso-639-1 code
@@ -53,7 +53,6 @@ def to_ted_langcodes(languages):
     for lang in languages:
         lang_info = get_language_details(lang, failsafe=True)
         if lang_info:
-            logger.warning(lang_info)
             if lang_info["querytype"] == "purecode":
                 append_part1_or_part3(lang_code_list, lang_info)
             elif lang_info["querytype"] == "locale":

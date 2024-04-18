@@ -345,16 +345,16 @@ class Ted2Zim:
 
         # count the number of videos per audio language
         audio_lang_counts = {
-            k: len(list(g))
-            for k, g in groupby(
+            lang: len(list(group))
+            for lang, group in groupby(
                 [video["native_talk_language"] for video in self.videos]
             )
         }
 
         # count the number of videos per subtitle language
         subtitle_lang_counts = {
-            k: len(list(g))
-            for k, g in groupby(
+            lang: len(list(group))
+            for lang, group in groupby(
                 [
                     subtitle["languageCode"]
                     for video in self.videos
@@ -371,12 +371,13 @@ class Ted2Zim:
         }
 
         sorted_ted_languages = [
-            item[0]
-            for item in sorted(scored_languages.items(), key=lambda item: -item[1])
+            lang_code
+            for lang_code, _ in sorted(
+                scored_languages.items(), key=lambda item: -item[1]
+            )
         ]
 
         # compute the mappings from TED to ISO639-3 code and set ZIM language
-        # (mapping is usefull to keep list in same order)
         mapping = tedlang.ted_to_iso639_3_langcodes(sorted_ted_languages)
         self.zim_languages = ",".join(
             [mapping[code] for code in sorted_ted_languages if mapping[code]]
