@@ -35,18 +35,18 @@ scripts = [
   "invoke==2.2.0",
 ]
 lint = [
-  "black==24.3.0",
-  "ruff==0.3.3",
+  "black==24.4.0",
+  "ruff==0.4.0",
 ]
 check = [
-  "pyright==1.1.354",
+  "pyright==1.1.359",
 ]
 test = [
   "pytest==8.1.1",
   "coverage==7.4.4",
 ]
 dev = [
-  "pre-commit==3.6.2",
+  "pre-commit==3.7.0",
   "debugpy==1.8.1",
   "ted2zim[scripts]",
   "ted2zim[lint]",
