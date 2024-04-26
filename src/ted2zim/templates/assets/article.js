@@ -8,7 +8,7 @@ $.urlParam = function(name){
 
 window.onload = function() {
     var lang = $.urlParam('lang');
-    if (lang !== "undefined") {
+    if (lang && lang !== "undefined") {
         document.getElementById("title-head").innerHTML = $("p.title.lang-" + lang).text();
         $(".lang-default").css("display", "none");
         $(".lang-" + lang).css("display", "block");

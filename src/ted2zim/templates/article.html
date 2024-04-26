@@ -28,7 +28,7 @@
             {% endfor %}
             <div id="video-wrapper">
                 <video class="video-js vjs-default-skin vjs-fill"
-                    controls preload="auto"
+                    controls preload="auto" playsinline
                     poster="videos/{{ video_id }}/thumbnail.webp"
                     data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
                     <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />

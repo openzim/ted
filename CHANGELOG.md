@@ -5,12 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (as of version 2.0.11).
 
-## Unreleased
+## [Unreleased]
+
+## [3.0.0] - 2024-04-19
 
 ### Added
 
-- New `long_description` CLI argument to set the ZIM long description
-- New `disable_metadata_check` CLI argument to disable the metadata checks which are automated since zimscraperlib 3.x
+- New `--long-description` CLI argument to set the ZIM long description
+- New `--disable-metadata-check` CLI argument to disable the metadata checks which are automated since zimscraperlib 3.x
 - When `--languages` CLI arugment is not passed, no filtering by language is done (#171)
 
 ### Changed
@@ -22,8 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 
-- Fix language metadata computation (list, but not yet fully properly ordered)
+- Fix language metadata computation (#172)
 - Fix computation of automatic description and long description
+- Fix subtitles time offset (#177)
+- Fix rare bug in display of videos title and description on video page
+- Fix support for Youtube fallback when download video from TED CDN is not working (#164 + #182)
+- Do not include videos which failed to be fetched / processed in the final list of videos on main page (#167, #169)
+- Fix video not working on Safari iOS / iPad (#145)
 
 ## [2.1.0] - 2024-01-08
 

@@ -80,7 +80,7 @@ class WebVTT:
     def __init__(self, url):
         self.url = url
 
-    def convert(self):
+    def convert(self, offset):
         """download and convert its URL to WebVTT text"""
         req = request_url(self.url)
 
@@ -91,7 +91,7 @@ class WebVTT:
         except json.JSONDecodeError:
             return None
 
-        return self.json_to_vtt(source_subtitles)
+        return self.json_to_vtt(source_subtitles, offset)
 
     @staticmethod
     def miliseconds_to_human(miliseconds):
@@ -105,7 +105,7 @@ class WebVTT:
         return f"{hours:02}:{minutes:02}:{seconds:02}.{miliseconds:03}"
 
     @staticmethod
-    def json_to_vtt(json_subtitles, offset=11820):
+    def json_to_vtt(json_subtitles, offset):
         """WebVTT string from TED JSON subtitles list
 
         TED format: {"captions": [
@@ -148,15 +148,20 @@ def get_temp_fpath(**kwargs):
             fpath.unlink()
 
 
-def get_main_title(titles, prefered_lang):
+def get_main_title(titles, locale_ted_codes: list[str]):
     """main title from list of titles dict based on language pref with fallback"""
     missing = "n/a"
     if not titles:
         return missing
 
-    def get_for(lang):
+    def get_for(lang: str):
         filtered = [title["text"] for title in titles if title["lang"] == lang]
         if filtered:
             return filtered[0]
 
-    return get_for(prefered_lang) or get_for("default") or get_for("en") or missing
+    for code in [*locale_ted_codes, "default", "en"]:
+        title = get_for(code)
+        if title:
+            return title
+
+    return missing
