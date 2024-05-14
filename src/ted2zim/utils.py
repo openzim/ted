@@ -38,19 +38,19 @@ def request_url(url, json_data=None):
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
     max_attempts, attempt = 5, 1
     while True:
-        time.sleep(1)  # delay requests
-        if json_data:
-            req = requests.post(
-                url,
-                headers={"User-Agent": "Mozilla/5.0"},
-                json=json_data,
-                timeout=REQUESTS_TIMEOUT,
-            )
-        else:
-            req = requests.get(
-                url, headers={"User-Agent": "Mozilla/5.0"}, timeout=REQUESTS_TIMEOUT
-            )
         try:
+            time.sleep(1)  # delay requests
+            if json_data:
+                req = requests.post(
+                    url,
+                    headers={"User-Agent": "Mozilla/5.0"},
+                    json=json_data,
+                    timeout=REQUESTS_TIMEOUT,
+                )
+            else:
+                req = requests.get(
+                    url, headers={"User-Agent": "Mozilla/5.0"}, timeout=REQUESTS_TIMEOUT
+                )
             req.raise_for_status()
             return req
         except Exception as exc:

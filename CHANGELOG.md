@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Change log level from ERROR to WARNING for missing translations (#197)
+- Fix HTTP retries to consider any HTTP failure, not only bad HTTP status code (#162)
 
 ## [3.0.0] - 2024-04-19
 
