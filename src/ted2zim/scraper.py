@@ -829,8 +829,9 @@ class Ted2Zim:
 
             requested_lang_code = self.get_lang_code_from_url(url)
             if requested_lang_code and json_data["language"] != requested_lang_code:
-                logger.error(
-                    f"Video has not yet been translated into {requested_lang_code}"
+                logger.warning(
+                    f"Video at {url} has not yet been translated into "
+                    f"{requested_lang_code}"
                 )
                 return None
             # Desrialize the data at json_data["playerData"] into a dict
