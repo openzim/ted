@@ -38,6 +38,8 @@ def request_url(url, json_data=None):
         url = f"{BASE_URL}playlists/57/björk_6_talks_that_are_music"
     max_attempts, attempt = 5, 1
     while True:
+        req = None
+        last_exc = None
         try:
             time.sleep(1)  # delay requests
             if json_data:
@@ -54,8 +56,9 @@ def request_url(url, json_data=None):
             req.raise_for_status()
             return req
         except Exception as exc:
-            if req.status_code == HTTPStatus.NOT_FOUND:
+            if req and req.status_code == HTTPStatus.NOT_FOUND:
                 raise exc
+            last_exc = exc
             time.sleep(30 * attempt)  # wait upon failure
 
         if attempt < max_attempts:
@@ -64,14 +67,15 @@ def request_url(url, json_data=None):
 
         if json_data:
             raise ConnectionRefusedError(
-                f"Failed to query {url} after {attempt} attempts (HTTP "
-                f"{req.status_code}); sent data was: {json.dumps(json_data)}"
-            )
+                f"Failed to query {url} after {attempt} attempts (HTTP status "
+                f"{req.status_code if req else '<unknown>'}); sent data was: "
+                f"{json.dumps(json_data)}"
+            ) from last_exc
         else:
             raise ConnectionRefusedError(
                 f"Failed to download {url} after {attempt} attempts "
-                f"(HTTP {req.status_code})"
-            )
+                f"(HTTP status {req.status_code if req else '<unknown>'})"
+            ) from last_exc
 
 
 class WebVTT:
