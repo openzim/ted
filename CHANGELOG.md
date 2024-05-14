@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Change log level from ERROR to WARNING for missing translations (#197)
+
 ## [3.0.0] - 2024-04-19
 
 ### Added
