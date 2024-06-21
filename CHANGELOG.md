@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updgrade to zimscraperlib 3.4.0 (including **new webm encoder presets to migrate to VP9 instead of VP8**) (#204)
+
+### Fixed
+
+- Retry logic is still failing because req might be null when timeout occurs (#203)
+- Typo in disable-metadata-checks arg in ted2zim-multi (#202)
+
 ## [3.0.1] - 2024-05-14
 
 ### Fixed

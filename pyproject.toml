@@ -9,11 +9,11 @@ description = "Make ZIM file from TED Talks"
 readme = "README.md"
 dependencies = [
   "python-dateutil==2.9.0.post0",
-  "zimscraperlib==3.3.2",
-  "requests==2.32.0",
+  "zimscraperlib==3.4.0",
+  "requests==2.32.3",
   "beautifulsoup4==4.12.3",
   "Jinja2==3.1.4",
-  "kiwixstorage==0.8.3",
+  "kiwixstorage==0.9.0",
   "pif==0.8.2",
   "python-slugify==8.0.4",
   "yt-dlp", # yt-dlp should be updated as frequently as possible
@@ -28,25 +28,25 @@ kind = "scraper"
 additional-keywords = ["ted"]
 
 [tool.hatch.build.hooks.openzim-build]
-dependencies = [ "zimscraperlib==3.3.2"] # required for fix_ogv_dist
+dependencies = [ "zimscraperlib==3.4.0"] # required for fix_ogv_dist
 
 [project.optional-dependencies]
 scripts = [
   "invoke==2.2.0",
 ]
 lint = [
-  "black==24.4.0",
-  "ruff==0.4.0",
+  "black==24.4.2",
+  "ruff==0.4.10",
 ]
 check = [
-  "pyright==1.1.359",
+  "pyright==1.1.368",
 ]
 test = [
-  "pytest==8.1.1",
-  "coverage==7.4.4",
+  "pytest==8.2.2",
+  "coverage==7.5.3",
 ]
 dev = [
-  "pre-commit==3.7.0",
+  "pre-commit==3.7.1",
   "debugpy==1.8.1",
   "ted2zim[scripts]",
   "ted2zim[lint]",

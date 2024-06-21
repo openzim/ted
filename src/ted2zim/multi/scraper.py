@@ -285,7 +285,7 @@ class TedHandler:
             args += ["--debug"]
 
         if self.disable_metadata_checks:
-            args += ["--disable-metadatachecks"]
+            args += ["--disable-metadata-checks"]
 
         logger.debug(nicer_args_join(args))
         process = subprocess.run(
@@ -317,7 +317,7 @@ class TedHandler:
         if self.debug:
             args += ["--debug"]
         if self.disable_metadata_checks:
-            args += ["--disable-metadatachecks"]
+            args += ["--disable-metadata-checks"]
         return subprocess.run(args, check=False).returncode
 
     def fetch_metadata(self):
