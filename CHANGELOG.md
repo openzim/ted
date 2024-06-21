@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Retry logic is still failing because req might be null when timeout occurs (#203)
+- Typo in disable-metadata-checks arg in ted2zim-multi (#202)
 
 ## [3.0.1] - 2024-05-14
 
