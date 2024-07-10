@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change log level of "Video at {url} has not yet been translated into {requested_lang_code}" messages from warning to debug (way too verbose)
+
 ### Fixed
 
 -  Restore functionality to resist temporary bad TED responses when parsing video pages (#209)
