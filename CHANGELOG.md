@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Change log level of "Video at {url} has not yet been translated into {requested_lang_code}" messages from warning to debug (way too verbose)
+- Disable preloading of subtitles in video.js
 
 ### Fixed
 
