@@ -30,7 +30,7 @@
                 <video class="video-js vjs-default-skin vjs-fill"
                     controls preload="auto" playsinline
                     poster="videos/{{ video_id }}/thumbnail.webp"
-                    data-setup='{"techOrder": ["html5", "ogvjs"], "ogvjs": {"base": "assets/ogvjs"}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
+                    data-setup='{"techOrder": ["html5", "ogvjs"], "html5": {"preloadTextTracks": false}, "ogvjs": {"base": "assets/ogvjs", "preloadTextTracks": false}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
                     <source src="videos/{{ video_id }}/video.{{ video_format }}" type="video/{{ video_format }}" />
                         {% for language in languages %}
                         <track kind="subtitles" src="videos/{{ video_id }}/subs/subs_{{ language.languageCode }}.vtt" srclang="{{ language.languageCode }}" label="{{ language.languageName }}" />
