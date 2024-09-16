@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 -  Restore functionality to resist temporary bad TED responses when parsing video pages (#209)
+-  Retry video data extraction if `videoData` is missing from page data (#226)
 
 ## [3.0.2] - 2024-06-24
 
