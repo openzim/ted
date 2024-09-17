@@ -803,7 +803,7 @@ class Ted2Zim:
         """
 
         # Every TED video page has a <script>-tag with a Javascript
-        # object with JSON in it. We will just stip away the object
+        # object with JSON in it. We will just strip away the object
         # signature and load the json to extract meta-data out of it.
         # returns True if successfully scraped new video
 
@@ -840,9 +840,21 @@ class Ted2Zim:
                     url, retry_count=retry_count + 1
                 )
 
-            json_data = json.loads(next_data_tag.string)["props"]["pageProps"][
-                "videoData"
-            ]
+            # Sometimes, the video data is not included in the json data, so we retry
+            # the request.
+            try:
+                json_data = json.loads(next_data_tag.string)["props"]["pageProps"][
+                    "videoData"
+                ]
+            except KeyError:
+                logger.debug(
+                    "Insufficient data returned by server, videoData not "
+                    "found in JSON string. Retrying in 5 seconds..."
+                )
+                time.sleep(5)
+                return self.extract_info_from_video_page(
+                    url, retry_count=retry_count + 1
+                )
 
             requested_lang_code = self.get_lang_code_from_url(url)
             if requested_lang_code and json_data["language"] != requested_lang_code:
@@ -855,10 +867,10 @@ class Ted2Zim:
             # and overwrite it accordingly
             json_data["playerData"] = json.loads(json_data["playerData"])
             return json_data
-        except Exception:
+        except Exception as exc:
             logger.error(
-                f"Problem occured while parsing {url}. HTML content was:\n"
-                f"{html_content}"
+                f"Problem occured while parsing {url}, error: {exc!s}. "
+                f"HTML content was:\n{html_content}"
             )
             raise
 
