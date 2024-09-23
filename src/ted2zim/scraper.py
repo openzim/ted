@@ -707,8 +707,11 @@ class Ted2Zim:
                 for lang in player_data["languages"]
                 if lang["languageCode"] == lang_code
             ][-1]
-        except Exception as exc:
-            logger.warning(f"player data has no entry for {lang_code}: {exc}")
+        except Exception:
+            logger.warning(
+                f"Video at {json_data.get('canonicalUrl')} "
+                f"has no subtitle/language data in {lang_code}"
+            )
             lang_name = lang_code
 
         return lang_code, lang_name
