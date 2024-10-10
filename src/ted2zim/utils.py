@@ -1,9 +1,11 @@
 import contextlib
 import json
 import pathlib
+import re
 import tempfile
 import time
 from http import HTTPStatus
+from urllib.parse import urlsplit
 
 import requests
 
@@ -169,3 +171,27 @@ def get_main_title(titles, locale_ted_codes: list[str]):
             return title
 
     return missing
+
+
+def is_valid_uri(url: str) -> bool:
+    """check if uri is a valid uri.
+
+    Adapted from: https://github.com/boto/botocore/blob/develop/botocore/utils.py#L1276
+    """
+    url_parts = urlsplit(url)
+    hostname = url_parts.hostname
+    max_hostname_length = 255
+    if hostname is None or len(hostname) > max_hostname_length:
+        return False
+
+    if hostname[-1] == ".":
+        hostname = hostname[:-1]
+
+    allowed = re.compile(
+        r"""^((?!-)                 # ensure hostname does not begin with hyphen
+        [A-Z\d-]{1,63}(?<!-)\.)*    # optional subdomain name (must not end with hyphen)
+        ((?!-)[A-Z\d-]{1,63}(?<!-)  # main domain name (must not end with hyphen)
+        )$""",
+        re.IGNORECASE | re.VERBOSE,
+    )
+    return bool(allowed.match(hostname))

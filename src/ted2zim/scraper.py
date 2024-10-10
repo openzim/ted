@@ -44,7 +44,13 @@ from ted2zim.constants import (
     get_logger,
 )
 from ted2zim.processing import post_process_video
-from ted2zim.utils import WebVTT, get_main_title, request_url, update_subtitles_list
+from ted2zim.utils import (
+    WebVTT,
+    get_main_title,
+    is_valid_uri,
+    request_url,
+    update_subtitles_list,
+)
 
 logger = get_logger()
 
@@ -1036,6 +1042,11 @@ class Ted2Zim:
                 # download an image of the speaker
                 if not video_speaker:
                     logger.debug("Speaker doesn't have an image")
+                elif not is_valid_uri(video_speaker):
+                    logger.error(
+                        f"Invalid speaker image URI {video_speaker!r} for "
+                        f"{video_title}"
+                    )
                 else:
                     logger.debug(f"Downloading Speaker image for {video_title}")
                     self.download_jpeg_image_and_convert(
