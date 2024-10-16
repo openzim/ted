@@ -1033,9 +1033,15 @@ class Ted2Zim:
             )
         if not downloaded_from_cache:
             try:
-                # download an image of the speaker
+                # Before downloading a speaker image, check if the URL exists.
+                # Sometimes, the URL from TED is "-" which is invalid.
                 if not video_speaker:
                     logger.debug("Speaker doesn't have an image")
+                elif video_speaker == "-":
+                    logger.error(
+                        f"Invalid speaker image URL {video_speaker!r} for "
+                        f"{video_title}"
+                    )
                 else:
                     logger.debug(f"Downloading Speaker image for {video_title}")
                     self.download_jpeg_image_and_convert(
