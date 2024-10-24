@@ -175,6 +175,13 @@ def main():
         default=False,
     )
 
+    parser.add_argument(
+        "--language-threshold",
+        help="Consider languages present in at least percentage of videos",
+        default=0.5,
+        type=float,
+    )
+
     args = parser.parse_args()
     set_debug(args.debug)
     logger = get_logger()
@@ -200,6 +207,9 @@ def main():
 
         if not args.threads >= 1:
             parser.error("--threads must be provided a positive integer")
+
+        if not 0 < args.language_threshold <= 1:
+            parser.error("--language-threshold must be between 0 and 1.")
 
         scraper = Ted2Zim(**dict(args._get_kwargs()))
         scraper.run()
