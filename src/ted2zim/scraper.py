@@ -349,7 +349,7 @@ class Ted2Zim:
         audio_lang_counts = {
             lang: len(list(group))
             for lang, group in groupby(
-                [video["native_talk_language"] for video in self.videos]
+                sorted(video["native_talk_language"] for video in self.videos)
             )
         }
 
@@ -357,11 +357,11 @@ class Ted2Zim:
         subtitle_lang_counts = {
             lang: len(list(group))
             for lang, group in groupby(
-                [
+                sorted(
                     subtitle["languageCode"]
                     for video in self.videos
                     for subtitle in video["subtitles"]
-                ]
+                )
             )
         }
 
