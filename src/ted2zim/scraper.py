@@ -78,6 +78,7 @@ class Ted2Zim:
         tmp_dir,
         threads,
         disable_metadata_checks,
+        language_threshold,
     ):
         # video-encoding info
         self.video_format = video_format
@@ -98,6 +99,7 @@ class Ted2Zim:
         self.publisher = publisher
         self.name = name
         self.disable_metadata_checks = disable_metadata_checks
+        self.language_threshold = language_threshold
 
         if not self.disable_metadata_checks:
             # Validate ZIM metadata early so that we do not waste time doing operations
@@ -347,7 +349,7 @@ class Ted2Zim:
         audio_lang_counts = {
             lang: len(list(group))
             for lang, group in groupby(
-                [video["native_talk_language"] for video in self.videos]
+                sorted(video["native_talk_language"] for video in self.videos)
             )
         }
 
@@ -355,19 +357,24 @@ class Ted2Zim:
         subtitle_lang_counts = {
             lang: len(list(group))
             for lang, group in groupby(
-                [
+                sorted(
                     subtitle["languageCode"]
                     for video in self.videos
                     for subtitle in video["subtitles"]
-                ]
+                )
             )
         }
 
         # Attribute 10 "points" score to language in video audio and 1 "point" score
-        # to language in video subtitle
+        # to language in video subtitle if language is present in at least
+        # "threshold" percentage of videos.
         scored_languages = {
             k: 10 * audio_lang_counts.get(k, 0) + subtitle_lang_counts.get(k, 0)
             for k in list(audio_lang_counts.keys()) + list(subtitle_lang_counts.keys())
+            if self.is_language_above_threshold(
+                max(audio_lang_counts.get(k, 0), subtitle_lang_counts.get(k, 0)),
+                len(self.videos),
+            )
         }
 
         sorted_ted_languages = [
@@ -395,6 +402,15 @@ class Ted2Zim:
         if not self.disable_metadata_checks:
             # Validate ZIM languages
             validate_language("Language", self.zim_languages)
+
+    def is_language_above_threshold(self, language_count: int, nb_videos: int) -> bool:
+        """check if a language appears in at least threshold percentage of videos"""
+        epsilon = 1e-5
+        appearance_fraction = language_count / nb_videos
+        return (
+            appearance_fraction >= self.language_threshold
+            or (abs(appearance_fraction - self.language_threshold)) <= epsilon
+        )
 
     def get_subtitle_dict(self, lang):
         """dict of language name and code from a larger dict lang
