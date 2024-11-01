@@ -1,0 +1,26 @@
+diff --git a/src/ted2zim/templates/assets/app.js b/src/ted2zim/templates/assets/app.js
+index a70e101..f901be2 100644
+--- a/src/ted2zim/templates/assets/app.js
++++ b/src/ted2zim/templates/assets/app.js
+@@ -84,7 +84,7 @@ function refreshPagination() {
+ 	if (pageCount > 1) {
+ 	    var pageText = document.getElementById('pagination-text');
+ 	    var pageNumber = videoDB.getPageNumber();
+-	    pageText.innerHTML += ' ' + pageNumber + '/' + pageCount;
++	    pageText.innerHTML = pageText.getAttribute('data-text') + ' ' + pageNumber + '/' + pageCount;
+ 	    
+ 	    if (videoDB.getPageNumber() == 1) {
+ 		leftArrow.style.visibility = 'hidden';
+diff --git a/src/ted2zim/templates/home.html b/src/ted2zim/templates/home.html
+index 87e0ab4..3d02b54 100644
+--- a/src/ted2zim/templates/home.html
++++ b/src/ted2zim/templates/home.html
+@@ -32,7 +32,7 @@
+     </div>
+     <div id="pagination" style="visibility: hidden; margin-bottom: 1em;">
+       <div id="left-arrow">&#10096;</div>
+-      <span id="pagination-text">{{ pagination_text }}</span>
++      <span id="pagination-text" data-text="{{ pagination_text }}">{{ pagination_text }}</span>
+       <div id="right-arrow">&#10097;</div>
+     </div>
+   </div>
