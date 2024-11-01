@@ -8,6 +8,7 @@ An offliner to create ZIM :package: files from TED talks
 [![codecov](https://codecov.io/gh/openzim/ted/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/ted)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/ted2zim.svg)](https://pypi.org/project/ted2zim/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ted2zim.svg)](https://pypi.org/project/ted2zim)
+[![Docker](https://ghcr-badge.egpl.dev/openzim/ted/latest_tag?label=docker)](https://ghcr.io/openzim/ted)
 
 TED (Technology, Entertainment, Design) is a global set of conferences under the slogan "ideas worth spreading". They address a wide range of topics within the research and practice of science and culture, often through storytelling. The speakers are given a maximum of 18 minutes to present their ideas in the most innovative and engaging ways they can. One can eaisly find all the TED videos [here](https://ted.com/talks).
 
