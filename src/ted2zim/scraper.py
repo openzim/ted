@@ -79,6 +79,7 @@ class Ted2Zim:
         threads,
         disable_metadata_checks,
         language_threshold,
+        links,
     ):
         # video-encoding info
         self.video_format = video_format
@@ -122,6 +123,7 @@ class Ted2Zim:
 
         # scraper options
         self.topics = [] if not topics else topics.split(",")
+        self.links = [] if not links else links.split(",")
         self.autoplay = autoplay
         self.playlist = playlist
         self.subtitles_enough = subtitles_enough
@@ -317,6 +319,10 @@ class Ted2Zim:
             if not self.title:
                 self.title = self.playlist_title.strip()  # pyright: ignore
             default_description = self.playlist_description.strip()  # pyright: ignore
+        elif self.links:
+            if not self.title:
+                self.title = "TED Talks Selection"
+            default_description = "A custom selection of TED talks"
         elif len(self.topics) > 1:
             if not self.title:
                 self.title = "TED Collection"
@@ -1331,6 +1337,45 @@ class Ted2Zim:
                 )
             raise ValueError("Wrong topic(s) were supplied. No videos found")
 
+    def extract_videos_from_links(self, links):
+        """extracts metadata for all videos specified by links
+
+        calls extract_info_from_video_page on all links to get this data
+        """
+        logger.debug(f"Extracting videos from {len(links)} links")
+
+        for original_url in links:
+            url = original_url.strip()
+            # Ensure the URL is a valid TED talk URL
+            if not url.startswith(BASE_URL) and "ted.com/talks" not in url:
+                logger.warning(f"Skipping invalid TED talk URL: {url}")
+                continue
+
+            logger.debug(f"Processing link: {url}")
+            json_data = self.extract_info_from_video_page(url)
+
+            # Skip if we couldn't retrieve the data
+            if json_data is None:
+                continue
+
+            # Process the video data
+            if self.update_videos_list_from_info(json_data):
+                # Try to get the talk in other languages if source_languages specified
+                if self.source_languages:
+                    urls = self.generate_urls_for_other_languages(
+                        url, self.source_languages
+                    )
+                    for lang_url in urls:
+                        json_data = self.extract_info_from_video_page(lang_url)
+                        if json_data:
+                            self.update_videos_list_from_info(json_data)
+            logger.debug(f"Processed {url}")
+
+        # Process finished
+        logger.debug(f"Total links processed: {len(links)}")
+        if not self.videos:
+            raise ValueError("No valid videos found from the provided links")
+
     def run(self):
         logger.info(
             f"Starting scraper with:\n"
@@ -1347,8 +1392,11 @@ class Ted2Zim:
                 f"{self.s3_storage.bucket_name}"
             )
 
+        # links mode requested
+        if self.links:
+            self.extract_videos_from_links(self.links)
         # playlist mode requested
-        if self.playlist:
+        elif self.playlist:
             self.extract_videos_from_playlist(self.playlist)
         # topic(s) mode requested
         else:

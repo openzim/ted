@@ -8,19 +8,26 @@ def main():
         prog=NAME,
         description="Scraper to create ZIM files from TED talks topics or playlists",
     )
+    # Create a mutually exclusive group for content source
+    source_group = parser.add_mutually_exclusive_group(required=True)
 
-    parser.add_argument(
-        "--topics",
-        help="Comma-seperated list of topics to scrape; as given on ted.com/talks",
+    source_group.add_argument(
+        "--links",
+        help="Comma-separated TED talk URLs to scrape, each in the format: https://www.ted.com/talks/<talk_slug>",
     )
 
-    parser.add_argument(
+    source_group.add_argument(
+        "--topics",
+        help="Comma-separated list of topics to scrape; as given on ted.com/talks",
+    )
+
+    source_group.add_argument(
         "--playlist",
         help="A playlist ID from ted.com/playlists to scrape videos from",
     )
 
     parser.add_argument(
-        "--languages", help="Comma-seperated list of languages to filter videos"
+        "--languages", help="Comma-separated list of languages to filter videos"
     )
 
     parser.add_argument(
@@ -42,7 +49,7 @@ def main():
         "--subtitles",
         help=f"Language setting for subtitles. {ALL}: include all available subtitles, "
         f"{MATCHING} (default): only subtitles matching --languages, {NONE}: include no"
-        " subtitle. Also accepts comma-seperated list of language codes",
+        " subtitle. Also accepts comma-separated list of language codes",
         default=MATCHING,
         dest="subtitles_setting",
     )
@@ -189,19 +196,6 @@ def main():
     from ted2zim.scraper import Ted2Zim
 
     try:
-        if args.topics and args.playlist:
-            parser.error("--topics is incompatible with --playlist")
-        elif args.topics:
-            if args.subtitles_enough and not args.languages:
-                parser.error(
-                    "--subtitles-enough is only meant to be used if --languages is "
-                    "present"
-                )
-        elif args.playlist:
-            if args.subtitles_enough:
-                parser.error("--subtitles-enough is not compatible with playlists")
-        else:
-            parser.error("Either --topics or --playlist is required")
         if not args.subtitles_setting:
             parser.error("--subtitles cannot take an empty string")
 

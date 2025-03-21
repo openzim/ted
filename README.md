@@ -51,9 +51,17 @@ For the full list of arguments, see [this](ted2zim/entrypoint.py) file or run th
 ted2zim --help
 ```
 
-Example usage
+**Example usage**
+Sample of creating a ZIM for `augmented reality` topic, with a custom name, mp4 format and so on.
+
 ```bash
 ted2zim --topics="augmented reality" --debug --name="augumented_reality" --format=mp4 --title="Augmented Reality" --description="TED videos in AR category" --creator="TED" --publisher="openzim" --output="output" --keep --low-quality
+```
+
+Sample of creating a ZIM for specific URLs, with a custom name, mp4 format and so on.
+
+```bash
+ted2zim --links https://www.ted.com/talks/gautam_shah_can_the_metaverse_bring_us_closer_to_wildlife,https://www.ted.com/talks/micaela_mantegna_how_to_stop_the_metaverse_from_becoming_the_internet_s_bad_sequel --debug --name="sample_links" --format=mp4 --title="Sample Links" --description="TED talks from two different URLs" --creator="TED" --publisher="openzim" --output="output" --keep --low-quality
 ```
 
 This project can also be run with docker. Use the provided [Dockerfile](Dockerfile) or [pre-build images](https://github.com/orgs/openzim/packages/container/package/ted) to run it with Docker. See steps [here](https://docs.docker.com/get-started/part2/).
