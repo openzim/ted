@@ -149,5 +149,38 @@ function refreshVideos(language, pageData) {
 }
 
 $(document).ready(function() {
-  $(".backtotop").on("click", function() { $('html, body').animate({ scrollTop: 0 }, 'slow'); });
+  $(".backtotop").on("click", function() { $('html, body').animate({ scrollTop: 0 }, 'slow');});
+  
+  // Modal Logic 
+  const modal = document.getElementById('language-modal');
+  const openBtn = document.querySelector('.language-icon-btn'); 
+  const closeBtn = document.querySelector('.close-modal');
+
+  // Open the modal
+  $(openBtn).on('click', function () {
+    $(modal).css('display', 'flex');
+    $('body').css('overflow', 'hidden');
+  });
+
+  // Close the modal on close button
+  $(closeBtn).on('click', function () {
+    $(modal).css('display', 'none');
+    $('body').css('overflow', '');
+  });
+
+  // Close the modal when clicking outside the modal content
+  $(window).on('click', function (e) {
+    if (e.target === modal) {
+      $(modal).css('display', 'none');
+      $('body').css('overflow', '');
+    }
+  });
+
+  // Close the modal when pressing the Escape key
+  $(document).on('keydown', function (e) {
+    if (e.key === 'Escape' && $(modal).css('display') === 'flex') {
+      $(modal).css('display', 'none');
+      $('body').css('overflow', '');
+    }
+  });
 });
