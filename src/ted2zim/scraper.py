@@ -948,6 +948,7 @@ class Ted2Zim:
                 titles=titles,
                 descriptions=video["description"],
                 back_to_list=_("Back to the list"),
+                native_talk_language=video["native_talk_language"],
             )
             html_path = self.build_dir.joinpath(video["slug"])
             with open(html_path, "w", encoding="utf-8") as html_page:

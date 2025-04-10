@@ -14,6 +14,7 @@
         <script src="assets/ogvjs/ogv.js"></script>
         <script src="assets/videojs-ogvjs.js"></script>
         <script src="assets/jquery.min.js"></script>
+        <script src="assets/utils.js"></script>
         <script src="assets/article.js"></script>
         <script src="assets/polyfills.js"></script>
         <script src="assets/webp-hero.bundle.js"></script>
@@ -26,8 +27,8 @@
             {% for title in titles %}
             <p class="title lang-{{ title.lang }}">{{ title.text }}</p>
             {% endfor %}
-            <div id="video-wrapper">
-                <video class="video-js vjs-default-skin vjs-fill"
+            <div id="video-wrapper" data-audio-lang="{{ native_talk_language }}">
+                <video id="ted-video" class="video-js vjs-default-skin vjs-fill"
                     controls preload="auto" playsinline
                     poster="videos/{{ video_id }}/thumbnail.webp"
                     data-setup='{"techOrder": ["html5", "ogvjs"], "html5": {"preloadTextTracks": false}, "ogvjs": {"base": "assets/ogvjs", "preloadTextTracks": false}, "autoplay": {% if autoplay %}true{% else %}false{% endif %}, "preload": true, "controls": true, "controlBar": {"pictureInPictureToggle":false}}'>
