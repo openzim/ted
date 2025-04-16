@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `--language-threshold` CLI argument for considering languages that appear in at least specified percentage of videos in `compute_zim_languages` (#212)
 - Add `--links` CLI argument for scraping videos from specific links (#237)
 - Circular back-to-top button and replaced text characters with icon buttons for better visual consistency (#112)
+- Sub title selection should be done according to the language selection (#207)
+- Select language is not persistent enough (#208)
 
 ### Fixed
 

@@ -1,5 +1,12 @@
-
 window.onload = function() {
+  // Check if a language is stored using the storage utility
+  let selectedLanguage = storage.getItem(SELECTED_LANGUAGE_KEY);
+
+  // If a language is stored, select it in the dropdown
+  // This ensures the dropdown reflects the stored language on page load.
+  if (selectedLanguage && selectedLanguage !== 'lang-all') {
+    $('.chosen-select').val(selectedLanguage).trigger('chosen:updated');
+  }
   setupLanguageFilter();
   setupPagination();
 
@@ -23,12 +30,16 @@ window.onload = function() {
 function setupLanguageFilter() {
   $('.chosen-select').chosen({width: "380px"}).change(function(){
     language = arguments[1].selected;
+    // Store the selected language using the storage utility
+    storage.setItem(SELECTED_LANGUAGE_KEY, language);
 
     // If 'lang-all' is selected the user wants to
     // display videos in all languages. 
     // This removes the previously set filter (if any).
     if (language == 'lang-all') {
       language = undefined;
+      // If 'lang-all' is selected, remove the stored language.
+      storage.removeItem(SELECTED_LANGUAGE_KEY);
     }
 
     // Load the data for the selected language and 
