@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Upgrade Video.JS to 8.23.3 (#247)
+
 ## [3.0.3] - 2024-07-10
 
 ### Changed
