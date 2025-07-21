@@ -6,7 +6,7 @@ execute_after=[
 
 [files.assets.actions."video.js"]
 action="extract_all"
-source="https://github.com/videojs/video.js/releases/download/v7.8.1/video-js-7.8.1.zip"
+source="https://github.com/videojs/video.js/releases/download/v8.23.3/video-js-8.23.3.zip"
 target_dir="videojs"
 remove = ["alt","examples",]
 
