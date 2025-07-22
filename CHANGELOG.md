@@ -5,30 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (as of version 2.0.11).
 
-## [Unreleased]
+## [3.1.0] - 2025-07-22
+
+### Changed
+
+- Add `--language-threshold` CLI argument for considering languages that appear in at least specified percentage of videos in `compute_zim_languages` (#212)
+- Circular back-to-top button and replaced text characters with icon buttons for better visual consistency (#112)
+- Allow users to only get specific video from TED instead extract the entire topic or playlist (#237)
 
 ### Fixed
 
+- Do not preload all subtitles in video.JS (#220)
+- Retry video info extract on missing videoData (#222)
+- Do not try to download inappropriate speaker image URL (#224)
+- Fix pagination text duplication during page navigation (#217)
+- Sub title selection should be done according to the language selection (#207)
+- Select language is not persistent enough (#208)
+- Style : added minimum height for grid (#239)
 - Upgrade Video.JS to 8.23.3 (#247)
+- Translation of video title and description is not working on PWA reader (#188)
 
 ## [3.0.3] - 2024-07-10
 
 ### Changed
 
 - Change log level of "Video at {url} has not yet been translated into {requested_lang_code}" messages from warning to debug (way too verbose)
-- Disable preloading of subtitles in video.js
-- Add `--language-threshold` CLI argument for considering languages that appear in at least specified percentage of videos in `compute_zim_languages` (#212)
 - Add `--links` CLI argument for scraping videos from specific links (#237)
-- Circular back-to-top button and replaced text characters with icon buttons for better visual consistency (#112)
-- Sub title selection should be done according to the language selection (#207)
-- Select language is not persistent enough (#208)
 
 ### Fixed
 
 -  Restore functionality to resist temporary bad TED responses when parsing video pages (#209)
 -  Retry video data extraction if `videoData` is missing from page data (#226)
 -  Skip download of speaker image if URL is "-" (#224)
--  Fix pagination text duplication during page navigation (#242)
 
 ## [3.0.2] - 2024-06-24
 
