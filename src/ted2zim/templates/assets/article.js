@@ -8,7 +8,20 @@ $.urlParam = function(name){
 
 // Function to retrieve the selected language
 function getSelectedLanguage() {
-    return storage.getItem(SELECTED_LANGUAGE_KEY) || $.urlParam('lang');
+    const stored = storage.getItem(SELECTED_LANGUAGE_KEY);
+
+    if (stored && stored !== "undefined") {
+        return stored;
+    }
+    const legacy = $.urlParam('lang');
+    if (legacy && storage.getItem(SELECTED_LANGUAGE_KEY)) {
+        storage.setItem(SELECTED_LANGUAGE_KEY, legacy);
+        return legacy;
+    }
+
+
+    //fallback to en
+    return "en";
 }
 
 window.onload = function() {
@@ -41,7 +54,7 @@ window.onload = function() {
     }
 };
 
-$(document).ready(function() {
-    $("#backtolist").on("click", function() { history.go(-1) });
+$(document).ready(function () {
+    $("#backtolist").on("click", function () { history.go(-1) });
 });
 

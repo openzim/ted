@@ -994,30 +994,88 @@ class Ted2Zim:
         )
 
     def generate_datafile(self):
-        """Generate data.js inside assets folder"""
+        """Generate  data_{lang}.js and data_{lang}_{slug}.js inside assets folder"""
+        self.generate_language_index_file()
+        self.generate_video_details_file()
 
-        video_list = []
+    def generate_language_index_file(self):
+        """Generate data_{lang}.js inside assets"""
+
+        assets_path = self.build_dir / "assets"
+        assets_path.mkdir(parents=True, exist_ok=True)
+
+        per_language = {}
         for video in self.videos:
             if video.get("failed", False):
                 continue
-            lang_codes = [lang["languageCode"] for lang in video["subtitles"]] + [
-                lang["languageCode"] for lang in video["languages"]
-            ]
-            json_data = {
-                "languages": list(set(lang_codes)),
-                "id": video["id"],
-                "description": video["description"],
-                "title": video["title"],
-                "speaker": video["speaker"],
-                "slug": video["slug"],
-            }
-            video_list.append(json_data)
-        assets_path = self.build_dir.joinpath("assets")
-        if not assets_path.exists():
-            assets_path.mkdir(parents=True)
 
-        with open(assets_path.joinpath("data.js"), "w") as data_file:
-            data_file.write("json_data = " + json.dumps(video_list, indent=4))
+            languages = self._get_video_languages(video)
+
+            for lang in languages:
+                per_language.setdefault(lang, []).append(
+                    {
+                        "id": video["id"],
+                        "slug": video["slug"],
+                        "title": self._pick_lang(video["title"], lang),
+                        "speaker": video["speaker"],
+                    }
+                )
+
+        for lang, videos in per_language.items():
+            filename = f"data_{lang}.js"
+
+            with open(assets_path / filename, "w", encoding="utf-8") as f:
+                f.write(
+                    "window.json_data = "
+                    + json.dumps(videos, ensure_ascii=False, separators=(",", ":"))
+                )
+
+    def generate_video_details_file(self):
+        """Generate data_{lang}_{slug}.js inside assets"""
+        assets_path = self.build_dir / "assets"
+
+        assets_path.mkdir(parents=True, exist_ok=True)
+
+        for video in self.videos:
+            if video.get("failed", False):
+                continue
+
+            languages = self._get_video_languages(video)
+
+            for lang in languages:
+                filename = f"data_{lang}_{video['slug']}.js"
+
+                detailed_data = {
+                    "id": video["id"],
+                    "slug": video["slug"],
+                    "title": video["title"],
+                    "description": video["description"],
+                    "speaker": video["speaker"],
+                    "languages": list(languages),
+                    "subtitles": video.get("subtitles", []),
+                }
+
+                with open(assets_path / filename, "w", encoding="utf-8") as f:
+                    f.write(
+                        "window.json_data = "
+                        + json.dumps(
+                            detailed_data, ensure_ascii=False, separators=(",", ":")
+                        )
+                    )
+
+    def _get_video_languages(self, video):
+        """Helper Function to collect languages per video"""
+        return {
+            lang["languageCode"]
+            for lang in video.get("languages", [])
+            if "languageCode" in lang
+        }
+
+    def _pick_lang(self, items, lang):
+        for item in items:
+            if item["lang"] == lang:
+                return item["text"]
+        return None
 
     def download_jpeg_image_and_convert(self, url, fpath, preset_options, resize=None):
         """downloads a JPEG image and convert to proper format
@@ -1062,8 +1120,7 @@ class Ted2Zim:
                     logger.debug("Speaker doesn't have an image")
                 elif video_speaker == "-":
                     logger.error(
-                        f"Invalid speaker image URL {video_speaker!r} for "
-                        f"{video_title}"
+                        f"Invalid speaker image URL {video_speaker!r} for {video_title}"
                     )
                 else:
                     logger.debug(f"Downloading Speaker image for {video_title}")

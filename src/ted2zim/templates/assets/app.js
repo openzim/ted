@@ -1,24 +1,22 @@
-window.onload = function() {
+window.onload = function () {
   // Check if a language is stored using the storage utility
-  let selectedLanguage = storage.getItem(SELECTED_LANGUAGE_KEY);
+  let selectedLanguage = storage.getItem(SELECTED_LANGUAGE_KEY) || "en";
 
   // If a language is stored, select it in the dropdown
   // This ensures the dropdown reflects the stored language on page load.
-  if (selectedLanguage && selectedLanguage !== 'lang-all') {
-    $('.chosen-select').val(selectedLanguage).trigger('chosen:updated');
-  }
   setupLanguageFilter();
   setupPagination();
 
-  // Load the initial data. 
-  // This will display all data without any language filter.
-  videoDB.loadData(undefined, function() {
-    var data = videoDB.getPage(videoDB.getPageNumber());
-    refreshVideos(undefined, data);
-  });
+  $('.chosen-select').val(selectedLanguage).trigger('chosen:updated');
   videoDB.resetPage();
-  refreshPagination();
-  return false;
+  // Load the initial data. 
+  // This will load the data_{lang}.js data
+  videoDB.loadData(selectedLanguage, function () {
+    var data = videoDB.getPage(videoDB.getPageNumber());
+    refreshVideos(data);
+    refreshPagination();
+  });
+
 };
 
 /** 
@@ -28,26 +26,16 @@ window.onload = function() {
  * subtitles in the selected language.
  */
 function setupLanguageFilter() {
-  $('.chosen-select').chosen({width: "380px"}).change(function(){
-    language = arguments[1].selected;
+  $('.chosen-select').chosen({ width: "380px" }).change(function (_, params) {
+    var language = params.selected;
     // Store the selected language using the storage utility
     storage.setItem(SELECTED_LANGUAGE_KEY, language);
-
-    // If 'lang-all' is selected the user wants to
-    // display videos in all languages. 
-    // This removes the previously set filter (if any).
-    if (language == 'lang-all') {
-      language = undefined;
-      // If 'lang-all' is selected, remove the stored language.
-      storage.removeItem(SELECTED_LANGUAGE_KEY);
-    }
-
     // Load the data for the selected language and 
     // generate the video list.
     videoDB.resetPage();
-    videoDB.loadData(language, function() {
+    videoDB.loadData(language, function () {
       var data = videoDB.getPage(videoDB.getPageNumber());
-      refreshVideos(language, data);
+      refreshVideos(data);
       refreshPagination();
     });
   });
@@ -59,27 +47,27 @@ function setupLanguageFilter() {
 */
 function setupPagination() {
 
-  function handlePagination(){
-	var data = videoDB.getPage(videoDB.getPageNumber());
-	refreshVideos(undefined, data);
-	refreshPagination();
-	window.scrollTo(0, 0);
+  function handlePagination() {
+    var data = videoDB.getPage(videoDB.getPageNumber());
+    refreshVideos(undefined, data);
+    refreshPagination();
+    window.scrollTo(0, 0);
   }
 
-	var leftArrow = document.getElementById('left-arrow');
-	var rightArrow = document.getElementById('right-arrow');
-	
-	leftArrow.onclick = function() {
-	    videoDB.pageBackwards(function() {
-		handlePagination();
-	    });
-	}
-	
-	rightArrow.onclick = function() {
-	    videoDB.pageForward(function(){
-		handlePagination();
-	    });
-	}
+  var leftArrow = document.getElementById('left-arrow');
+  var rightArrow = document.getElementById('right-arrow');
+
+  leftArrow.onclick = function () {
+    videoDB.pageBackwards(function () {
+      handlePagination();
+    });
+  }
+
+  rightArrow.onclick = function () {
+    videoDB.pageForward(function () {
+      handlePagination();
+    });
+  }
 }
 
 /**
@@ -88,32 +76,32 @@ function setupPagination() {
  */
 function refreshPagination() {
   var pageCount = videoDB.getPageCount();
-	var pageBox = document.getElementById('pagination');
-	var leftArrow = document.getElementById('left-arrow');
-	var rightArrow = document.getElementById('right-arrow');
-	
-	if (pageCount > 1) {
-	    var pageText = document.getElementById('pagination-text');
-	    var pageNumber = videoDB.getPageNumber();
-	    pageText.innerHTML = pageText.getAttribute('data-text') + ' ' + pageNumber + '/' + pageCount;
-	    
-	    if (videoDB.getPageNumber() == 1) {
-		leftArrow.style.visibility = 'hidden';
-		rightArrow.style.visibility = 'visible';
-	    } else if (pageNumber == pageCount) {
-		leftArrow.style.visibility = 'visible';
-		rightArrow.style.visibility = 'hidden';	
-	    } else {
-		leftArrow.style.visibility = 'visible';
-		rightArrow.style.visibility = 'visible';	
-	    }
-	    
-	    pageBox.style.visibility = 'visible';
-	} else {
-	    pageBox.style.visibility = 'hidden';
-	    leftArrow.style.visibility = 'hidden';
-	    rightArrow.style.visibility = 'hidden';	
-	}
+  var pageBox = document.getElementById('pagination');
+  var leftArrow = document.getElementById('left-arrow');
+  var rightArrow = document.getElementById('right-arrow');
+
+  if (pageCount > 1) {
+    var pageText = document.getElementById('pagination-text');
+    var pageNumber = videoDB.getPageNumber();
+    pageText.innerHTML = pageText.getAttribute('data-text') + ' ' + pageNumber + '/' + pageCount;
+
+    if (videoDB.getPageNumber() == 1) {
+      leftArrow.style.visibility = 'hidden';
+      rightArrow.style.visibility = 'visible';
+    } else if (pageNumber == pageCount) {
+      leftArrow.style.visibility = 'visible';
+      rightArrow.style.visibility = 'hidden';
+    } else {
+      leftArrow.style.visibility = 'visible';
+      rightArrow.style.visibility = 'visible';
+    }
+
+    pageBox.style.visibility = 'visible';
+  } else {
+    pageBox.style.visibility = 'hidden';
+    leftArrow.style.visibility = 'hidden';
+    rightArrow.style.visibility = 'hidden';
+  }
 }
 
 /**
@@ -121,44 +109,35 @@ function refreshPagination() {
  * the passed in {pageData} parameter.
  * @param {pageData} Video data for the current page.
  */
-function refreshVideos(language, pageData) {
-    var videoList = document.getElementById('video-items');
-    videoList.innerHTML = '';
-    for (i in pageData) {
-      var video = pageData[i];
-      var lang = undefined;
-      idx = 0;
-      for (j in video.title) {
-        if (video.title[j].lang == language) {
-          idx = j;
-          lang = language;
-        }
-      }
-      var li = document.createElement('li');
-      
-      var a = document.createElement('a')
-      a.href =  video['slug']+'?lang=' + lang;
-      a.className = 'nostyle'
+function refreshVideos(pageData) {
+  let videoList = document.getElementById('video-items');
+  videoList.innerHTML = '';
+  for (const element of pageData) {
+    let video = element;
+    let li = document.createElement('li');
 
-      var img = document.createElement('img');
-      img.src = 'videos/'+video['id']+'/thumbnail.webp';
+    let a = document.createElement('a');
+    a.href = video.slug;
+    a.className = 'nostyle';
+    let img = document.createElement('img');
+    img.src = 'videos/' + video.id + '/thumbnail.webp';
 
-      var author = document.createElement('p');
-      author.id = 'author';
-      author.innerHTML = video['speaker'];
-      
-      var title = document.createElement('p');
-      title.id = 'title';
-      title.innerHTML = video['title'][idx].text;
+    let author = document.createElement('p');
+    author.id = 'author';
+    author.innerHTML = video.speaker;
 
-      a.appendChild(img);
-      a.appendChild(author);
-      a.appendChild(title);
-      li.appendChild(a);
-      videoList.appendChild(li);
-    }
+    let title = document.createElement('p');
+    title.id = 'title';
+    title.innerHTML = video.title;
+
+    a.appendChild(img);
+    a.appendChild(author);
+    a.appendChild(title);
+    li.appendChild(a);
+    videoList.appendChild(li);
+  }
 }
 
-$(document).ready(function() {
-  $(".backtotop").on("click", function() { $('html, body').animate({ scrollTop: 0 }, 'slow'); });
+$(document).ready(function () {
+  $(".backtotop").on("click", function () { $('html, body').animate({ scrollTop: 0 }, 'slow'); });
 });
