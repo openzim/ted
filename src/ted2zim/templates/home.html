@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta content="utf-8" http-equiv="encoding">
@@ -14,11 +14,9 @@
   </head>
   <body>
     <div class="container">
-      <img src="assets/img/TED.png" id="title-img"/>
-      <select data-placeholder="Language" class="chosen-select" tabindex="2">
-        <option value=""></option>
-        <option value="lang-all">{{ language_filter_text }}</option>
-        {% for language in languages %}
+      <img src="assets/img/TED.png" id="title-img" alt="TED"/>
+      <select data-placeholder="Language" class="chosen-select" tabindex="0">
+        <option value=""></option>{% for language in languages %}
           <option value="{{ language.languageCode }}">{{ language.languageName }}</option>
         {% endfor %}
       </select>
@@ -41,7 +39,6 @@
   </div>
   <script src="assets/jquery.min.js" type="text/javascript"></script>
   <script src="assets/chosen/chosen.jquery.js" type="text/javascript"></script>
-  <script src="assets/data.js"></script>
   <script src="assets/db.js"></script>
   <script src="assets/utils.js"></script>
   <script src="assets/app.js"></script>

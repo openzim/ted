@@ -8,8 +8,20 @@
 var videoDB = (function() {
   var ITEMS_PER_PAGE = 40;
   var db = {};
-  var data;
-  var page;
+  var data = [];
+  var page = 1;
+  var currentLang = "en";
+  
+  //helper to load js data
+  function loadScript(src, callback) {
+    var script = document.createElement("script");
+    script.src = src;
+    script.onload = callback;
+    script.onerror = function () {
+      console.error("Failed to load", src);
+    };
+    document.head.appendChild(script);
+  }
 
   /**
    * Load the data with or without an 
@@ -24,24 +36,12 @@ var videoDB = (function() {
    *                   when the data is loaded.
    */
   db.loadData = function(language, callback){
-    if (typeof language === 'undefined'){
-      data = json_data;
-    }
-    else {
-
-      // Clear the previously loaded data.
-      data = [];
-
-      // Iterate through the whole data set and 
-      // add the video objects that have the language 
-      // that we want to the data array.
-      for (i in json_data){
-        if (json_data[i].languages.indexOf(language) > -1) {
-          data.push(json_data[i]);
-        }
-      }
-    }
-    callback();
+    //current language defaults to english 
+    currentLang = language || "en";     
+    loadScript("assets/data_" + currentLang + ".js" , function(){
+      data = window.json_data || [];
+      callback();
+    } );
   }
 
   /**
@@ -70,7 +70,7 @@ var videoDB = (function() {
    *                   you have to load a new page. 
    */
   db.pageBackwards = function(callback) {
-    if (page != 1) {
+    if (page > 1) {
       page--;
       window.location.hash = '#' + page;
       callback();

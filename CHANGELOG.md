@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed the `data.js` to `data_{lang}.js` and `data_{lang}_{slug}.js` to reduce file size. (#257)
 - Add `--language-threshold` CLI argument for considering languages that appear in at least specified percentage of videos in `compute_zim_languages` (#212)
 - Circular back-to-top button and replaced text characters with icon buttons for better visual consistency (#112)
 - Allow users to only get specific video from TED instead extract the entire topic or playlist (#237)
