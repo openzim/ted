@@ -42,7 +42,7 @@
       "title": "Subtitles Setting",
       "description": "Language setting for subtitles. all: include all available subtitles, matching (default): only subtitles matching language(s), none: include no subtitle. Also accepts comma-separated list of language(s)"
     },
-    "video_format": {
+    "format": {
       "type": "string-enum",
       "required": false,
       "title": "Video format",
