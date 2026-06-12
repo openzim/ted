@@ -180,5 +180,31 @@
       "name": "check_exclusive_fields",
       "fields": ["links", "topics", "playlists"]
     }
+  ],
+  "zimMetadata": [
+    {
+      "metadata": "Name",
+      "flag": "name"
+    },
+    {
+      "metadata": "Title",
+      "flag": "title"
+    },
+    {
+      "metadata": "Description",
+      "flag": "description"
+    },
+    {
+      "metadata": "LongDescription",
+      "flag": "long_description"
+    },
+    {
+      "metadata": "Creator",
+      "flag": "creator"
+    },
+    {
+      "metadata": "Publisher",
+      "flag": "publisher"
+    }
   ]
 }
