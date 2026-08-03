@@ -26,7 +26,7 @@ def update_subtitles_list(video_id, language_list):
     return language_list
 
 
-def request_url(url, json_data=None):
+def request_url(url, json_data=None, *, raise_for_status: bool = True):
     """performs an HTTP request and returns the response, either GET or POST
 
     - json_data is used as POST body when passed, otherwise a GET request is done
@@ -53,7 +53,8 @@ def request_url(url, json_data=None):
                 req = requests.get(
                     url, headers={"User-Agent": "Mozilla/5.0"}, timeout=REQUESTS_TIMEOUT
                 )
-            req.raise_for_status()
+            if raise_for_status:
+                req.raise_for_status()
             return req
         except Exception as exc:
             if req and req.status_code == HTTPStatus.NOT_FOUND:
@@ -86,7 +87,7 @@ class WebVTT:
 
     def convert(self, offset):
         """download and convert its URL to WebVTT text"""
-        req = request_url(self.url)
+        req = request_url(self.url, raise_for_status=False)
 
         if req.status_code == HTTPStatus.NOT_FOUND:
             return None

@@ -1320,8 +1320,9 @@ class Ted2Zim:
                 offset=video["subtitles_offset"]
             )
             if not vtt_subtitle:
-                logger.error(
-                    f"Subtitle file for {subtitle['languageCode']} could not be created"
+                logger.warning(
+                    f"Subtitle file for {subtitle['languageCode']}, downloaded from"
+                    f"{subtitle['link']}, could not be created"
                 )
                 continue
             valid_subs.append(subtitle)
