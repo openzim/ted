@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Log more meaningful messages in warnings (#268)
+- Better warnings on missing language names (#269)
 
 ## [3.1.0] - 2025-07-22
 

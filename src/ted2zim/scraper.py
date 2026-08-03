@@ -725,15 +725,21 @@ class Ted2Zim:
     def get_lang_code_and_name(self, json_data, url: str | None):
         player_data = json_data["playerData"]
         lang_code = json_data["language"]
-        try:
-            lang_name = [
-                lang["languageName"]
-                for lang in player_data["languages"]
-                if lang["languageCode"] == lang_code
-            ][-1]
-        except Exception as exc:
-            logger.warning(f"player data has no entry for {lang_code} at {url}: {exc}")
+        lang_names = [
+            lang["languageName"]
+            for lang in player_data["languages"]
+            if lang["languageCode"] == lang_code
+        ]
+        if len(lang_names) == 0:
+            if lang_code != "en":
+                # display warning only for non-English, we do not care about English
+                # lang name since it is "English", we know that
+                logger.warning(
+                    f"player data is missing language name for {lang_code} on {url}"
+                )
             lang_name = lang_code
+        else:
+            lang_name = lang_names[-1]
 
         return lang_code, lang_name
 
