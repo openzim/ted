@@ -948,9 +948,17 @@ class Ted2Zim:
                 speaker=video["speaker"],
                 languages=video["subtitles"],
                 speaker_bio=video["speaker_bio"].replace("Full bio", ""),
-                speaker_img=video["speaker_picture"],
+                speaker_img=(
+                    video["speaker_picture"]
+                    if video["speaker_picture"] != "-"
+                    else None
+                ),
                 date=video["date"],
-                profession=video["speaker_profession"],
+                profession=(
+                    video["speaker_profession"]
+                    if video["speaker_profession"] is not None
+                    else ""
+                ),
                 video_format=self.video_format,
                 autoplay=self.autoplay,
                 video_id=str(video["id"]),
