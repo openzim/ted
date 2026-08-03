@@ -223,14 +223,14 @@ class Ted2Zim:
                     # If the first video which was fetched is in source_languages,
                     # save it.
                     if lang_code in self.source_languages:
-                        self.update_videos_list_from_info(json_data)
+                        self.update_videos_list_from_info(json_data, url)
                     # Determine the next languages to fetch from source_languages
                     other_languages = [
                         code for code in self.source_languages if code != lang_code
                     ]
                 else:
                     # No languages were specified. Save the first video
-                    self.update_videos_list_from_info(json_data)
+                    self.update_videos_list_from_info(json_data, url)
                     # We use the the languages returned from the first
                     # video to generate other language urls.
                     other_languages = [
@@ -256,7 +256,7 @@ class Ted2Zim:
                 for lang_url in other_lang_urls:
                     data = self.extract_info_from_video_page(lang_url)
                     if data is not None:
-                        self.update_videos_list_from_info(data)
+                        self.update_videos_list_from_info(data, lang_url)
 
                 self.already_visited.add(urllib.parse.urlparse(url).path)
             logger.debug(f"Seen {relative_path}")
@@ -508,7 +508,7 @@ class Ted2Zim:
                 # save it and increment the counter.
                 if (
                     lang_code in self.source_languages
-                    and self.update_videos_list_from_info(json_data)
+                    and self.update_videos_list_from_info(json_data, url)
                 ):
                     nb_extracted += 1
 
@@ -529,7 +529,9 @@ class Ted2Zim:
                     )
                     for lang_url in other_lang_urls:
                         data = self.extract_info_from_video_page(lang_url)
-                        if data is not None and self.update_videos_list_from_info(data):
+                        if data is not None and self.update_videos_list_from_info(
+                            data, lang_url
+                        ):
                             # It is possible that this is the first time we
                             # are saving this video as the first video might
                             # not necessarily be in the source_languages.
@@ -559,7 +561,7 @@ class Ted2Zim:
             else:
                 # Since we are searching for all languages, first update the
                 # videos list with the data we just scraped.
-                if self.update_videos_list_from_info(json_data):
+                if self.update_videos_list_from_info(json_data, url):
                     nb_extracted += 1
 
                 # We use the the languages returned from the json_data of
@@ -582,7 +584,7 @@ class Ted2Zim:
                     for lang_url in other_lang_urls:
                         data = self.extract_info_from_video_page(lang_url)
                         if data is not None:
-                            self.update_videos_list_from_info(data)
+                            self.update_videos_list_from_info(data, lang_url)
 
             logger.debug(f"Seen {hit['slug']}")
             self.already_visited.add(urllib.parse.urlparse(url).path)
@@ -720,7 +722,7 @@ class Ted2Zim:
                     self.videos[index]["subtitles"] += subtitles
         return False
 
-    def get_lang_code_and_name(self, json_data):
+    def get_lang_code_and_name(self, json_data, url: str | None):
         player_data = json_data["playerData"]
         lang_code = json_data["language"]
         try:
@@ -730,14 +732,14 @@ class Ted2Zim:
                 if lang["languageCode"] == lang_code
             ][-1]
         except Exception as exc:
-            logger.warning(f"player data has no entry for {lang_code}: {exc}")
+            logger.warning(f"player data has no entry for {lang_code} at {url}: {exc}")
             lang_name = lang_code
 
         return lang_code, lang_name
 
-    def update_videos_list_from_info(self, json_data):
+    def update_videos_list_from_info(self, json_data, url: str):
         player_data = json_data["playerData"]
-        lang_code, lang_name = self.get_lang_code_and_name(json_data)
+        lang_code, lang_name = self.get_lang_code_and_name(json_data, url)
 
         native_talk_language = player_data["nativeLanguage"]
         # Extract the speaker of the TED talk
@@ -787,7 +789,7 @@ class Ted2Zim:
         video_link, youtube_id = self.extract_download_link(player_data)
         if not video_link and not youtube_id:
             logger.error(
-                "No suitable download link or Youtube ID found. Skipping video"
+                f"No suitable download link or Youtube ID found. Skipping {url}"
             )
             return False
 
@@ -1417,7 +1419,7 @@ class Ted2Zim:
                 continue
 
             # Process the video data
-            if self.update_videos_list_from_info(json_data):
+            if self.update_videos_list_from_info(json_data, url):
                 # Try to get the talk in other languages if source_languages specified
                 if self.source_languages:
                     urls = self.generate_urls_for_other_languages(
@@ -1426,7 +1428,7 @@ class Ted2Zim:
                     for lang_url in urls:
                         json_data = self.extract_info_from_video_page(lang_url)
                         if json_data:
-                            self.update_videos_list_from_info(json_data)
+                            self.update_videos_list_from_info(json_data, lang_url)
             logger.debug(f"Processed {url}")
 
         # Process finished
