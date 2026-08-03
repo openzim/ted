@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Log more meaningful messages in warnings (#268)
 - Better warnings on missing language names (#269)
+- Do not crash the whole scrape with a `KeyError: 'metadata'` when a talk's `playerData.resources` has no `hls.metadata` entry (#261)
 
 ## [3.1.0] - 2025-07-22
 
