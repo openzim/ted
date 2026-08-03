@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Do not crash the whole scrape with a `KeyError: 'metadata'` when a talk's `playerData.resources` has no `hls.metadata` entry (#261)
 - Some subtitles are missing in the ZIM (#262)
 - Do not add speaker image when its URL is known '-' bad value + do not show missing speaker profession (#264)
+- Do not download unused thumbnails and subtitles from Youtube (#265, #266)
 
 ## [3.1.0] - 2025-07-22
 

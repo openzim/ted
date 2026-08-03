@@ -1247,6 +1247,12 @@ class Ted2Zim:
                     ).get_options(
                         target_dir=video_dir, filepath=pathlib.Path("video.%(ext)s")
                     )
+                    # override scraperlib defaults since the scraper handles these
+                    # thumbnails and subtitles separately
+                    options["writethumbnail"] = False
+                    options["write_all_thumbnails"] = False
+                    options["writesubtitles"] = False
+                    options["allsubtitles"] = False
                     with yt_dlp.YoutubeDL(options) as ydl:
                         ydl.download([youtube_id])
                     downloaded = True
