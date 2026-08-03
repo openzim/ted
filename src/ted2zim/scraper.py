@@ -800,7 +800,9 @@ class Ted2Zim:
             return False
 
         langs = player_data["languages"]
-        metadata_link = player_data["resources"]["hls"]["metadata"]
+        metadata_link = player_data.get("resources", {}).get("hls", {}).get("metadata")
+        if video_link and not metadata_link:
+            logger.warning(f"metadata link is missing for {url}")
         subtitles = self.generate_subtitle_list(
             video_id, langs, lang_code, native_talk_language
         )
