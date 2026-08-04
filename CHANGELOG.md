@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Upgrade all dependencies and dev/CI tooling (Python to 3.14, zimscraperlib to 5.4.1, other Python and JS dependencies) (#276)
 - Add deno runtime for better yt-dlp operation (#273)
+- Introduce dark-mode theme (#256)
 
 ### Fixed
 
