@@ -993,7 +993,10 @@ class Ted2Zim:
             {"languageName": value, "languageCode": key}
             for key, value in all_langs.items()
         ]
-        languages = sorted(languages, key=lambda x: x["languageName"])
+        # casefold for a case-insensitive sort: a plain sort puts every
+        # uppercase-first native name (e.g. "Deutsch") before every
+        # lowercase-first one (e.g. "français"), which reads as a broken order
+        languages = sorted(languages, key=lambda x: x["languageName"].casefold())
         html = env.get_template("home.html").render(
             languages=languages,
             page_title=_("TED Talks"),
@@ -1088,10 +1091,15 @@ class Ted2Zim:
                     )
 
     def _get_video_languages(self, video):
-        """Helper Function to collect languages per video"""
+        """Helper Function to collect languages per video
+
+        Includes both audio languages and subtitle languages: the home page
+        language filter (render_home_page) lists both, so a data_{lang}.js file
+        must be generated for each or selecting a subtitle-only language 404s.
+        """
         return {
             lang["languageCode"]
-            for lang in video.get("languages", [])
+            for lang in video.get("languages", []) + video.get("subtitles", [])
             if "languageCode" in lang
         }
 
@@ -1099,7 +1107,10 @@ class Ted2Zim:
         for item in items:
             if item["lang"] == lang:
                 return item["text"]
-        return None
+        # no dedicated translation for this language (e.g. a subtitle-only
+        # language the talk page itself was never fetched in) ; fall back to
+        # whatever title is available rather than leaving it blank
+        return items[0]["text"] if items else None
 
     def download_jpeg_image_and_convert(self, url, fpath, preset_options, resize=None):
         """downloads a JPEG image and convert to proper format
@@ -1454,15 +1465,31 @@ class Ted2Zim:
 
             # Process the video data
             if self.update_videos_list_from_info(json_data, url):
-                # Try to get the talk in other languages if source_languages specified
+                lang_code = json_data["language"]
+                player_data = json_data["playerData"]
+
                 if self.source_languages:
-                    urls = self.generate_urls_for_other_languages(
-                        url, self.source_languages
-                    )
+                    # Only the explicitly requested languages
+                    other_languages = [
+                        code for code in self.source_languages if code != lang_code
+                    ]
+                else:
+                    # No languages were specified: fetch every language edition
+                    # TED has for this talk (same behavior as playlist/topic
+                    # scraping), otherwise title/description never get
+                    # translated even though subtitles are fetched
+                    other_languages = [
+                        language["languageCode"]
+                        for language in player_data["languages"]
+                        if language["languageCode"] != lang_code
+                    ]
+
+                if other_languages:
+                    urls = self.generate_urls_for_other_languages(url, other_languages)
                     for lang_url in urls:
-                        json_data = self.extract_info_from_video_page(lang_url)
-                        if json_data:
-                            self.update_videos_list_from_info(json_data, lang_url)
+                        lang_json_data = self.extract_info_from_video_page(lang_url)
+                        if lang_json_data:
+                            self.update_videos_list_from_info(lang_json_data, lang_url)
             logger.debug(f"Processed {url}")
 
         # Process finished

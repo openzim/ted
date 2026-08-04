@@ -27,9 +27,17 @@ function getSelectedLanguage() {
 window.onload = function() {
     var lang = getSelectedLanguage();
     if (lang && lang !== "undefined") {
-        document.getElementById("title-head").innerHTML = $("p.title.lang-" + lang).text();
-        $(".lang-default").css("display", "none");
-        $(".lang-" + lang).css("display", "block");
+        var langTitle = $("p.title.lang-" + lang);
+        // Only switch to the selected language's title/description if this
+        // specific talk actually has one (e.g. it was fetched as an audio
+        // language) ; a talk can have many more subtitle languages than
+        // title/description translations, so keep showing the default
+        // language instead of hiding everything when there's no match.
+        if (langTitle.length) {
+            document.getElementById("title-head").innerHTML = langTitle.text();
+            $(".lang-default").css("display", "none");
+            $(".lang-" + lang).css("display", "block");
+        }
 
         // Retrieve the value of the data-audio-lang attribute from the #video-wrapper element
         const audioLang = $('#video-wrapper').attr('data-audio-lang');
@@ -57,4 +65,3 @@ window.onload = function() {
 $(document).ready(function () {
     $("#backtolist").on("click", function () { history.go(-1) });
 });
-

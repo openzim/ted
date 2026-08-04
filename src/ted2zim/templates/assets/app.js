@@ -59,7 +59,7 @@ function setupPagination() {
 
   function handlePagination() {
     var data = videoDB.getPage(videoDB.getPageNumber());
-    refreshVideos(undefined, data);
+    refreshVideos(data);
     refreshPagination();
     window.scrollTo(0, 0);
   }
