@@ -394,10 +394,15 @@ class Ted2Zim:
             )
         ]
 
-        # compute the mappings from TED to ISO639-3 code and set ZIM language
+        # compute the mappings from TED to ISO639-3 code and set ZIM language ;
+        # multiple TED codes can map to the same ISO639-3 code (e.g. "zh-cn" and
+        # "zh-tw" both map to "chi"), so duplicates are dropped while preserving
+        # the score-based ordering (dict preserves insertion order)
         mapping = tedlang.ted_to_iso639_3_langcodes(sorted_ted_languages)
         self.zim_languages = ",".join(
-            [mapping[code] for code in sorted_ted_languages if mapping[code]]
+            dict.fromkeys(
+                mapping[code] for code in sorted_ted_languages if mapping[code]
+            )
         )
 
         # Display a clear warning on languages which have been ignored due to missing
@@ -1341,7 +1346,7 @@ class Ted2Zim:
             )
             if not vtt_subtitle:
                 logger.warning(
-                    f"Subtitle file for {subtitle['languageCode']}, downloaded from"
+                    f"Subtitle file for {subtitle['languageCode']}, downloaded from "
                     f"{subtitle['link']}, could not be created"
                 )
                 continue
