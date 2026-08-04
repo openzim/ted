@@ -6,7 +6,7 @@ execute_after=[
 
 [files.assets.actions."video.js"]
 action="extract_all"
-source="https://github.com/videojs/video.js/releases/download/v8.23.3/video-js-8.23.3.zip"
+source="https://github.com/videojs/video.js/releases/download/v8.23.9/video-js-8.23.9.zip"
 target_dir="videojs"
 remove = ["alt","examples",]
 
@@ -18,13 +18,13 @@ remove = ["docsupport","chosen.proto.*","*.html","*.md"]
 
 [files.assets.actions."jquery.min.js"]
 action="get_file"
-source="https://code.jquery.com/jquery-3.5.1.min.js"
+source="https://code.jquery.com/jquery-4.0.0.min.js"
 target_file="jquery.min.js"
 
 [files.assets.actions."ogv.js"]
 action="extract_items"
-source="https://github.com/brion/ogv.js/releases/download/1.8.9/ogvjs-1.8.9.zip"
-zip_paths=["ogvjs-1.8.9"]
+source="https://github.com/bvibber/ogv.js/releases/download/1.9.0/ogvjs-1.9.0.zip"
+zip_paths=["ogvjs-1.9.0"]
 target_paths=["ogvjs"]
 remove = ["ogvjs/COPYING","ogvjs/*.txt","ogvjs/*.md",]
 

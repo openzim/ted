@@ -16,7 +16,7 @@ This project is aimed at creating a sustainable solution to make TED accessible 
 
 `ted2zim` adheres to openZIM's [Contribution Guidelines](https://github.com/openzim/overview/wiki/Contributing).
 
-`ted2zim` has implemented openZIM's [Python bootstrap, conventions and policies](https://github.com/openzim/_python-bootstrap/docs/Policy.md) **v1.0.2**.
+`ted2zim` has implemented openZIM's [Python bootstrap, conventions and policies](https://github.com/openzim/_python-bootstrap/docs/Policy.md) **v2.0.0**.
 
 ## Getting started :rocket:
 

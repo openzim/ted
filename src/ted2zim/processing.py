@@ -38,9 +38,8 @@ def post_process_video(video_dir, video_id, preset, video_format, low_quality):
         dst_path,
         preset.to_ffmpeg_args(),
         delete_src=True,
-        with_process=True,
         failsafe=True,
-    )  # pyright: ignore[reportGeneralTypeIssues]
+    )
     if not success:
         if process:
             logger.error(process.stdout)

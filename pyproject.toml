@@ -4,16 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ted2zim"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.14,<3.15"
 description = "Make ZIM file from TED Talks"
 readme = "README.md"
 dependencies = [
   "python-dateutil==2.9.0.post0",
-  "zimscraperlib==3.4.0",
-  "requests==2.32.3",
-  "beautifulsoup4==4.12.3",
-  "Jinja2==3.1.4",
-  "kiwixstorage==0.9.0",
+  "zimscraperlib==5.4.1",
+  "requests==2.34.2",
+  "beautifulsoup4==4.15.0",
+  "Jinja2==3.1.6",
+  "kiwixstorage==0.10.1",
   "pif==0.8.2",
   "python-slugify==8.0.4",
   "yt-dlp", # yt-dlp should be updated as frequently as possible
@@ -28,30 +28,26 @@ kind = "scraper"
 additional-keywords = ["ted"]
 
 [tool.hatch.build.hooks.openzim-build]
-dependencies = [ "zimscraperlib==3.4.0"] # required for fix_ogv_dist
+dependencies = [ "zimscraperlib==5.4.1"] # required for fix_ogv_dist
 
 [project.optional-dependencies]
 scripts = [
-  "invoke==2.2.0",
+  "invoke==2.2.1",
 ]
-lint = [
-  "black==24.4.2",
-  "ruff==0.4.10",
-]
-check = [
-  "pyright==1.1.368",
+qa = [
+  "ruff==0.16.1",
+  "pyright==1.1.411",
 ]
 test = [
-  "pytest==8.2.2",
-  "coverage==7.5.3",
+  "pytest==9.1.1",
+  "coverage==7.15.3",
 ]
 dev = [
-  "pre-commit==3.7.1",
-  "debugpy==1.8.1",
+  "pre-commit==4.6.1",
+  "debugpy==1.8.21",
   "ted2zim[scripts]",
-  "ted2zim[lint]",
+  "ted2zim[qa]",
   "ted2zim[test]",
-  "ted2zim[check]",
 ]
 
 [project.scripts]
@@ -83,33 +79,22 @@ report-cov = "inv report-cov"
 coverage = "inv coverage --args '{args}'"
 html = "inv coverage --html --args '{args}'"
 
-[tool.hatch.envs.lint]
-template = "lint"
-python = "py312"
+[tool.hatch.envs.qa]
+template = "qa"
 skip-install = false
-features = ["scripts", "lint"]
+features = ["scripts", "qa", "test"]
 
-[tool.hatch.envs.lint.scripts]
-black = "inv lint-black --args '{args}'"
-ruff = "inv lint-ruff --args '{args}'"
-all = "inv lintall --args '{args}'"
-fix-black = "inv fix-black --args '{args}'"
-fix-ruff = "inv fix-ruff --args '{args}'"
-fixall = "inv fixall --args '{args}'"
-
-[tool.hatch.envs.check]
-features = ["scripts", "check"]
-
-[tool.hatch.envs.check.scripts]
-pyright = "inv check-pyright --args '{args}'"
-all = "inv checkall --args '{args}'"
-
-[tool.black]
-line-length = 88
-target-version = ['py312']
+[tool.hatch.envs.qa.scripts]
+check-lint = "inv check-lint --args '{args}'"
+check-format = "inv check-format --args '{args}'"
+check-type = "inv check-type --args '{args}'"
+check-all = "inv check-all --args '{args}'"
+fix-format = "inv fix-format --args '{args}'"
+fix-lint = "inv fix-lint --args '{args}'"
+fix-all = "inv fix-all --args '{args}'"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 88
 src = ["src"]
 
@@ -190,6 +175,7 @@ ignore = [
   "PLR0912",
   "PLR0913",
   "PLR0915",
+  "PLR0917", # Too many positional arguments (same spirit as PLR0913 above)
 ]
 unfixable = [
   # Don't touch unused imports
@@ -230,8 +216,8 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.pyright]
 include = ["src", "tests", "tasks.py"]
-exclude = [".env/**", ".venv/**"]
+exclude = [".env/**", ".venv/**", ".hatch/**"]
 extraPaths = ["src"]
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 typeCheckingMode = "basic"
 disableBytesTypePromotions = true

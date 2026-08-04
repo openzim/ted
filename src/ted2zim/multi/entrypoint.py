@@ -106,7 +106,9 @@ def main():
     logger = get_logger()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
-    from ted2zim.multi.scraper import TedHandler
+    # local import so debug logging is configured before pulling in the heavy
+    # scraper module and its dependencies
+    from ted2zim.multi.scraper import TedHandler  # noqa: PLC0415
 
     try:
         handler = TedHandler(dict(args._get_kwargs()), extra_args=extra_args)

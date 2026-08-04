@@ -193,7 +193,9 @@ def main():
     set_debug(args.debug)
     logger = get_logger()
 
-    from ted2zim.scraper import Ted2Zim
+    # local import so debug logging is configured before pulling in the heavy
+    # scraper module and its dependencies
+    from ted2zim.scraper import Ted2Zim  # noqa: PLC0415
 
     try:
         if not args.subtitles_setting:
