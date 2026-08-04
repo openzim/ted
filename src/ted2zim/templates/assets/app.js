@@ -1,3 +1,6 @@
+// TomSelect instance for the language filter, created in setupLanguageFilter()
+var languageSelect;
+
 window.onload = function () {
   // Check if a language is stored using the storage utility
   let selectedLanguage = storage.getItem(SELECTED_LANGUAGE_KEY) || "en";
@@ -7,9 +10,9 @@ window.onload = function () {
   setupLanguageFilter();
   setupPagination();
 
-  $('.chosen-select').val(selectedLanguage).trigger('chosen:updated');
+  languageSelect.setValue(selectedLanguage, true); // silent: avoid a duplicate loadData below
   videoDB.resetPage();
-  // Load the initial data. 
+  // Load the initial data.
   // This will load the data_{lang}.js data
   videoDB.loadData(selectedLanguage, function () {
     var data = videoDB.getPage(videoDB.getPageNumber());
@@ -19,18 +22,25 @@ window.onload = function () {
 
 };
 
-/** 
+/**
  * Apply a language filter, that is selected by the
- * drop down options <select> menu. 
+ * drop down options <select> menu (enhanced with TomSelect for
+ * type-anywhere-in-the-label search).
  * This will then only display items that have
  * subtitles in the selected language.
  */
 function setupLanguageFilter() {
-  $('.chosen-select').chosen({ width: "380px" }).change(function (_, params) {
-    var language = params.selected;
+  languageSelect = new TomSelect('#language-select', {
+    create: false,
+    maxOptions: null, // TED has 100+ languages, don't cap the unfiltered list
+    // moves the search box into the dropdown itself, always starting empty,
+    // instead of mixing it with the current value inline in the control
+    plugins: ['dropdown_input'],
+  });
+  languageSelect.on('change', function (language) {
     // Store the selected language using the storage utility
     storage.setItem(SELECTED_LANGUAGE_KEY, language);
-    // Load the data for the selected language and 
+    // Load the data for the selected language and
     // generate the video list.
     videoDB.resetPage();
     videoDB.loadData(language, function () {
@@ -49,7 +59,7 @@ function setupPagination() {
 
   function handlePagination() {
     var data = videoDB.getPage(videoDB.getPageNumber());
-    refreshVideos(undefined, data);
+    refreshVideos(data);
     refreshPagination();
     window.scrollTo(0, 0);
   }
@@ -71,7 +81,7 @@ function setupPagination() {
 }
 
 /**
- * Reset the page text on the pagination widget, 
+ * Reset the page text on the pagination widget,
  * if a new language has been applied.
  */
 function refreshPagination() {
@@ -105,7 +115,7 @@ function refreshPagination() {
 }
 
 /**
- * Dynamically generate the video item out of 
+ * Dynamically generate the video item out of
  * the passed in {pageData} parameter.
  * @param {pageData} Video data for the current page.
  */

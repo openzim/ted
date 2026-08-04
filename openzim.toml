@@ -10,16 +10,22 @@ source="https://github.com/videojs/video.js/releases/download/v8.23.9/video-js-8
 target_dir="videojs"
 remove = ["alt","examples",]
 
-[files.assets.actions."chosen.jquery.js"]
-action="extract_all"
-source="https://github.com/harvesthq/chosen/releases/download/v1.8.7/chosen_v1.8.7.zip"
-target_dir="chosen"
-remove = ["docsupport","chosen.proto.*","*.html","*.md"]
-
 [files.assets.actions."jquery.min.js"]
 action="get_file"
 source="https://code.jquery.com/jquery-4.0.0.min.js"
 target_file="jquery.min.js"
+
+[files.assets.actions."tom-select.js"]
+action="get_file"
+source="https://cdn.jsdelivr.net/npm/tom-select@2.6.2/dist/js/tom-select.popular.min.js"
+target_dir="tomselect"
+target_file="tom-select.popular.min.js"
+
+[files.assets.actions."tom-select.css"]
+action="get_file"
+source="https://cdn.jsdelivr.net/npm/tom-select@2.6.2/dist/css/tom-select.default.min.css"
+target_dir="tomselect"
+target_file="tom-select.default.min.css"
 
 [files.assets.actions."ogv.js"]
 action="extract_items"
