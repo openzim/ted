@@ -13,6 +13,10 @@ RUN apt-get update \
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["entrypoint.sh"]
 
+# Install deno (required by yt-dlp)
+RUN curl -fsSL https://deno.land/install.sh | sh -s \
+  && ln -s /root/.deno/bin/deno /usr/local/bin/deno
+
 # Copy pyproject.toml and its dependencies
 COPY pyproject.toml openzim.toml README.md /src/
 COPY src/ted2zim/__about__.py /src/src/ted2zim/__about__.py
