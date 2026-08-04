@@ -368,8 +368,8 @@ pyrightconfig.json
 
 # assets that we download
 src/ted2zim/templates/assets/videojs/
-src/ted2zim/templates/assets/chosen/
 src/ted2zim/templates/assets/jquery.min.js
+src/ted2zim/templates/assets/tomselect/
 src/ted2zim/templates/assets/ogvjs/
 src/ted2zim/templates/assets/videojs-ogvjs.js
 src/ted2zim/templates/assets/polyfills.js
