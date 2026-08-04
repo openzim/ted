@@ -17,19 +17,18 @@ from kiwixstorage import KiwixStorage
 from pif import get_public_ip
 from slugify import slugify
 from zimscraperlib.download import BestMp4, BestWebm, YoutubeDownloader, save_large_file
-from zimscraperlib.i18n import _, setlocale
-from zimscraperlib.image.optimization import optimize_image
+from zimscraperlib.i18n import get_language
+from zimscraperlib.image.optimization import OptimizeOptions, optimize_image
 from zimscraperlib.image.presets import WebpMedium
 from zimscraperlib.image.transformation import resize_image
 from zimscraperlib.inputs import compute_descriptions
 from zimscraperlib.video.presets import VideoMp4Low, VideoWebmLow
-from zimscraperlib.zim import make_zim_file
 from zimscraperlib.zim.metadata import (
-    validate_description,
-    validate_language,
-    validate_longdescription,
-    validate_tags,
-    validate_title,
+    DescriptionMetadata,
+    LanguageMetadata,
+    LongDescriptionMetadata,
+    TagsMetadata,
+    TitleMetadata,
 )
 
 from ted2zim import languages as tedlang
@@ -43,8 +42,10 @@ from ted2zim.constants import (
     SEARCH_URL,
     get_logger,
 )
+from ted2zim.i18n import _, setlocale
 from ted2zim.processing import post_process_video
 from ted2zim.utils import WebVTT, get_main_title, request_url, update_subtitles_list
+from ted2zim.zim import make_zim_file
 
 logger = get_logger()
 
@@ -107,13 +108,15 @@ class Ted2Zim:
             # for a scraper which will fail anyway in the end ; language is not
             # validated here since it is dynamically built based on languages found in
             # videos that will be added to the ZIM
-            validate_tags("Tags", self.tags)
+            # (instantiating a Metadata class validates its value and raises
+            # ValueError on any problem)
+            TagsMetadata(self.tags)
             if self.title:
-                validate_title("Title", self.title)
+                TitleMetadata(self.title)
             if self.description:
-                validate_description("Description", self.description)
+                DescriptionMetadata(self.description)
             if self.long_description:
-                validate_longdescription("LongDescription", self.long_description)
+                LongDescriptionMetadata(self.long_description)
 
         # directory setup
         self.output_dir = pathlib.Path(output_dir).expanduser().resolve()
@@ -158,9 +161,9 @@ class Ted2Zim:
         self.already_visited = set()
 
         # set and record locale for translations
-        locale_details = tedlang.get_language_details(locale_name)
-        if locale_details["querytype"] != "locale":
-            locale_name = locale_details["iso-639-1"]
+        locale_details = get_language(locale_name)
+        if locale_details.querytype != "locale":
+            locale_name = locale_details.iso_639_1 or locale_name
         try:
             self.locale = setlocale(ROOT_DIR, locale_name)
         except locale.Error:
@@ -207,13 +210,14 @@ class Ted2Zim:
         soup = BeautifulSoup(request_url(playlist_url).text, features="html.parser")
         video_elements = soup.find_all("a", attrs={"class": "group"})
         self.playlist_title = soup.find("h1").string  # pyright: ignore
-        self.playlist_description = soup.find(
-            "p", attrs={"class": "text-base"}
-        ).string  # pyright: ignore
+        self.playlist_description = soup.find("p", attrs={"class": "text-base"}).string  # pyright: ignore
 
         for element in video_elements:
             relative_path = element.get("href")
-            url = urllib.parse.urljoin(self.talks_base_url, relative_path)
+            url = urllib.parse.urljoin(
+                self.talks_base_url,
+                relative_path,  # pyright: ignore[reportArgumentType]
+            )
             json_data = self.extract_info_from_video_page(url)
 
             if json_data is not None:
@@ -399,7 +403,7 @@ class Ted2Zim:
         # Display a clear warning on languages which have been ignored due to missing
         # ISO639-3 codes
         ignored_ted_codes = [code for code in sorted_ted_languages if not mapping[code]]
-        if len(ignored_ted_codes):
+        if ignored_ted_codes:
             logger.warning(
                 "Some languages have not been added to ZIM metadata due to missing "
                 f"ISO639-3 code: {ignored_ted_codes}"
@@ -407,7 +411,7 @@ class Ted2Zim:
 
         if not self.disable_metadata_checks:
             # Validate ZIM languages
-            validate_language("Language", self.zim_languages)
+            LanguageMetadata(self.zim_languages.split(","))
 
     def is_language_above_threshold(self, language_count: int, nb_videos: int) -> bool:
         """check if a language appears in at least threshold percentage of videos"""
@@ -474,9 +478,7 @@ class Ted2Zim:
         """Possible URLs for other requested languages based on a video url"""
 
         urls = []
-        page_lang, query = self.get_lang_code_from_url(
-            url, with_full_query=True
-        )  # pyright: ignore[reportGeneralTypeIssues]
+        page_lang, query = self.get_lang_code_from_url(url, with_full_query=True)  # pyright: ignore[reportGeneralTypeIssues]
         url_parts = list(urllib.parse.urlparse(url))
 
         # update the language query field value with other languages and form URLs
@@ -652,7 +654,6 @@ class Ted2Zim:
     ):
         # append to self.videos and return if not present
         if not [video for video in self.videos if video.get("id", None) == video_id]:
-
             # Fetch metadata and compute subtitles offset (sum up all domains durations
             # up till the primary domain) - we do it only once per video since this
             # information is same for all languages
@@ -1114,7 +1115,10 @@ class Ted2Zim:
                 method="cover",
             )
         optimize_image(
-            org_jpeg_path, fpath, convert=True, delete_src=True, **preset_options
+            org_jpeg_path,
+            fpath,
+            OptimizeOptions.of(webp=preset_options),
+            delete_src=True,
         )
         logger.debug(f"Converted {org_jpeg_path} to {fpath} and optimized ")
 
@@ -1253,7 +1257,9 @@ class Ted2Zim:
                     options["write_all_thumbnails"] = False
                     options["writesubtitles"] = False
                     options["allsubtitles"] = False
-                    with yt_dlp.YoutubeDL(options) as ydl:
+                    with yt_dlp.YoutubeDL(
+                        options  # pyright: ignore[reportArgumentType]
+                    ) as ydl:
                         ydl.download([youtube_id])
                     downloaded = True
                 except Exception as exc:
@@ -1528,8 +1534,8 @@ class Ted2Zim:
                 illustration="favicon.png",
                 title=self.title,
                 description=self.description,
-                language=self.zim_languages,  # pyright: ignore[reportArgumentType]
-                long_description=self.long_description,  # pyright: ignore[reportArgumentType]
+                languages=self.zim_languages.split(","),
+                long_description=self.long_description,
                 creator=self.creator,
                 publisher=self.publisher,
                 tags=self.tags,

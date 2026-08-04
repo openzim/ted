@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade all dependencies and dev/CI tooling (Python to 3.14, zimscraperlib to 5.4.1, other Python and JS dependencies)
+
 ### Fixed
 
 - Log more meaningful messages in warnings (#268)

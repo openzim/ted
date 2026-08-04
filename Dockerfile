@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.14-slim-bookworm
 LABEL org.opencontainers.image.source=https://github.com/openzim/ted
 
 # Install necessary packages
