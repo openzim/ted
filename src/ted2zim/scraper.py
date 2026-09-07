@@ -221,7 +221,7 @@ class Ted2Zim:
             json_data = self.extract_info_from_video_page(url)
 
             if json_data is not None:
-                player_data = json_data["playerData"]
+                player_data = json_data["videoPlayerData"]
                 lang_code = json_data["language"]
                 if self.source_languages:
                     # If the first video which was fetched is in source_languages,
@@ -507,7 +507,7 @@ class Ted2Zim:
                 continue
 
             lang_code = json_data["language"]
-            player_data = json_data["playerData"]
+            player_data = json_data["videoPlayerData"]
             # we need to filter videos since this has not been done
             # before for topics with the "new" search page (2023)
             if self.source_languages:
@@ -729,7 +729,7 @@ class Ted2Zim:
         return False
 
     def get_lang_code_and_name(self, json_data, url: str | None):
-        player_data = json_data["playerData"]
+        player_data = json_data["videoPlayerData"]
         lang_code = json_data["language"]
         lang_names = [
             lang["languageName"]
@@ -750,7 +750,7 @@ class Ted2Zim:
         return lang_code, lang_name
 
     def update_videos_list_from_info(self, json_data, url: str):
-        player_data = json_data["playerData"]
+        player_data = json_data["videoPlayerData"]
         lang_code, lang_name = self.get_lang_code_and_name(json_data, url)
 
         native_talk_language = player_data["nativeLanguage"]
@@ -901,9 +901,6 @@ class Ted2Zim:
                     f"{requested_lang_code}"
                 )
                 return None
-            # Desrialize the data at json_data["playerData"] into a dict
-            # and overwrite it accordingly
-            json_data["playerData"] = json.loads(json_data["playerData"])
             return json_data
         except Exception as exc:
             logger.error(
@@ -1466,7 +1463,7 @@ class Ted2Zim:
             # Process the video data
             if self.update_videos_list_from_info(json_data, url):
                 lang_code = json_data["language"]
-                player_data = json_data["playerData"]
+                player_data = json_data["videoPlayerData"]
 
                 if self.source_languages:
                     # Only the explicitly requested languages
