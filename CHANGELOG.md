@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Adapt to upstream player data change in HTML page (#288)
+- Adapt to upstream player data change in HTML page (#288, #290)
 
 ## [3.2.0] - 2026-09-07
 
