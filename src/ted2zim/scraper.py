@@ -612,26 +612,28 @@ class Ted2Zim:
 
     def extract_download_link(self, talk_data):
         """Returns download link / youtube video ID for a TED video"""
+        resources = talk_data.get("resources") or {}
         if (
-            isinstance(talk_data.get("resources", {}).get("h264"), list)
-            and len(talk_data["resources"]["h264"])
-            and talk_data["resources"]["h264"][0].get("file")
+            isinstance(resources.get("h264"), list)
+            and len(resources["h264"])
+            and resources["h264"][0].get("file")
         ):
             logger.debug(
                 "Using h264 resource link for bitrate="
-                f"{talk_data['resources']['h264'][0].get('bitrate')}"
+                f"{resources['h264'][0].get('bitrate')}"
             )
-            download_link = talk_data["resources"]["h264"][0]["file"]
+            download_link = resources["h264"][0]["file"]
         else:
             download_link = None
 
+        external = talk_data.get("external") or {}
         if (
-            talk_data.get("external", {}).get("service")
-            and talk_data["external"]["service"] == "YouTube"
-            and talk_data["external"].get("code")
+            external.get("service")
+            and external["service"] == "YouTube"
+            and external.get("code")
         ):
-            logger.debug(f"Found Youtube ID {talk_data['external']['code']}")
-            youtube_id = talk_data["external"]["code"]
+            logger.debug(f"Found Youtube ID {external['code']}")
+            youtube_id = external["code"]
         else:
             youtube_id = None
 
@@ -750,6 +752,20 @@ class Ted2Zim:
         return lang_code, lang_name
 
     def update_videos_list_from_info(self, json_data, url: str):
+        """wraps _update_videos_list_from_info to always log full details (incl.
+        traceback) on unexpected errors, since json_data structure is not fully
+        controlled (comes from TED website) and might vary from what we expect"""
+        try:
+            return self._update_videos_list_from_info(json_data, url)
+        except Exception as exc:
+            logger.error(
+                f"Unexpected error processing video data for {url}: {exc}\n"
+                f"json_data was:\n{json_data}"
+            )
+            logger.exception(exc)
+            raise
+
+    def _update_videos_list_from_info(self, json_data, url: str):
         player_data = json_data["videoPlayerData"]
         lang_code, lang_name = self.get_lang_code_and_name(json_data, url)
 
@@ -806,7 +822,9 @@ class Ted2Zim:
             return False
 
         langs = player_data["languages"]
-        metadata_link = player_data.get("resources", {}).get("hls", {}).get("metadata")
+        metadata_link = ((player_data.get("resources") or {}).get("hls") or {}).get(
+            "metadata"
+        )
         if video_link and not metadata_link:
             logger.warning(f"metadata link is missing for {url}")
         subtitles = self.generate_subtitle_list(
