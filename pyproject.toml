@@ -32,18 +32,18 @@ dependencies = [ "zimscraperlib==5.4.1"] # required for fix_ogv_dist
 
 [project.optional-dependencies]
 scripts = [
-  "invoke==2.2.1",
+  "invoke==3.0.3",
 ]
 qa = [
-  "ruff==0.16.1",
+  "ruff==0.16.6",
   "pyright==1.1.411",
 ]
 test = [
   "pytest==9.1.1",
-  "coverage==7.15.3",
+  "coverage==7.16.0",
 ]
 dev = [
-  "pre-commit==4.6.1",
+  "pre-commit==4.6.2",
   "debugpy==1.8.21",
   "ted2zim[scripts]",
   "ted2zim[qa]",
