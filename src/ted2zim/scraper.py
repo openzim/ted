@@ -208,7 +208,17 @@ class Ted2Zim:
         playlist_url = f"{self.playlists_base_url}/{playlist}"
         logger.debug(f"extract_videos_from_playlist: {playlist_url}")
         soup = BeautifulSoup(request_url(playlist_url).text, features="html.parser")
-        video_elements = soup.find_all("a", attrs={"class": "group"})
+        # Each talk's link is repeated 2-3x on the page (thumbnail, title, "Watch
+        # now" button) with no stable class to filter on anymore, so we select by
+        # href prefix instead and dedupe while preserving page order.
+        seen_hrefs = set()
+        video_elements = []
+        for element in soup.find_all("a", attrs={"href": True}):
+            href = str(element.get("href") or "")
+            if not href.startswith("/talks/") or href in seen_hrefs:
+                continue
+            seen_hrefs.add(href)
+            video_elements.append(element)
         self.playlist_title = soup.find("h1").string  # pyright: ignore
         self.playlist_description = soup.find("p", attrs={"class": "text-base"}).string  # pyright: ignore
 
@@ -784,7 +794,7 @@ class Ted2Zim:
                 raise OSError(f"Unexpected speaker JSON format: {json_data}")
             speaker = " ".join(
                 [
-                    speaker_info.get("firstame", ""),
+                    speaker_info.get("firstname", ""),
                     speaker_info.get("middlename", ""),
                     speaker_info.get("lastname", ""),
                 ]
@@ -803,7 +813,7 @@ class Ted2Zim:
         # Extract the ted talk details from json
         video_id = json_data["id"]
         speaker_profession = speaker_info.get("description")
-        speaker_bio = speaker_info.get("whoTheyAre", "-")
+        speaker_bio = speaker_info.get("whoTheyAre") or "-"
         speaker_picture = speaker_info.get("photoUrl", "-")
         title = json_data.get("title", "n/a")
         description = json_data.get("description", "n/a")
