@@ -794,7 +794,7 @@ class Ted2Zim:
                 raise OSError(f"Unexpected speaker JSON format: {json_data}")
             speaker = " ".join(
                 [
-                    speaker_info.get("firstame", ""),
+                    speaker_info.get("firstname", ""),
                     speaker_info.get("middlename", ""),
                     speaker_info.get("lastname", ""),
                 ]
